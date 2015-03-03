@@ -8,17 +8,21 @@
 #
 # Commencez par: placement --help 
 #
+# Calcule et renvoie le switch cpu_bin qui doit être inséré dans l'appel srun
+#
 # Exemple: 4 processus, 8 threads par processus, hyperthreading activé
 #
 # Switch -H: Renvoie l'affectation des cores aux processes de manière lisible par les humains:
 #
-# placement.py -H 4 8 2
-# [ 0 20 1 21 2 22 3 23 ]
-# [ 10 30 11 31 12 32 13 33 ]
-# [ 4 24 5 25 6 26 7 27 ]
-# [ 14 34 15 35 16 36 17 37 ]
+# placement -H 4 8 2
+# [ 0 1 2 3 20 21 22 23 ]
+# [ 10 11 12 13 30 31 32 33 ]
+# [ 4 5 6 7 24 25 26 27 ]
+# [ 14 15 16 17 34 35 36 37 ]
 #
-# Switch -A: Renvoie l'affectation des cores aux processes de manière cartographique::
+# --cpu_bind=mask_cpu:0xf0000f,0x3c0003c00,0xf0000f0,0x3c0003c000
+#
+# Switch -A: Renvoie l'affectation des cores aux processes de manière cartographique:
 #
 # placement.py -A 4 8 2
 # /XXXX...... .......... 
@@ -30,41 +34,122 @@
 # /.......... ....XXXX.. 
 # \.......... ....XXXX.. 
 #
-# Switch -R: Renvoie le switch prêt à insérer dans votre commande srun:
+# --cpu_bind=mask_cpu:0xf0000f,0x3c0003c00,0xf0000f0,0x3c0003c000
 #
-# ./placement.py -R 4 8 2
-#--cpu_bind=mask_cpu:0xf0000f,0x3c0003c00,0xf0000f0,0x3c0003c000 
+# DANS UN SCRIPT SBATCH:
+# ======================
 #
-# Dans les scripts on peut donc mettre:
-#
-# srun $(placement.py -R 4 8 2)
+# Pas la peine de spécifier les paramètres, les variables d'environnement SLURM seront utilisées
+# Commandes recommandées:
+# 
+# placement -A
+# if [[ $? != 0 ]]
+# then
+#  echo "ERREUR DANS LE NOMBRE DE PROCESES OU DE TACHES" 2>&1
+#  exit $?
+# fi
+# ...
+# srun $(placement) ./mon_application
 #        
 # emmanuel.courcelle@inp-toulouse.fr
 # http://www.calmip.univ-toulouse.fr
 ################################################################
 
+import os
 from optparse import OptionParser
 
-# Variables liées à notre architecture: BULLx DLC, 
-# soit 612 nœuds, chacun 2 procs Intel Ivybridge 10 cœurs
-sockets=2
-cores_per_socket=10
+# Changer cette cons en changeant d'architecture (cf. lignes 70 et suivantes)
+#ARCHI = 'BULLX-DLC'
+ARCHI = 'MESCA'
 
-def examples():
-    print "not yet written"
+# Constantes liées à nos architectures: 
+SOCKETS_PER_NODE = ''
+CORES_PER_SOCKET = ''
+HYPERTHREADING   = ''
+
+# 1/ BULLx DLC (eos), 612 nœuds, chacun 2 procs Intel Ivybridge 10 cœurs, hyperthreading activé
+if ARCHI == 'BULLX-DLC':
+    SOCKETS_PER_NODE = 2
+    CORES_PER_SOCKET = 10
+    HYPERTHREADING   = True
+    THREADS_PER_CORE = 2
+
+# 2/ BULL SMP-mesca, 8 sockets, 15 cœurs par socket, pas d'HYPERTHREADING
+if ARCHI == 'MESCA':
+    SOCKETS_PER_NODE = 8
+    CORES_PER_SOCKET = 15
+    HYPERTHREADING   = False
+    THREADS_PER_CORE = 1
+
+# class Architecture: 
+#       Description de l'architecture dans une classe
+#       Paramètres du constructeur:
+#           sockets_per_node: Nombre de sockets par node, doit être < SOCKETS_PER_NODE 
+#           tasks           : Nombre de tâches (processes) souhaité
+#           cpus_per_task   : Nombre de cpus par process
+#           hyper           : Si False, hyperthreading interdit
+#
+#           - tasks, threads_per_task, et la constante HYPERTHREADING permet de calculer le nombre
+#           de threads par cœur
+#           - cores_per_socket est fixe (cf. CORES_PER_SOCKET)
+#           - Le nombre de cores par nœud dérive de sockets_per_node et cores_per_socket
+#       Il est interdit (et impossible) de changer les attributs par la suite
+class Architecture(object):
+    def __init__(self, sockets_per_node, cpus_per_task, tasks, hyper):
+        if sockets_per_node > SOCKETS_PER_NODE:
+            msg = "ERREUR INTERNE "
+            msg += str(sockets_per_node)
+            msg += " > " 
+            msg += str(SOCKETS_PER_NODE)
+            print msg
+            raise Exception(msg)
+
+        self.sockets_per_node = sockets_per_node+0
+        self.cores_per_socket = CORES_PER_SOCKET
+        self.cores_per_node   = self.sockets_per_node * self.cores_per_socket
+        self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
+
+        #print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
+
+    # Accepte d'initialiser un attribut seulement s'il n'existe pas
+    def __setattr__(self,name,value):
+        try:
+            getattr(self,name)
+            raise Exception("ERREUR INTERNE - Pas le droit de changer les attributs")
+        except Exception:
+            object.__setattr__(self,name,value)
+
+    #
+    # Active l'HYPERTHREADING si nécessaire:
+    #         si hyper == True on active
+    #         sinon on active seulement si nécessaire
+    #         Si la variable globale HYPERTHREADING est à False et que l'HYPERTHREADING doit être
+    #         activé, on lève une exception
+    #
+    #         Retourne threads_per_core (1 ou 2)
+    #
+    def activateHyper(self,hyper,cpus_per_task,tasks):
+        threads_per_core=1
+        if hyper==True or (cpus_per_task*tasks>self.cores_per_node and cpus_per_task*tasks<=THREADS_PER_CORE*self.cores_per_node):
+            if HYPERTHREADING:
+                threads_per_core = THREADS_PER_CORE
+            else:
+                msg = "OUPS - l'HYPERTHREADING n'est pas actif sur cette machine"
+                raise Exception(msg)
+        return threads_per_core
 
 #
 # Réécrit le placement pour une tâche (appelé par getCpuBindingSrun)
 # Réécriture sous forme hexadécimale pour srun
 #
-# Params: threads_per_core (1/2, HTOFF/ON)
+# Params: archi (l'architecture processeurs)
 #         cores (un tableau d'entiers représentant les cœurs)
 # Return: Le tableau de tableaux réécrit en hexa
 #
-def getCpuTaskMachineBinding(threads_per_core,cores):
+def getCpuTaskMachineBinding(archi,cores):
     i = 1
     rvl = 0
-    for j in range(sockets*cores_per_socket*threads_per_core):
+    for j in range(archi.cores_per_node*archi.threads_per_core):
         if (j in cores):
             rvl += i
         i = 2 * i
@@ -74,12 +159,13 @@ def getCpuTaskMachineBinding(threads_per_core,cores):
 # Réécrit le placement pour une tâche (appelé par getCpuBinding)
 # Réécriture de manière "humainement lisible"
 #
-# Params: threads_per_core (1/2, HTOFF/ON)
+# Params: archi (l'architecture processeurs), non utilisé
 #         cores (un tableau d'entiers représentant les cœurs)
 # Return: Le tableau de tableaux réécrit en chaine de caractères
 #
-def getCpuTaskHumanBinding(threads_per_core,cores):
-    rvl="# [ "
+#
+def getCpuTaskHumanBinding(archi,cores):
+    rvl="[ "
     sorted_cores = cores
     sorted_cores.sort()
     for c in sorted_cores:
@@ -92,22 +178,26 @@ def getCpuTaskHumanBinding(threads_per_core,cores):
 # Réécrit le placement pour une tâche (appelé par getCpuBinding)
 # Réécriture en "art ascii" représentant l'architecture processeur
 #
-# Params: threads_per_core (1/2, HTOFF/ON)
+# Params:  archi (l'architecture processeurs)
 #         cores (un tableau d'entiers représentant les cœurs)
-# Return: Une ou deux lignes, deux fois 10 colonnes séparées par un espace (pour 2 sockets de 10 cœurs)
+# Return: Une ou deux lignes, deux fois 10 colonnes séparées par un espace (pour 2 sockets_per_node de 10 cœurs)
 #
-def getCpuTaskAsciiBinding(threads_per_core,cores):
-    rvl = ""
-    for l in range(threads_per_core):
-        if (threads_per_core>1):
-            if l==0:
-                rvl += '# /'
-            else:
-                rvl += '# \\'
+# NOTE - PAS UTILISE ACTUELLEMENT, on utilise getCpuBindingAscii à la place
+#        On le garde pour cat getCpuBindingAscii est limité à 62 tâches
+#
 
-        for j in range(sockets):
-            for k in range(cores_per_socket):
-                if (l*cores_per_socket*sockets+j*cores_per_socket+k in cores):
+def getCpuTaskAsciiBinding(archi,cores):
+    rvl = ""
+    for l in range(archi.threads_per_core):
+        if (archi.threads_per_core>1):
+            if l==0:
+                rvl += '/'
+            else:
+                rvl += '\\'
+
+        for j in range(archi.sockets_per_node):
+            for k in range(archi.cores_per_socket):
+                if (l*archi.cores_per_node+j*archi.cores_per_socket+k in cores):
                     rvl += 'X'
                 else:
                     rvl += '.'
@@ -116,13 +206,72 @@ def getCpuTaskAsciiBinding(threads_per_core,cores):
     return rvl
 
 #
+# Conversion de  numéro de tâche (0..61) vers lettre(A-Za-z0-9)
+def numTaskToLetter(n):
+    if n<0 or n>61:
+        raise(Exception("ERREUR INTERNE - Si plus de 62 tâches, utilisez getCpuTaskAsciiBinding"))
+    if n<26:
+        return chr(65+n)   # A..Z
+    if n<52:
+        return chr(71+n)   # a..z  (71=97-26)
+    return chr(n-4)        # 0..9  (-4=53-48)
+
+#
+# Réécriture de tasks_binding sous forme 'ascii art'
+#
+# Params = archi (passé à getCpuTasksMachineBinding), tasks_binding
+# Return = La chaine de caractères à afficher
+#    
+def getCpuBindingAscii(archi,tasks_binding):
+    char=ord('A')
+
+    # cores = tableau de cores, prérempli avec '.'
+    cores=[]
+    for i in range(archi.cores_per_node*archi.threads_per_core):
+        cores.append('.')
+
+    # remplir le tableau cores avec une lettre correspondant au process
+    nt=0
+    for t in tasks_binding:
+        for c in t:
+            cores[c] = numTaskToLetter(nt)
+        nt += 1
+
+    # Ecrire l'affectation des cœurs à partir de cores
+    rvl = "  "
+    for s in range(archi.sockets_per_node):
+        rvl += 'S'
+        rvl += str(s)
+        for c in range(archi.cores_per_socket):
+            if c<2:
+                continue
+            else:
+                rvl += '-'
+        rvl += ' '
+    rvl += '\n'
+
+    for l in range(archi.threads_per_core):
+        if l==0:
+            rvl += "P "
+        else:
+            rvl += "L "
+
+        for s in range(archi.sockets_per_node):
+            for c in range(archi.cores_per_socket):
+                rvl += cores[l*archi.cores_per_node+s*archi.cores_per_socket+c]
+            rvl += ' '
+        rvl += "\n"
+
+    return rvl
+
+#
 # Appel de fct pour chaque élément de tasks_binding
 # concatène et renvoie les retours de fct
 #
-def getCpuBinding(threads_per_core,tasks_binding,fct):
+def getCpuBinding(archi,tasks_binding,fct):
     rvl = ""
     for t in tasks_binding:
-        rvl += fct(threads_per_core,t)
+        rvl += fct(archi.threads_per_core,t)
     return rvl
 
 #
@@ -131,10 +280,10 @@ def getCpuBinding(threads_per_core,tasks_binding,fct):
 # Params = threads_per_core (passé à getCpuTasksMachineBinding), tasks_binding
 # Return = La chaine de caractères à afficher
 #    
-def getCpuBindingSrun( threads_per_core,tasks_binding):
+def getCpuBindingSrun(archi,tasks_binding):
     mask_cpus=[]
     for t in tasks_binding:
-        mask_cpus += [getCpuTaskMachineBinding(threads_per_core,t)]
+        mask_cpus += [getCpuTaskMachineBinding(archi,t)]
 
     return "--cpu_bind=mask_cpu:" + ",".join(mask_cpus)
 
@@ -142,56 +291,53 @@ def getCpuBindingSrun( threads_per_core,tasks_binding):
 # Valide les paramètres d'entrée, lève une exception avec un message clair si pas corrects
 #
 # On vérifie que les paramètres ne sont pas trop grands ou trop petits
-# En particulier, si le nombre tasks*threads_per_task est < 10, on n'est pas sur la partition exclusive
+# En particulier, si le nombre tasks*cpus_per_task est < 10, on n'est pas sur la partition exclusive
 #
 # On refuse les tâches à cheval sur deux sockets, sauf s'il n'y a qu'une tâche 
 # (tâche unique avec 20 threads: OK, 5 tâches de 4 threads, HTOFF: NON)
 #
-def checkBuildParameters(threads_per_core,threads_per_task,tasks):
-    if (threads_per_core<0 or threads_per_task<0 or tasks<0 ):
+def checkBuildParameters(archi,cpus_per_task,tasks):
+    if (cpus_per_task<0 or tasks<0 ):
         raise Exception("OUPS - Tous les paramètres doivent être entiers positifs")
 
-    if threads_per_core > 2:
-        raise Exception("OUPS - threads_per_core doit être <= 2 (pas " + str(threads_per_core) + ")")
+    if cpus_per_task%archi.threads_per_core!=0:
+        raise Exception("OUPS - cpus_per_task => doit être multiple de threads_per_core")
 
-    if threads_per_task%threads_per_core!=0:
-        raise Exception("OUPS - threads_per_task => doit être multiple de threads_per_core")
-
-    if threads_per_task*tasks<=10:
+    if cpus_per_task*tasks<=10:
         raise Exception("OUPS - moins de 10 cœurs utilisés: partition shared, placement non supporté")
 
-    if tasks>1 and threads_per_task>threads_per_core*cores_per_socket:
-        raise Exception("OUPS - Votre task déborde du socket, threads_per_task doit être <= "+str(threads_per_core*cores_per_socket))
-    if threads_per_task*tasks>threads_per_core*cores_per_socket*sockets:
-        raise Exception("OUPS - Pas assez de cores ! Diminuez threads_per_task ou tasks")
+    if tasks>1 and cpus_per_task>archi.threads_per_core*archi.cores_per_socket:
+        raise Exception("OUPS - Votre task déborde du socket, cpus_per_task doit être <= "+str(archi.threads_per_core*archi.cores_per_socket))
+    if cpus_per_task*tasks>archi.threads_per_core*archi.cores_per_node:
+        raise Exception("OUPS - Pas assez de cores ! Diminuez cpus_per_task ou tasks")
 
-    # max_tasks calculé ainsi permet d'être sûr de ne pas avoir une tâche entre deux sockets, 
-    max_tasks = sockets * (cores_per_socket*threads_per_core/threads_per_task)
-    if threads_per_task>1:
+    # max_tasks calculé ainsi permet d'être sûr de ne pas avoir une tâche entre deux sockets_per_node, 
+    max_tasks = archi.sockets_per_node * (archi.cores_per_socket*archi.threads_per_core/cpus_per_task)
+    if cpus_per_task>1:
         if tasks>max_tasks and max_tasks>0:
-            raise Exception("OUPS - Une task est à cheval sur deux sockets ! Diminuez tasks, le maximum est " + str(max_tasks))
+            raise Exception("OUPS - Une task est à cheval sur deux sockets ! Diminuez le nombre de tâches par nœuds, le maximum est " + str(max_tasks))
 
 #
 # Construit le tableau de tableaux tasks_binding à partir des paramètres
-# Params: threads_per_core (HT ON/OFF, soit 2/1), threads_per_task et tasks        
+# Params: archi, cpus_per_task et tasks        
 # Return: tasks_binding, un tableau de tableaux:
-#         Le tableau des proceses, chaque process est représenté par un tableau de cœurs.
+#         Le tableau des processes, chaque process est représenté par un tableau de cœurs.
 #
-def buildTasksBinding(threads_per_core,threads_per_task,tasks):
-    checkBuildParameters(threads_per_core,threads_per_task,tasks)
+def buildTasksBinding(archi,cpus_per_task,tasks):
+    checkBuildParameters(archi,cpus_per_task,tasks)
 
     # c_step est l'épaisseur des "tranches de coeurs", c_max le nombre de tranches par socket
     # Pour 10 coeurs/socket, 4 threads/task, ht OFF -> c_step = 4, 2 itérations
     # Pour 10 coeurs/socket, 4 threads/task, ht ON  -> c_step = 2, 5 itérations
-    c_step = threads_per_task / threads_per_core
+    c_step = cpus_per_task / archi.threads_per_core
     tasks_binding=[]
     t = 0
-    for c in range(0,cores_per_socket,c_step):
-        for s in range(sockets):
+    for c in range(0,archi.cores_per_socket,c_step):
+        for s in range(archi.sockets_per_node):
             t_binding=[]
-            for h in range(threads_per_task/threads_per_core):
-                for y in range(threads_per_core):
-                    t_binding += [y*cores_per_socket*sockets + s*cores_per_socket + c + h]
+            for h in range(cpus_per_task/archi.threads_per_core):
+                for y in range(archi.threads_per_core):
+                    t_binding += [y*archi.cores_per_node + s*archi.cores_per_socket + c + h]
             tasks_binding += [t_binding]
             t += 1
             if (t==tasks):
@@ -200,30 +346,56 @@ def buildTasksBinding(threads_per_core,threads_per_task,tasks):
     # normalement on ne passe pas par là on a déjà retourné
     return tasks_binding
 
-    
 def main():
 
-    parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks threads_per_task threads_per_core")
+    # Parser de la ligne de commande
+    parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task")
+    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,SOCKETS_PER_NODE+1)),default=SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
     parser.add_option("-H","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
     parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
-    parser.add_option("-R","--srun",action="store_true",default=False,dest="srun",help="Output srunnally readable (%default)")
+    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of HYPERTHREADING (%default)")
     (options, args) = parser.parse_args()
 
-    # Valeurs par défaut
-    threads_per_core = 1
-    threads_per_task = 4
-    tasks            = 4
-    
-    if len(args) >= 3:
-        threads_per_core = int(args[2])
-    if len(args) >= 2:
-        threads_per_task = int(args[1])
-    if len(args) >= 1:
-        tasks            = int(args[0])
-
     try:
-        tasks_binding = buildTasksBinding(threads_per_core, threads_per_task, tasks)
+    #if True:
+        # Valeurs par défaut: en l'absence d'autres indications
+        cpus_per_task = 4
+        tasks         = 4
+
+        # sockets_per_node, cores_per_node
+        #sockets_per_node = int(options.sockets)
+        #cores_per_node   = sockets_per_node * CORES_PER_SOCKET
+
+        # Valeurs par défaut: on prend les variables d'environnement de SLURM, si posible
+        if 'SLURM_TASKS_PER_NODE' in os.environ:
+            tmp = os.environ['SLURM_TASKS_PER_NODE'].partition('(')[0]         # 20(x2)   ==> 2
+            tmp = map(int,tmp.split(','))                                      # '11,10'  ==> [11,10]
+            if len(tmp)==1:
+                tasks = tmp[0]
+            elif len(tmp)==2:
+                tasks = min(tmp)
+                if options.asciiart or options.human:
+                    msg = "ATTENTION - SLURM_TASKS_PER_NODE = " + os.environ['SLURM_TASKS_PER_NODE'] + "\n"
+                    msg+= "            Le paradigme utilisé est probablement client-serveur, le placement prend en compte " + str(tasks) + " tâches"
+                    print msg
+                    print 
+            else:
+                msg =  "OUPS - Placement non supporté dans cette configuration:\n"
+                msg += "       SLURM_TASKS_PER_NODE = " + os.environ['SLURM_TASKS_PER_NODE']
+                raise Exception(msg)
+
+        if 'SLURM_CPUS_PER_TASK' in os.environ:
+            cpus_per_task = int(os.environ['SLURM_CPUS_PER_TASK'])
+    
+        if len(args) >= 2:
+            cpus_per_task = int(args[1])
+        if len(args) >= 1:
+            tasks         = int(args[0])
+
+        archi = Architecture(int(options.sockets), cpus_per_task, tasks, options.hyper)
+        tasks_binding = buildTasksBinding(archi, cpus_per_task, tasks)
+
     except Exception, e:
         print e
         exit(1)
@@ -234,15 +406,36 @@ def main():
 
 # Imprime le binding de manière compréhensible pour les humains
     if options.human==True:
-        print getCpuBinding(threads_per_core,tasks_binding,getCpuTaskHumanBinding)
+        print getCpuBinding(archi,tasks_binding,getCpuTaskHumanBinding)
     
 # Imprime le binding en ascii art
     if options.asciiart==True:
-        print getCpuBinding(threads_per_core,tasks_binding,getCpuTaskAsciiBinding)
+        if tasks<=62:
+            print getCpuBindingAscii(archi,tasks_binding)
+        else:
+            print getCpuBinding(archi,tasks_binding,getCpuTaskAsciiBinding)
     
 # Imprime le binding de manière compréhensible pour srun
-    if options.srun==True:
-        print getCpuBindingSrun(threads_per_core,tasks_binding)
+    print getCpuBindingSrun(archi,tasks_binding)
+
+def examples():
+    ex = """USING placement IN AN SBATCH SCRIPT
+===================================
+
+1/ Insert the following lines in your script:
+
+placement -A
+if [[ $? != 0 ]]
+then
+ echo "ERREUR DANS LE NOMBRE DE PROCESSES OU DE TACHES" 2>&1
+ exit $?
+fi
+
+2/ Modify your srun call as followes:
+
+srun $(placement) ./my_application
+"""
+    print ex
 
 if __name__ == "__main__":
     main()
