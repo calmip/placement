@@ -58,9 +58,12 @@
 import os
 from optparse import OptionParser
 
+class PlacementException(Exception):
+    pass
+
 # Changer cette cons en changeant d'architecture (cf. lignes 70 et suivantes)
-#ARCHI = 'BULLX-DLC'
-ARCHI = 'MESCA'
+ARCHI = 'BULLX-DLC'
+#ARCHI = 'MESCA'
 
 # Constantes liées à nos architectures: 
 SOCKETS_PER_NODE = ''
@@ -102,20 +105,20 @@ class Architecture(object):
             msg += " > " 
             msg += str(SOCKETS_PER_NODE)
             print msg
-            raise Exception(msg)
+            raise PlacementException(msg)
 
         self.sockets_per_node = sockets_per_node+0
         self.cores_per_socket = CORES_PER_SOCKET
         self.cores_per_node   = self.sockets_per_node * self.cores_per_socket
         self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
 
-        #print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
+        print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
 
     # Accepte d'initialiser un attribut seulement s'il n'existe pas
     def __setattr__(self,name,value):
         try:
             getattr(self,name)
-            raise Exception("ERREUR INTERNE - Pas le droit de changer les attributs")
+            raise PlacementException("ERREUR INTERNE - Pas le droit de changer les attributs")
         except Exception:
             object.__setattr__(self,name,value)
 
@@ -135,7 +138,7 @@ class Architecture(object):
                 threads_per_core = THREADS_PER_CORE
             else:
                 msg = "OUPS - l'HYPERTHREADING n'est pas actif sur cette machine"
-                raise Exception(msg)
+                raise PlacementException(msg)
         return threads_per_core
 
 #
@@ -209,7 +212,7 @@ def getCpuTaskAsciiBinding(archi,cores):
 # Conversion de  numéro de tâche (0..61) vers lettre(A-Za-z0-9)
 def numTaskToLetter(n):
     if n<0 or n>61:
-        raise(Exception("ERREUR INTERNE - Si plus de 62 tâches, utilisez getCpuTaskAsciiBinding"))
+        raise PlacementException("ERREUR INTERNE - Si plus de 62 tâches, utilisez getCpuTaskAsciiBinding")
     if n<26:
         return chr(65+n)   # A..Z
     if n<52:
@@ -288,69 +291,235 @@ def getCpuBindingSrun(archi,tasks_binding):
     return "--cpu_bind=mask_cpu:" + ",".join(mask_cpus)
 
 #
-# Valide les paramètres d'entrée, lève une exception avec un message clair si pas corrects
+# TaskBuilding permet d'implémenter les différents algorithmes de répartition
+#              Suivant le mode demandé (scatter ou compact) 
+#              on utilisera l'une ou l'autre des classes dérivées
 #
-# On vérifie que les paramètres ne sont pas trop grands ou trop petits
-# En particulier, si le nombre tasks*cpus_per_task est < 10, on n'est pas sur la partition exclusive
+# PRINCIPALES METHODES:
 #
-# On refuse les tâches à cheval sur deux sockets, sauf s'il n'y a qu'une tâche 
-# (tâche unique avec 20 threads: OK, 5 tâches de 4 threads, HTOFF: NON)
+# checkParameters()
+#      Valide les paramètres d'entrée, lève une exception avec un message clair si pas corrects
 #
-def checkBuildParameters(archi,cpus_per_task,tasks):
-    if (cpus_per_task<0 or tasks<0 ):
-        raise Exception("OUPS - Tous les paramètres doivent être entiers positifs")
+#      On vérifie que les paramètres ne sont pas trop grands ou trop petits
+#      En particulier, si le nombre tasks*cpus_per_task est < 10, on n'est pas sur la partition exclusive
+#      (TODO -> Partition exclusive ou pas, ça ne concerne qu'eos)
+#
+#      En scatter seulement, on refuse les tâches à cheval sur deux sockets, sauf s'il n'y a qu'une tâche 
+#      (tâche unique avec 20 threads: OK, 5 tâches de 4 threads, HTOFF: NON)
+#
+# distribProcesses()
+#      Construit le tableau de tableaux tasks_binding à partir des paramètres
+# 
+#      Return: tasks_bounded, un tableau de tableaux:
+#              Le tableau des processes, chaque process est représenté par un tableau de cœurs.
+#
+    
+class TasksBinding(object):
+    def __init__(self,archi,cpus_per_task,tasks):
+        self.archi = archi
+        self.cpus_per_task = cpus_per_task
+        self.tasks = tasks
 
-    if cpus_per_task%archi.threads_per_core!=0:
-        raise Exception("OUPS - cpus_per_task => doit être multiple de threads_per_core")
+    def checkParameters():
+        raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
+    def distribProcesses():
+        raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
 
-    if cpus_per_task*tasks<=10:
-        raise Exception("OUPS - moins de 10 cœurs utilisés: partition shared, placement non supporté")
-
-    if tasks>1 and cpus_per_task>archi.threads_per_core*archi.cores_per_socket:
-        raise Exception("OUPS - Votre task déborde du socket, cpus_per_task doit être <= "+str(archi.threads_per_core*archi.cores_per_socket))
-    if cpus_per_task*tasks>archi.threads_per_core*archi.cores_per_node:
-        raise Exception("OUPS - Pas assez de cores ! Diminuez cpus_per_task ou tasks")
-
-    # max_tasks calculé ainsi permet d'être sûr de ne pas avoir une tâche entre deux sockets_per_node, 
-    max_tasks = archi.sockets_per_node * (archi.cores_per_socket*archi.threads_per_core/cpus_per_task)
-    if cpus_per_task>1:
-        if tasks>max_tasks and max_tasks>0:
-            raise Exception("OUPS - Une task est à cheval sur deux sockets ! Diminuez le nombre de tâches par nœuds, le maximum est " + str(max_tasks))
+    # Code commun à toutes les classes dérivées
+    # _checkParameters doit être appelé par toutes les fonctions checkParameters()
+    def _checkParameters(self):
+        if (self.cpus_per_task<0 or self.tasks<0 ):
+            raise PlacementException("OUPS - Tous les paramètres doivent être entiers positifs")
+        if self.cpus_per_task*self.tasks<=10:
+            raise PlacementException("OUPS - moins de 10 cœurs utilisés: partition shared, placement non supporté")
+        if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_per_node:
+            msg = "OUPS - Pas assez de cores ! Diminuez cpus_per_task (";
+            msg += str(self.cpus_per_task)
+            msg += ") ou tasks ("
+            msg += str(self.tasks)
+            msg += ")"
+            raise PlacementException(msg)
 
 #
-# Construit le tableau de tableaux tasks_binding à partir des paramètres
-# Params: archi, cpus_per_task et tasks        
-# Return: tasks_binding, un tableau de tableaux:
-#         Le tableau des processes, chaque process est représenté par un tableau de cœurs.
+# class ScatterMode, dérive de TaskBuilding, implémente les algos utilisés en mode scatter
 #
-def buildTasksBinding(archi,cpus_per_task,tasks):
-    checkBuildParameters(archi,cpus_per_task,tasks)
+class ScatterMode(TasksBinding):
+    def __init__(self,archi,cpus_per_task,tasks):
+        TasksBinding.__init__(self,archi,cpus_per_task,tasks)
+        
+    def checkParameters(self):
+        self._checkParameters()
 
-    # c_step est l'épaisseur des "tranches de coeurs", c_max le nombre de tranches par socket
-    # Pour 10 coeurs/socket, 4 threads/task, ht OFF -> c_step = 4, 2 itérations
-    # Pour 10 coeurs/socket, 4 threads/task, ht ON  -> c_step = 2, 5 itérations
-    c_step = cpus_per_task / archi.threads_per_core
-    tasks_binding=[]
-    t = 0
-    for c in range(0,archi.cores_per_socket,c_step):
-        for s in range(archi.sockets_per_node):
+        if self.cpus_per_task % self.archi.threads_per_core!=0:
+            msg = "OUPS - cpus_per_task ("
+            msg += str(self.cpus_per_task)
+            msg += ") => doit être multiple de threads_per_core ("
+            msg += str(self.archi.threads_per_core)
+            msg += ")"
+            raise PlacementException(msg)
+
+        if self.tasks>1 and self.cpus_per_task>self.archi.threads_per_core*self.archi.cores_per_socket:
+            msg =  "OUPS - Votre task déborde du socket, cpus_per_task doit être <= "
+            msg += str(self.archi.threads_per_core*self.archi.cores_per_socket)
+            raise PlacementException(msg)
+        
+        if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_per_node:
+            msg = "OUPS - Pas assez de cores ! Diminuez cpus_per_task (";
+            msg += str(self.cpus_per_task)
+            msg += ") ou tasks ("
+            msg += str(self.tasks)
+            msg += ")"
+            raise PlacementException(msg)
+
+        # max_tasks calculé ainsi permet d'être sûr de ne pas avoir une tâche entre deux sockets_per_node, 
+        # PREMIER ALGO DE distribProcesses:
+        if False:
+            max_tasks = self.archi.sockets_per_node * (self.archi.cores_per_socket*self.archi.threads_per_core/self.cpus_per_task)
+        # SECOND ALGO DE distribProcesses:
+        else:
+            max_tasks = self.archi.sockets_per_node * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
+        if self.cpus_per_task>1:
+            if self.tasks>max_tasks and max_tasks>0:
+                msg = "OUPS - Une task est à cheval sur deux sockets ! Diminuez le nombre de tâches par nœuds, le maximum est "
+                msg += str(max_tasks)
+                raise PlacementException(msg)
+
+    def distribProcesses(self):
+        self.checkParameters()
+
+        # c_step est l'épaisseur des "tranches de coeurs", c_max le nombre de tranches par socket
+        # Pour 10 coeurs/socket, 4 threads/task, ht OFF -> c_step = 4, 2 itérations
+        # Pour 10 coeurs/socket, 4 threads/task, ht ON  -> c_step = 2, 5 itérations
+
+        # Le code qui suit est inactif
+        # ./placement -A   --mode=scatter --hyper 4 4
+        # S0-------- S1-------- 
+        # P AACC...... BBDD...... 
+        # L AACC...... BBDD...... 
+        if False:
+            c_step = self.cpus_per_task / self.archi.threads_per_core
+            tasks_bounded=[]
+            t = 0
+            for c in range(0,self.archi.cores_per_socket,c_step):
+                for s in range(self.archi.sockets_per_node):
+                    t_binding=[]
+                    for h in range(self.cpus_per_task/self.archi.threads_per_core):
+                        for y in range(self.archi.threads_per_core):
+                            t_binding += [y*self.archi.cores_per_node + s*self.archi.cores_per_socket + c + h]
+                    tasks_bounded += [t_binding]
+                    t += 1
+                    if (t==self.tasks):
+                        return tasks_bounded
+
+        # Le code qui suit est ACTIF
+        # ./placement -A   --mode=compact --hyper 4 4
+        # S0-------- S1-------- 
+        # P AAAABBBB.. .......... 
+        # L CCCCDDDD.. .......... 
+        # ATTENTION Dans checkParameters le calcul de max_tasks n'est pas le même
+        else:
+            c_step = self.cpus_per_task
+            tasks_bounded=[]
             t_binding=[]
-            for h in range(cpus_per_task/archi.threads_per_core):
-                for y in range(archi.threads_per_core):
-                    t_binding += [y*archi.cores_per_node + s*archi.cores_per_socket + c + h]
-            tasks_binding += [t_binding]
-            t += 1
-            if (t==tasks):
-                return tasks_binding
+            t = 0
+            th= 0
+            for c in range(0,self.archi.cores_per_socket,c_step):
+                for y in range(self.archi.threads_per_core):
+                    for s in range(self.archi.sockets_per_node):
+                        for th in range(self.cpus_per_task):
+                            if th==0 and self.archi.cores_per_socket-c<self.cpus_per_task:
+                                continue
+                            t_binding += [y*self.archi.cores_per_node + s*self.archi.cores_per_socket + c + th]
+                        tasks_bounded += [t_binding]
+                        t_binding = []
+                        t += 1
+                        if (t==self.tasks):
+                            return tasks_bounded
 
-    # normalement on ne passe pas par là on a déjà retourné
-    return tasks_binding
+        # normalement on ne passe pas par là on a déjà retourné
+        return tasks_bounded
+
+#
+# class CompactMode, dérive de TaskBuilding, implémente les algos utilisés en mode scatter
+#
+class CompactMode(TasksBinding):
+    def __init__(self,archi,cpus_per_task,tasks):
+        TasksBinding.__init__(self,archi,cpus_per_task,tasks)
+        
+    def checkParameters(self):
+        self._checkParameters()
+
+        if self.cpus_per_task % self.archi.threads_per_core!=0:
+            msg = "OUPS - cpus_per_task ("
+            msg += str(self.cpus_per_task)
+            msg += ") => doit être multiple de threads_per_core ("
+            msg += str(self.archi.threads_per_core)
+            msg += ")"
+            raise PlacementException(msg)
+
+    def distribProcesses(self):
+        self.checkParameters()
+
+        # c_step est l'épaisseur des "tranches de coeurs", c_max le nombre de tranches par socket
+        # Pour 10 coeurs/socket, 4 threads/task, ht OFF -> c_step = 4, 2 itérations
+        # Pour 10 coeurs/socket, 4 threads/task, ht ON  -> c_step = 2, 5 itérations
+
+        # Le code qui suit est inactif
+        # ./placement -A   --mode=compact --hyper 4 4
+        # S0-------- S1-------- 
+        # P AABBCCDD.. .......... 
+        # L AABBCCDD.. .......... 
+        if False:
+            c_step = self.cpus_per_task / self.archi.threads_per_core
+            tasks_bounded=[]
+            t_binding=[]
+            t = 0
+            th= 0
+            for c in range(0,self.archi.cores_per_node,c_step):
+                for h in range(self.cpus_per_task/self.archi.threads_per_core):
+                    for y in range(self.archi.threads_per_core):
+                        t_binding += [y*self.archi.cores_per_node + c + h ]
+                        th+=1
+                        if th==self.cpus_per_task:
+                            tasks_bounded += [t_binding]
+                            t_binding = []
+                            th = 0
+                            t += 1
+                            if (t==self.tasks):
+                                return tasks_bounded
+
+        # Le code qui suit est ACTIF
+        # ./placement -A   --mode=compact --hyper 4 4
+        # S0-------- S1-------- 
+        # P AAAABBBBCC .......... 
+        # L CCDDDD.... ..........
+        else:
+            tasks_bounded=[]
+            t_binding=[]
+            t = 0
+            th= 0
+            for s in range(self.archi.sockets_per_node):
+                for h in range(self.archi.threads_per_core):
+                    for c in range(self.archi.cores_per_socket):
+                        t_binding += [h*self.archi.cores_per_node + s*self.archi.cores_per_socket + c]
+                        th+=1
+                        if th==self.cpus_per_task:
+                            tasks_bounded += [t_binding]
+                            t_binding = []
+                            th = 0
+                            t += 1
+                            if (t==self.tasks):
+                                return tasks_bounded
+
+        # normalement on ne passe pas par là on a déjà retourné
+        return tasks_bounded
 
 def main():
 
     # Parser de la ligne de commande
     parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task")
     parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,SOCKETS_PER_NODE+1)),default=SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
+    parser.add_option("-M","--mode",type="choice",choices=["compact","scatter"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, compact (%default)")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
     parser.add_option("-H","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
     parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
@@ -383,7 +552,7 @@ def main():
             else:
                 msg =  "OUPS - Placement non supporté dans cette configuration:\n"
                 msg += "       SLURM_TASKS_PER_NODE = " + os.environ['SLURM_TASKS_PER_NODE']
-                raise Exception(msg)
+                raise PlacementException(msg)
 
         if 'SLURM_CPUS_PER_TASK' in os.environ:
             cpus_per_task = int(os.environ['SLURM_CPUS_PER_TASK'])
@@ -394,9 +563,15 @@ def main():
             tasks         = int(args[0])
 
         archi = Architecture(int(options.sockets), cpus_per_task, tasks, options.hyper)
-        tasks_binding = buildTasksBinding(archi, cpus_per_task, tasks)
+        task_distrib = ""
+        if options.mode == "scatter":
+            task_distrib = ScatterMode(archi,cpus_per_task,tasks)
+        else:
+            task_distrib = CompactMode(archi,cpus_per_task,tasks)
 
-    except Exception, e:
+        tasks_bounded = task_distrib.distribProcesses()
+
+    except PlacementException, e:
         print e
         exit(1)
 
@@ -406,17 +581,17 @@ def main():
 
 # Imprime le binding de manière compréhensible pour les humains
     if options.human==True:
-        print getCpuBinding(archi,tasks_binding,getCpuTaskHumanBinding)
+        print getCpuBinding(archi,tasks_bounded,getCpuTaskHumanBinding)
     
 # Imprime le binding en ascii art
     if options.asciiart==True:
         if tasks<=62:
-            print getCpuBindingAscii(archi,tasks_binding)
+            print getCpuBindingAscii(archi,tasks_bounded)
         else:
-            print getCpuBinding(archi,tasks_binding,getCpuTaskAsciiBinding)
+            print getCpuBinding(archi,tasks_bounded,getCpuTaskAsciiBinding)
     
 # Imprime le binding de manière compréhensible pour srun
-    print getCpuBindingSrun(archi,tasks_binding)
+    print getCpuBindingSrun(archi,tasks_bounded)
 
 def examples():
     ex = """USING placement IN AN SBATCH SCRIPT
