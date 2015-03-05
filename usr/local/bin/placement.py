@@ -53,6 +53,7 @@
 #        
 # emmanuel.courcelle@inp-toulouse.fr
 # http://www.calmip.univ-toulouse.fr
+# Mars 2015
 ################################################################
 
 import os
@@ -112,7 +113,7 @@ class Architecture(object):
         self.cores_per_node   = self.sockets_per_node * self.cores_per_socket
         self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
 
-        print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
+        #print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
 
     # Accepte d'initialiser un attribut seulement s'il n'existe pas
     def __setattr__(self,name,value):
@@ -149,14 +150,17 @@ class Architecture(object):
 #         cores (un tableau d'entiers représentant les cœurs)
 # Return: Le tableau de tableaux réécrit en hexa
 #
-def getCpuTaskMachineBinding(archi,cores):
+def getCpuTaskSrunBinding(archi,cores):
     i = 1
     rvl = 0
     for j in range(archi.cores_per_node*archi.threads_per_core):
         if (j in cores):
             rvl += i
         i = 2 * i
-    return hex(rvl)
+    rvl = str(hex(rvl))
+    
+    # Supprime le 'L' final, dans le cas où il y a un grand nombre de threads
+    return rvl.rstrip('L')
 
 #
 # Réécrit le placement pour une tâche (appelé par getCpuBinding)
@@ -208,6 +212,10 @@ def getCpuTaskAsciiBinding(archi,cores):
         rvl += "\n"
     return rvl
 
+
+def getCpuTaskNumactlBinding(archi,cores):
+    return getCompactString(cores)
+
 #
 # Conversion de  numéro de tâche (0..61) vers lettre(A-Za-z0-9)
 def numTaskToLetter(n):
@@ -218,6 +226,48 @@ def numTaskToLetter(n):
     if n<52:
         return chr(71+n)   # a..z  (71=97-26)
     return chr(n-4)        # 0..9  (-4=53-48)
+
+# Conversion d'une liste d'entiers triée vers une chaine compacte:
+# ATTENTION - On fait un tri Inplace de A, qui est donc a priori modifié
+#             [0,1,2,5,6,7,9] ==> 0-2,5-7,9
+# 
+# params: A, liste d'entiers (peut être modifiée)
+#
+# return: Chaine de caractères
+def getCompactString(A):
+
+    A.sort()
+
+    # réécrire tout ça avec la syntaxe: 1,2,3,5 => 1-3,5
+    # cl_cpus = Compact List of A
+    tmp=[]
+    last_c=-1
+    start=-1
+    end=-1
+
+    # Ajoute '0-2' ou '0' à tmp
+    def compact(tmp,start,end):
+        if start==end:
+            tmp += [str(start)]
+        else:
+            tmp += [str(start)+'-'+str(end)]
+
+    for c in A:
+        if start==-1:
+            start=c
+        if last_c==-1:
+            last_c=c
+        else:
+            if c-last_c==1:
+                last_c=c
+            else:
+                compact(tmp,start,last_c)
+                start=c
+                last_c=c
+                
+    if last_c>-1:
+        compact(tmp,start,last_c)
+    return ','.join(tmp)
 
 #
 # Réécriture de tasks_binding sous forme 'ascii art'
@@ -280,16 +330,40 @@ def getCpuBinding(archi,tasks_binding,fct):
 #
 # Réécriture de tasks_binding sous forme de paramètres hexadécimaux pour srun
 #
-# Params = threads_per_core (passé à getCpuTasksMachineBinding), tasks_binding
+# Params = archi, tasks_binding
 # Return = La chaine de caractères à afficher
 #    
 def getCpuBindingSrun(archi,tasks_binding):
     mask_cpus=[]
     for t in tasks_binding:
-        mask_cpus += [getCpuTaskMachineBinding(archi,t)]
+        mask_cpus += [getCpuTaskSrunBinding(archi,t)]
 
     return "--cpu_bind=mask_cpu:" + ",".join(mask_cpus)
 
+#
+# Réécriture de tasks_binding sous frome de switch numactl
+#
+def getCpuBindingNumactl(archi,tasks_binding):
+    cpus=[]
+
+    # remettre à plat tasks_binding
+#    for tasks in tasks_binding:
+#        for t in tasks:
+#            cpus.append(int(t))
+
+    # compactifie dans une chaine de caractères
+
+    sorted_tasks_binding=list(tasks_binding)
+    sorted_tasks_binding.sort()
+
+    for t in sorted_tasks_binding:
+        cpus += [getCpuTaskNumactlBinding(archi,t)]
+
+    return "--physcpubind=" + ",".join(cpus)
+    
+    s_cpus = getCompactString(cpus)
+    return "--physcpubind=" + s_cpus
+    
 #
 # TaskBuilding permet d'implémenter les différents algorithmes de répartition
 #              Suivant le mode demandé (scatter ou compact) 
@@ -427,7 +501,8 @@ class ScatterMode(TasksBinding):
                 for y in range(self.archi.threads_per_core):
                     for s in range(self.archi.sockets_per_node):
                         for th in range(self.cpus_per_task):
-                            if th==0 and self.archi.cores_per_socket-c<self.cpus_per_task:
+                            # Eviter le débordement sauf s'il n'y a qu'une seule task
+                            if self.tasks!=1 and th==0 and self.archi.cores_per_socket-c<self.cpus_per_task:
                                 continue
                             t_binding += [y*self.archi.cores_per_node + s*self.archi.cores_per_socket + c + th]
                         tasks_bounded += [t_binding]
@@ -518,23 +593,22 @@ def main():
 
     # Parser de la ligne de commande
     parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task")
-    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,SOCKETS_PER_NODE+1)),default=SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
-    parser.add_option("-M","--mode",type="choice",choices=["compact","scatter"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, compact (%default)")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
+    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,SOCKETS_PER_NODE+1)),default=SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
+    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of HYPERTHREADING (%default)")
+    parser.add_option("-M","--mode",type="choice",choices=["compact","scatter"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, compact (%default)")
     parser.add_option("-H","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
     parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
-    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of HYPERTHREADING (%default)")
+
+    parser.add_option("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
+    parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
+    parser.set_defaults(output_mode="srun")
     (options, args) = parser.parse_args()
 
     try:
-    #if True:
         # Valeurs par défaut: en l'absence d'autres indications
         cpus_per_task = 4
         tasks         = 4
-
-        # sockets_per_node, cores_per_node
-        #sockets_per_node = int(options.sockets)
-        #cores_per_node   = sockets_per_node * CORES_PER_SOCKET
 
         # Valeurs par défaut: on prend les variables d'environnement de SLURM, si posible
         if 'SLURM_TASKS_PER_NODE' in os.environ:
@@ -590,8 +664,11 @@ def main():
         else:
             print getCpuBinding(archi,tasks_bounded,getCpuTaskAsciiBinding)
     
-# Imprime le binding de manière compréhensible pour srun
-    print getCpuBindingSrun(archi,tasks_bounded)
+# Imprime le binding de manière compréhensible pour srun ou numactl
+    if options.output_mode=="srun":
+        print getCpuBindingSrun(archi,tasks_bounded)
+    if options.output_mode=="numactl":
+        print getCpuBindingNumactl(archi,tasks_bounded)
 
 def examples():
     ex = """USING placement IN AN SBATCH SCRIPT
