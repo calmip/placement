@@ -58,6 +58,8 @@
 
 import os
 from optparse import OptionParser
+import subprocess
+from itertools import chain,product
 
 class PlacementException(Exception):
     pass
@@ -185,7 +187,7 @@ def getCpuTaskHumanBinding(archi,cores):
 # Réécrit le placement pour une tâche (appelé par getCpuBinding)
 # Réécriture en "art ascii" représentant l'architecture processeur
 #
-# Params:  archi (l'architecture processeurs)
+# Params: archi (l'architecture processeurs)
 #         cores (un tableau d'entiers représentant les cœurs)
 # Return: Une ou deux lignes, deux fois 10 colonnes séparées par un espace (pour 2 sockets_per_node de 10 cœurs)
 #
@@ -214,7 +216,7 @@ def getCpuTaskAsciiBinding(archi,cores):
 
 
 def getCpuTaskNumactlBinding(archi,cores):
-    return getCompactString(cores)
+    return list2CompactString(cores)
 
 #
 # Conversion de  numéro de tâche (0..61) vers lettre(A-Za-z0-9)
@@ -234,7 +236,7 @@ def numTaskToLetter(n):
 # params: A, liste d'entiers (peut être modifiée)
 #
 # return: Chaine de caractères
-def getCompactString(A):
+def list2CompactString(A):
 
     A.sort()
 
@@ -269,13 +271,37 @@ def getCompactString(A):
         compact(tmp,start,last_c)
     return ','.join(tmp)
 
+# Conversion d'une chaine compacte vers une listre triée:
+#            [0-3,5] ==> [0,1,2,3,5]
+# 
+# params: S, chaine compacte
+# return: Liste d'entiers
+# 
+def compactString2List(S):
+    rvl = []
+    if S != "":
+        a   = S.split(',')
+        for s in a:
+            c = s.split('-')
+            if len(c) == 1:
+                rvl.append([int(c[0])])
+            else:
+                # [0-3] ==> 0,1,2 + 3
+                rvl.append(range(int(c[0]),int(c[1])))
+                rvl.append([int(c[1])])
+        rvl = list(chain(*rvl))
+    return rvl
+
 #
 # Réécriture de tasks_binding sous forme 'ascii art'
 #
-# Params = archi (passé à getCpuTasksMachineBinding), tasks_binding
+# Params = archi (passé à getCpuTasksMachineBinding)
+#          tasks_binding
+#          over_cores (un tableau d'entiers représentant les cores qui doivent exécuter plusieurs tâches, defaut=None)
+
 # Return = La chaine de caractères à afficher
 #    
-def getCpuBindingAscii(archi,tasks_binding):
+def getCpuBindingAscii(archi,tasks_binding,over_cores=None):
     char=ord('A')
 
     # cores = tableau de cores, prérempli avec '.'
@@ -287,7 +313,10 @@ def getCpuBindingAscii(archi,tasks_binding):
     nt=0
     for t in tasks_binding:
         for c in t:
-            cores[c] = numTaskToLetter(nt)
+            if over_cores!=None and c in over_cores:
+                cores[c] = '#'
+            else:
+                cores[c] = numTaskToLetter(nt)
         nt += 1
 
     # Ecrire l'affectation des cœurs à partir de cores
@@ -361,7 +390,7 @@ def getCpuBindingNumactl(archi,tasks_binding):
 
     return "--physcpubind=" + ",".join(cpus)
     
-    s_cpus = getCompactString(cpus)
+    s_cpus = list2CompactString(cpus)
     return "--physcpubind=" + s_cpus
     
 #
@@ -589,6 +618,183 @@ class CompactMode(TasksBinding):
         # normalement on ne passe pas par là on a déjà retourné
         return tasks_bounded
 
+#
+# class RunningMode, dérive de TaskBuilding, implémente les algos utilisés en mode running, ie observe ce qui se passe
+#                    lorsque l'application est exécutée
+#                    En déduit archi, cpus_per_task,tasks !
+#
+class RunningMode(TasksBinding):
+    def __init__(self,path):
+        TasksBinding.__init__(self,None,0,0)
+        self.path = path
+        self.pid=[]
+        self.aff=[]
+        self.archi = None
+        self.cpus_per_task = 0
+        self.tasks = 0
+        self.over_cores = []
+        
+    # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
+    # Afin d'éviter tout doublon (une hiérarchie de processes qui se partage le même cœur, on filtre les pid
+    # en rejetant les processes si le ppid figure lui aussi dans la liste des pid
+    def __identProcesses(self):
+        cmd = "ps --no-headers -o %P,%p -C "
+        cmd += self.path
+	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	p.wait()
+        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
+	if p.returncode !=0:
+            msg = "OUPS "
+            msg += "AUCUNE TACHE TROUVEE: peut être n'êtes-vous pas sur la bonne machine ?"
+            raise PlacementException(msg)
+        else:
+            # On met les ppid et les pid dans deux tableaux différents
+            tmp_ppid=[]
+            tmp_pid=[]
+            pid=[]
+            out = p.communicate()[0].split('\n')
+            for p in out:
+                if p != '':
+                    tmp = p.split(',')
+                    tmp_ppid.append(tmp[0].strip())
+                    tmp_pid.append(tmp[1].strip())
+            
+            # On ne garde dans pid que les processes tels que ppid est absent de tmp_pid, afin de ne pas
+            # sélectionner un process ET son père
+            for i in range(len(tmp_ppid)):
+                if tmp_ppid[i] in tmp_pid:
+                    pass
+                else:
+                    pid.append(tmp_pid[i])
+            return pid
+
+    # Appelle taskset sur le pid passé en paramètre et renvoie l'affinité
+    # Format retourné: 0-3
+    def __runTaskSet(self,p):
+        cmd = "taskset -c -p "
+        cmd += p
+	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	p.wait()
+        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
+	if p.returncode !=0:
+            msg = "OUPS "
+            msg += "La commande "
+            msg += cmd
+            msg += " a renvoyé l'erreur "
+            msg += p.returncode
+            raise PlacementException(msg)
+        else:
+            # On récupère l'affinité
+            out = p.communicate()[0].split('\n')[0]
+            return out.rpartition(" ")[2]
+
+    # Appelle __runTaskSet taskset sur le tableau self.pid
+    # Transforme les affinités retrounées: 0-3 ==> [0,1,2,3]
+    # Renvoie tasks_bounded
+    def __buildTasksBounded(self):
+        tasks_bounded=[]
+        for p in self.pid:
+            aff = self.__runTaskSet(p)
+            self.aff.append(aff)
+
+            tasks_bounded.append(compactString2List(aff))
+        return tasks_bounded
+
+    # A partir de tasks_bounded, détermine l'architecture
+    def __buildArchi(self,tasks_bounded):
+
+        # On fait l'hypothèse que tous les tableaux de tasks_bounded ont la même longueur
+        self.cpus_per_task = len(tasks_bounded[0])
+        self.tasks         = len(tasks_bounded)
+        self.sockets_per_node = SOCKETS_PER_NODE
+        self.archi = Architecture(self.sockets_per_node, self.cpus_per_task, self.tasks, HYPERTHREADING)
+
+    # Appelle __identProcesses pour récolter une liste de pids, la pose dans self.pid
+    # puis appelle __buildTasksBounded pour construire tasks_bounded
+    def distribProcesses(self):
+        self.pid = self.__identProcesses()
+        tasks_bounded = self.__buildTasksBounded()
+        self.__buildArchi(tasks_bounded)
+        return tasks_bounded
+
+    # Renvoie (pour impression) la correspondance Tâche => pid
+    def getTask2Pid(self):
+        rvl  = "TACHE ==> PID ==> AFFINITE\n"
+        rvl += "==========================\n"
+        for i in range(len(self.pid)):
+            rvl += numTaskToLetter(i)
+            rvl += " ==> "
+            rvl += self.pid[i]
+            rvl += " ==> "
+            rvl += self.aff[i]
+            rvl += "\n"
+            i += 1
+        return rvl
+
+# Renvoie les couples de processes qui présentent un recouvrement, ainsi que
+# la liste des cœurs en cause
+def detectOverlap(tasks_bounded):
+    over=[]
+    over_cores=[]
+    for i in range(len(tasks_bounded)):
+        for j in range(i+1,len(tasks_bounded)):
+            overlap = list(set(tasks_bounded[i])&set(tasks_bounded[j]))
+            if len(overlap)!=0:
+                over.append((i,j))
+                over_cores.extend(overlap)
+
+    # Remplace les numéros par des lettres
+    # TODO - Si un numéro est plus gros que 62, plantage !
+    over_l = []
+    for c in over:
+        over_l.append( (numTaskToLetter(c[0]),numTaskToLetter(c[1])) )
+
+    # Supprime les doublons dans self.over_core
+    over_cores = set(over_cores)
+    over_cores = list(over_cores)
+    over_cores.sort()
+    return (over_l,over_cores)
+
+            
+# Calcule à partir de l'environnement ou des options les valeurs de tasks et cpus_per_task
+# Les renvoie dans une liste de deux entiers
+def computeCpusTasksFromEnv(options,args):
+
+    # Valeurs par défaut: en l'absence d'autres indications
+    cpus_per_task = 4
+    tasks         = 4
+
+    # Valeurs par défaut: on prend les variables d'environnement de SLURM, si posible
+    if 'SLURM_TASKS_PER_NODE' in os.environ:
+        tmp = os.environ['SLURM_TASKS_PER_NODE'].partition('(')[0]         # 20(x2)   ==> 2
+        tmp = map(int,tmp.split(','))                                      # '11,10'  ==> [11,10]
+        if len(tmp)==1:
+            tasks = tmp[0]
+        elif len(tmp)==2:
+            tasks = min(tmp)
+            if options.asciiart or options.human:
+                msg = "ATTENTION - SLURM_TASKS_PER_NODE = " + os.environ['SLURM_TASKS_PER_NODE'] + "\n"
+                msg+= "            Le paradigme utilisé est probablement client-serveur, le placement prend en compte " + str(tasks) + " tâches"
+                print msg
+                print 
+        else:
+            msg =  "OUPS - Placement non supporté dans cette configuration:\n"
+            msg += "       SLURM_TASKS_PER_NODE = " + os.environ['SLURM_TASKS_PER_NODE']
+            raise PlacementException(msg)
+
+    if 'SLURM_CPUS_PER_TASK' in os.environ:
+        cpus_per_task = int(os.environ['SLURM_CPUS_PER_TASK'])
+    
+    # Les valeurs spécifiées dans la ligne de commande ont la priorité !
+    if len(args) >= 2:
+        cpus_per_task = int(args[1])
+    if len(args) >= 1:
+        tasks         = int(args[0])
+
+    # retourne les valeurs calculées
+    return [cpus_per_task,tasks]
+
+
 def main():
 
     # Parser de la ligne de commande
@@ -602,56 +808,51 @@ def main():
 
     parser.add_option("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
+    parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process")
     parser.set_defaults(output_mode="srun")
     (options, args) = parser.parse_args()
 
     try:
-        # Valeurs par défaut: en l'absence d'autres indications
-        cpus_per_task = 4
-        tasks         = 4
 
-        # Valeurs par défaut: on prend les variables d'environnement de SLURM, si posible
-        if 'SLURM_TASKS_PER_NODE' in os.environ:
-            tmp = os.environ['SLURM_TASKS_PER_NODE'].partition('(')[0]         # 20(x2)   ==> 2
-            tmp = map(int,tmp.split(','))                                      # '11,10'  ==> [11,10]
-            if len(tmp)==1:
-                tasks = tmp[0]
-            elif len(tmp)==2:
-                tasks = min(tmp)
-                if options.asciiart or options.human:
-                    msg = "ATTENTION - SLURM_TASKS_PER_NODE = " + os.environ['SLURM_TASKS_PER_NODE'] + "\n"
-                    msg+= "            Le paradigme utilisé est probablement client-serveur, le placement prend en compte " + str(tasks) + " tâches"
-                    print msg
-                    print 
-            else:
-                msg =  "OUPS - Placement non supporté dans cette configuration:\n"
-                msg += "       SLURM_TASKS_PER_NODE = " + os.environ['SLURM_TASKS_PER_NODE']
-                raise PlacementException(msg)
+        if options.example==True:
+            examples()
+            exit(0)
 
-        if 'SLURM_CPUS_PER_TASK' in os.environ:
-            cpus_per_task = int(os.environ['SLURM_CPUS_PER_TASK'])
-    
-        if len(args) >= 2:
-            cpus_per_task = int(args[1])
-        if len(args) >= 1:
-            tasks         = int(args[0])
+        # Option --check
+        if options.check != None:
+            task_distrib = RunningMode(options.check)
+            tasks_bounded= task_distrib.distribProcesses()
+            #print tasks_bounded
+            #print task_distrib.pid
+            archi = task_distrib.archi
+            cpus_per_task = task_distrib.cpus_per_task
+            tasks         = task_distrib.tasks
 
-        archi = Architecture(int(options.sockets), cpus_per_task, tasks, options.hyper)
-        task_distrib = ""
-        if options.mode == "scatter":
-            task_distrib = ScatterMode(archi,cpus_per_task,tasks)
+            print task_distrib.getTask2Pid()
+            print
+
+            (overlap,over_cores) = detectOverlap(tasks_bounded)
+            if len(overlap)>0:
+                print "ATTENTION LES TACHES SUIVANTES ONT DES RECOUVREMENTS:"
+                print "====================================================="
+                print overlap
+                print
+
         else:
-            task_distrib = CompactMode(archi,cpus_per_task,tasks)
-
-        tasks_bounded = task_distrib.distribProcesses()
+            over_cores = None
+            [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
+            archi = Architecture(int(options.sockets), cpus_per_task, tasks, options.hyper)
+            task_distrib = ""
+            if options.mode == "scatter":
+                task_distrib = ScatterMode(archi,cpus_per_task,tasks)
+            else:
+                task_distrib = CompactMode(archi,cpus_per_task,tasks)
+            
+            tasks_bounded = task_distrib.distribProcesses()
 
     except PlacementException, e:
         print e
         exit(1)
-
-    if options.example==True:
-        examples()
-        exit(0)
 
 # Imprime le binding de manière compréhensible pour les humains
     if options.human==True:
@@ -660,15 +861,17 @@ def main():
 # Imprime le binding en ascii art
     if options.asciiart==True:
         if tasks<=62:
-            print getCpuBindingAscii(archi,tasks_bounded)
+            print getCpuBindingAscii(archi,tasks_bounded,over_cores)
         else:
             print getCpuBinding(archi,tasks_bounded,getCpuTaskAsciiBinding)
     
 # Imprime le binding de manière compréhensible pour srun ou numactl
-    if options.output_mode=="srun":
-        print getCpuBindingSrun(archi,tasks_bounded)
-    if options.output_mode=="numactl":
-        print getCpuBindingNumactl(archi,tasks_bounded)
+# (PAS si --check)
+    if options.check == None:
+        if options.output_mode=="srun":
+            print getCpuBindingSrun(archi,tasks_bounded)
+        if options.output_mode=="numactl":
+            print getCpuBindingNumactl(archi,tasks_bounded)
 
 def examples():
     ex = """USING placement IN AN SBATCH SCRIPT
