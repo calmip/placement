@@ -443,6 +443,10 @@ class TasksBinding(object):
             msg += ")"
             raise PlacementException(msg)
 
+    # Tri INPLACE des threads dans chaque process
+    def threadsSort(self,tasks_bound):
+        for p in tasks_bound:
+            p.sort()
 #
 # class ScatterMode, dérive de TaskBuilding, implémente les algos utilisés en mode scatter
 #
@@ -461,7 +465,10 @@ class ScatterMode(TasksBinding):
             msg += ")"
             raise PlacementException(msg)
 
-        if self.tasks>1 and self.cpus_per_task>self.archi.threads_per_core*self.archi.cores_per_socket:
+        if self.tasks>1 and \
+                self.cpus_per_task<self.archi.cores_per_socket and \
+                self.cpus_per_task>self.archi.threads_per_core*self.archi.cores_per_socket:
+
             msg =  "OUPS - Votre task déborde du socket, cpus_per_task doit être <= "
             msg += str(self.archi.threads_per_core*self.archi.cores_per_socket)
             raise PlacementException(msg)
@@ -475,12 +482,7 @@ class ScatterMode(TasksBinding):
             raise PlacementException(msg)
 
         # max_tasks calculé ainsi permet d'être sûr de ne pas avoir une tâche entre deux sockets_per_node, 
-        # PREMIER ALGO DE distribProcesses:
-        if False:
-            max_tasks = self.archi.sockets_per_node * (self.archi.cores_per_socket*self.archi.threads_per_core/self.cpus_per_task)
-        # SECOND ALGO DE distribProcesses:
-        else:
-            max_tasks = self.archi.sockets_per_node * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
+        max_tasks = self.archi.sockets_per_node * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
         if self.cpus_per_task>1:
             if self.tasks>max_tasks and max_tasks>0:
                 msg = "OUPS - Une task est à cheval sur deux sockets ! Diminuez le nombre de tâches par nœuds, le maximum est "
@@ -490,37 +492,16 @@ class ScatterMode(TasksBinding):
     def distribProcesses(self):
         self.checkParameters()
 
-        # c_step est l'épaisseur des "tranches de coeurs", c_max le nombre de tranches par socket
-        # Pour 10 coeurs/socket, 4 threads/task, ht OFF -> c_step = 4, 2 itérations
-        # Pour 10 coeurs/socket, 4 threads/task, ht ON  -> c_step = 2, 5 itérations
-
-        # Le code qui suit est inactif
-        # ./placement -A   --mode=scatter --hyper 4 4
-        # S0-------- S1-------- 
-        # P AACC...... BBDD...... 
-        # L AACC...... BBDD...... 
-        if False:
-            c_step = self.cpus_per_task / self.archi.threads_per_core
-            tasks_bounded=[]
-            t = 0
-            for c in range(0,self.archi.cores_per_socket,c_step):
-                for s in range(self.archi.sockets_per_node):
-                    t_binding=[]
-                    for h in range(self.cpus_per_task/self.archi.threads_per_core):
-                        for y in range(self.archi.threads_per_core):
-                            t_binding += [y*self.archi.cores_per_node + s*self.archi.cores_per_socket + c + h]
-                    tasks_bounded += [t_binding]
-                    t += 1
-                    if (t==self.tasks):
-                        return tasks_bounded
-
-        # Le code qui suit est ACTIF
-        # ./placement -A   --mode=compact --hyper 4 4
-        # S0-------- S1-------- 
-        # P AAAABBBB.. .......... 
-        # L CCCCDDDD.. .......... 
-        # ATTENTION Dans checkParameters le calcul de max_tasks n'est pas le même
-        else:
+        # cpus_per_task plus petit que cores_per_socket
+        # placement -A   --mode=scatter 4 4
+        #   S0-------- S1-------- 
+        # P AAAACCCC.. BBBBDDDD.. 
+        
+        # placement -A   --mode=scatter --hyper 4 4
+        #   S0-------- S1-------- 
+        # P AAAA...... BBBB...... 
+        # L CCCCDDDD.. DDDD...... 
+        if self.cpus_per_task <= self.archi.cores_per_socket:
             c_step = self.cpus_per_task
             tasks_bounded=[]
             t_binding=[]
@@ -531,7 +512,7 @@ class ScatterMode(TasksBinding):
                     for s in range(self.archi.sockets_per_node):
                         for th in range(self.cpus_per_task):
                             # Eviter le débordement sauf s'il n'y a qu'une seule task
-                            if self.tasks!=1 and th==0 and self.archi.cores_per_socket-c<self.cpus_per_task:
+                            if th==0 and self.archi.cores_per_socket-c<self.cpus_per_task:
                                 continue
                             t_binding += [y*self.archi.cores_per_node + s*self.archi.cores_per_socket + c + th]
                         tasks_bounded += [t_binding]
@@ -539,6 +520,31 @@ class ScatterMode(TasksBinding):
                         t += 1
                         if (t==self.tasks):
                             return tasks_bounded
+
+        # cpu_per_task plus grand que cores_per_socket 
+        # on n'a pas plus d'une tâche par socket en moyenne
+        # placement -A --mode=scatter 2 16
+        #   S0-------- S1-------- 
+        # P AAAAAAAA.. AAAAAAAA.. 
+        # L BBBBBBBB.. BBBBBBBB.. 
+        else:
+            # TODO - testé seulement pour au max 2 threads par core !!!
+            # On multiplie le nb de tâches et divise le nb de threads, on distribue, on coalesce les tableaux de tâches
+            tmp_task_distrib = ScatterMode(self.archi,
+                                           self.cpus_per_task/2,
+                                           self.tasks*2)
+            tmp_tasks_bounded= tmp_task_distrib.distribProcesses()
+            # On a passé un nombre *2, donc on est sûr que ce nombre est bien pair
+            imax = len(tmp_tasks_bounded)
+
+            tasks_bounded = []
+            for i in range(0,imax,2):
+                t=[]
+                t.extend(tmp_tasks_bounded[i])
+                t.extend(tmp_tasks_bounded[i+1])
+                tasks_bounded.append(t)
+            
+            return tasks_bounded
 
         # normalement on ne passe pas par là on a déjà retourné
         return tasks_bounded
@@ -564,40 +570,15 @@ class CompactMode(TasksBinding):
     def distribProcesses(self):
         self.checkParameters()
 
-        # c_step est l'épaisseur des "tranches de coeurs", c_max le nombre de tranches par socket
-        # Pour 10 coeurs/socket, 4 threads/task, ht OFF -> c_step = 4, 2 itérations
-        # Pour 10 coeurs/socket, 4 threads/task, ht ON  -> c_step = 2, 5 itérations
-
-        # Le code qui suit est inactif
-        # ./placement -A   --mode=compact --hyper 4 4
-        # S0-------- S1-------- 
-        # P AABBCCDD.. .......... 
-        # L AABBCCDD.. .......... 
         if False:
-            c_step = self.cpus_per_task / self.archi.threads_per_core
-            tasks_bounded=[]
-            t_binding=[]
-            t = 0
-            th= 0
-            for c in range(0,self.archi.cores_per_node,c_step):
-                for h in range(self.cpus_per_task/self.archi.threads_per_core):
-                    for y in range(self.archi.threads_per_core):
-                        t_binding += [y*self.archi.cores_per_node + c + h ]
-                        th+=1
-                        if th==self.cpus_per_task:
-                            tasks_bounded += [t_binding]
-                            t_binding = []
-                            th = 0
-                            t += 1
-                            if (t==self.tasks):
-                                return tasks_bounded
+            pass
 
-        # Le code qui suit est ACTIF
+        # cpus_per_task plus petit que cores_per_socket
         # ./placement -A   --mode=compact --hyper 4 4
         # S0-------- S1-------- 
         # P AAAABBBBCC .......... 
         # L CCDDDD.... ..........
-        else:
+        if self.cpus_per_task <= self.archi.cores_per_socket:
             tasks_bounded=[]
             t_binding=[]
             t = 0
@@ -614,6 +595,31 @@ class CompactMode(TasksBinding):
                             t += 1
                             if (t==self.tasks):
                                 return tasks_bounded
+
+        # cpu_per_task plus grand que cores_per_socket 
+        # on n'a pas plus d'une tâche par socket en moyenne
+        # placement -A --mode=scatter 2 16
+        #   S0-------- S1-------- 
+        # P AAAAAAAA.. BBBBBBBB.. 
+        # L AAAAAAAA.. BBBBBBBB.. 
+        else:
+            # TODO - testé seulement pour au max 2 threads par core !!!
+            # On multiplie le nb de tâches et divise le nb de threads, on distribue, on coalesce les tableaux de tâches
+            tmp_task_distrib = ScatterMode(self.archi,
+                                           self.cpus_per_task/2,
+                                           self.tasks*2)
+            tmp_tasks_bounded= tmp_task_distrib.distribProcesses()
+            # On a passé un nombre *2, donc on est sûr que ce nombre est bien pair
+            imax = len(tmp_tasks_bounded)/2
+
+            tasks_bounded = []
+            for i in range(imax):
+                t=[]
+                t.extend(tmp_tasks_bounded[i])
+                t.extend(tmp_tasks_bounded[i+imax])
+                tasks_bounded.append(t)
+            
+            return tasks_bounded
 
         # normalement on ne passe pas par là on a déjà retourné
         return tasks_bounded
@@ -849,6 +855,8 @@ def main():
                 task_distrib = CompactMode(archi,cpus_per_task,tasks)
             
             tasks_bounded = task_distrib.distribProcesses()
+
+        task_distrib.threadsSort(tasks_bounded)
 
     except PlacementException, e:
         print e
