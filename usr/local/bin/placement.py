@@ -64,54 +64,85 @@ from itertools import chain,product
 class PlacementException(Exception):
     pass
 
-# Changer cette cons en changeant d'architecture (cf. lignes 70 et suivantes)
-ARCHI = 'BULLX-DLC'
-#ARCHI = 'MESCA'
-
 # Constantes liées à nos architectures: 
-SOCKETS_PER_NODE = ''
-CORES_PER_SOCKET = ''
-HYPERTHREADING   = ''
+class ARCHITECTURE(object):
+    SOCKETS_PER_NODE = ''
+    CORES_PER_SOCKET = ''
+    HYPERTHREADING   = ''
+    THREADS_PER_CORE = ''
+    IS_SHARED        = ''
 
-# 1/ BULLx DLC (eos), 612 nœuds, chacun 2 procs Intel Ivybridge 10 cœurs, hyperthreading activé
-if ARCHI == 'BULLX-DLC':
+# 1/ BULLx DLC (eos), 2 sockets Intel Ivybridge 10 cœurs, hyperthreading activé
+class BULLX_DLC(ARCHITECTURE):
     SOCKETS_PER_NODE = 2
     CORES_PER_SOCKET = 10
     HYPERTHREADING   = True
     THREADS_PER_CORE = 2
+    IS_SHARED        = False
 
-# 2/ BULL SMP-mesca, 8 sockets, 15 cœurs par socket, pas d'HYPERTHREADING
-if ARCHI == 'MESCA':
+# 2 / SGI UV, uvprod, 48 sockets, 8 cœurs par socket, pas d'hyperthreading, SHARED
+class UVPROD(ARCHITECTURE):
+    SOCKETS_PER_NODE = 48
+    CORES_PER_SOCKET = 8
+    HYPERTHREADING   = True
+    THREADS_PER_CORE = 2
+    IS_SHARED        = True
+
+# 3/ BULL SMP-mesca, 8 sockets, 15 cœurs par socket, pas d'hyperthreading
+class MESCA(ARCHITECTURE):
     SOCKETS_PER_NODE = 8
     CORES_PER_SOCKET = 15
     HYPERTHREADING   = False
     THREADS_PER_CORE = 1
+    IS_SHARED        = False
+
+# Changer cette variable en changeant d'architecture (cf. lignes 70 et suivantes)
+ARCHI = ''
+#ARCHI = BULLX_DLC()
+#ARCHI = UVPROD()
+#ARCHI = MESCA()
+if ARCHI == '':
+    if 'SLURM_NODELIST' in os.environ:
+        if os.environ['SLURM_NODELIST'] == 'uvprod':
+            ARCHI = UVPROD()
+        else:
+            ARCHI = BULLX_DLC()
+    elif 'PLACEMENT_ARCHI' in os.environ:
+        if os.environ['PLACEMENT_ARCHI'] == 'uvprod':
+            ARCHI = UVPROD()
+        elif os.environ['PLACEMENT_ARCHI'] == 'eos':
+            ARCHI = BULLX_DLC()
+        else:
+            raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture inconnue")
+
+if ARCHI == '':
+    ARCHI = BULLX_DLC()
 
 # class Architecture: 
 #       Description de l'architecture dans une classe
 #       Paramètres du constructeur:
-#           sockets_per_node: Nombre de sockets par node, doit être < SOCKETS_PER_NODE 
+#           sockets_per_node: Nombre de sockets par node, doit être < ARCHI.SOCKETS_PER_NODE 
 #           tasks           : Nombre de tâches (processes) souhaité
 #           cpus_per_task   : Nombre de cpus par process
 #           hyper           : Si False, hyperthreading interdit
 #
-#           - tasks, threads_per_task, et la constante HYPERTHREADING permet de calculer le nombre
+#           - tasks, threads_per_task, et la constante ARCHI.HYPERTHREADING permet de calculer le nombre
 #           de threads par cœur
-#           - cores_per_socket est fixe (cf. CORES_PER_SOCKET)
+#           - cores_per_socket est fixe (cf. ARCHI.CORES_PER_SOCKET)
 #           - Le nombre de cores par nœud dérive de sockets_per_node et cores_per_socket
 #       Il est interdit (et impossible) de changer les attributs par la suite
 class Architecture(object):
     def __init__(self, sockets_per_node, cpus_per_task, tasks, hyper):
-        if sockets_per_node > SOCKETS_PER_NODE:
+        if sockets_per_node > ARCHI.SOCKETS_PER_NODE:
             msg = "ERREUR INTERNE "
             msg += str(sockets_per_node)
             msg += " > " 
-            msg += str(SOCKETS_PER_NODE)
+            msg += str(ARCHI.SOCKETS_PER_NODE)
             print msg
             raise PlacementException(msg)
 
         self.sockets_per_node = sockets_per_node+0
-        self.cores_per_socket = CORES_PER_SOCKET
+        self.cores_per_socket = ARCHI.CORES_PER_SOCKET
         self.cores_per_node   = self.sockets_per_node * self.cores_per_socket
         self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
 
@@ -126,23 +157,24 @@ class Architecture(object):
             object.__setattr__(self,name,value)
 
     #
-    # Active l'HYPERTHREADING si nécessaire:
+    # Active l'ARCHI.HYPERTHREADING si nécessaire:
     #         si hyper == True on active
     #         sinon on active seulement si nécessaire
-    #         Si la variable globale HYPERTHREADING est à False et que l'HYPERTHREADING doit être
+    #         Si la variable globale ARCHI.HYPERTHREADING est à False et que l'ARCHI.HYPERTHREADING doit être
     #         activé, on lève une exception
     #
     #         Retourne threads_per_core (1 ou 2)
     #
     def activateHyper(self,hyper,cpus_per_task,tasks):
         threads_per_core=1
-        if hyper==True or (cpus_per_task*tasks>self.cores_per_node and cpus_per_task*tasks<=THREADS_PER_CORE*self.cores_per_node):
-            if HYPERTHREADING:
-                threads_per_core = THREADS_PER_CORE
+        if hyper==True or (cpus_per_task*tasks>self.cores_per_node and cpus_per_task*tasks<=ARCHI.THREADS_PER_CORE*self.cores_per_node):
+            if ARCHI.HYPERTHREADING:
+                threads_per_core = ARCHI.THREADS_PER_CORE
             else:
-                msg = "OUPS - l'HYPERTHREADING n'est pas actif sur cette machine"
+                msg = "OUPS - l'ARCHI.HYPERTHREADING n'est pas actif sur cette machine"
                 raise PlacementException(msg)
         return threads_per_core
+
 
 #
 # Réécrit le placement pour une tâche (appelé par getCpuBindingSrun)
@@ -319,31 +351,37 @@ def getCpuBindingAscii(archi,tasks_binding,over_cores=None):
                 cores[c] = numTaskToLetter(nt)
         nt += 1
 
-    # Ecrire l'affectation des cœurs à partir de cores
-    rvl = "  "
-    for s in range(archi.sockets_per_node):
-        rvl += 'S'
-        rvl += str(s)
-        for c in range(archi.cores_per_socket):
-            if c<2:
-                continue
-            else:
-                rvl += '-'
-        rvl += ' '
-    rvl += '\n'
-
-    for l in range(archi.threads_per_core):
-        if l==0:
-            rvl += "P "
-        else:
-            rvl += "L "
-
-        for s in range(archi.sockets_per_node):
+    # Pour une machine SMP plein de sockets type uvprod, on affiche les sockets par groupes de 8
+    rvl = ""
+    for gs in range(0,archi.sockets_per_node,8):
+        rvl += "  "
+        # Ecrire l'affectation des cœurs à partir des cores
+        for s in range(gs,min(gs+8,archi.sockets_per_node)):
+            rvl += 'S'
+            rvl += str(s)
+            cmin = 2
+            if s>=10:
+                cmin=3
             for c in range(archi.cores_per_socket):
-                rvl += cores[l*archi.cores_per_node+s*archi.cores_per_socket+c]
+                if c<cmin:
+                    continue
+                else:
+                    rvl += '-'
             rvl += ' '
-        rvl += "\n"
+        rvl += '\n'
 
+        for l in range(archi.threads_per_core):
+            if l==0:
+                rvl += "P "
+            else:
+                rvl += "L "
+
+            for s in range(gs,min(gs+8,archi.sockets_per_node)):
+                for c in range(archi.cores_per_socket):
+                    rvl += cores[l*archi.cores_per_node+s*archi.cores_per_socket+c]
+                rvl += ' '
+            rvl += '\n'
+    
     return rvl
 
 #
@@ -712,8 +750,8 @@ class RunningMode(TasksBinding):
         # On fait l'hypothèse que tous les tableaux de tasks_bounded ont la même longueur
         self.cpus_per_task = len(tasks_bounded[0])
         self.tasks         = len(tasks_bounded)
-        self.sockets_per_node = SOCKETS_PER_NODE
-        self.archi = Architecture(self.sockets_per_node, self.cpus_per_task, self.tasks, HYPERTHREADING)
+        self.sockets_per_node = ARCHI.SOCKETS_PER_NODE
+        self.archi = Architecture(self.sockets_per_node, self.cpus_per_task, self.tasks, ARCHI.HYPERTHREADING)
 
     # Appelle __identProcesses pour récolter une liste de pids, la pose dans self.pid
     # puis appelle __buildTasksBounded pour construire tasks_bounded
@@ -803,11 +841,11 @@ def computeCpusTasksFromEnv(options,args):
 
 def main():
 
-    # Parser de la ligne de commande
-    parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task")
+    epilog = 'Environment:\n PLACEMENT_ARCHI, SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK'
+    parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task",epilog=epilog)
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
-    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,SOCKETS_PER_NODE+1)),default=SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
-    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of HYPERTHREADING (%default)")
+    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,ARCHI.SOCKETS_PER_NODE+1)),default=ARCHI.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
+    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of ARCHI.HYPERTHREADING (%default)")
     parser.add_option("-M","--mode",type="choice",choices=["compact","scatter"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, compact (%default)")
     parser.add_option("-H","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
     parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
@@ -858,28 +896,30 @@ def main():
 
         task_distrib.threadsSort(tasks_bounded)
 
+
+        # Imprime le binding de manière compréhensible pour les humains
+        if options.human==True:
+            print getCpuBinding(archi,tasks_bounded,getCpuTaskHumanBinding)
+    
+        # Imprime le binding en ascii art
+        if options.asciiart==True:
+            if tasks<=62:
+                print getCpuBindingAscii(archi,tasks_bounded,over_cores)
+            else:
+                # print getCpuBinding(archi,tasks_bounded,getCpuTaskAsciiBinding)
+                raise PlacementException("OUPS - switch --ascii interdit pour plus de 62 tâches !")
+    
+        # Imprime le binding de manière compréhensible pour srun ou numactl
+        # (PAS si --check)
+        if options.check == None:
+            if options.output_mode=="srun":
+                print getCpuBindingSrun(archi,tasks_bounded)
+            if options.output_mode=="numactl":
+                print getCpuBindingNumactl(archi,tasks_bounded)
+
     except PlacementException, e:
         print e
         exit(1)
-
-# Imprime le binding de manière compréhensible pour les humains
-    if options.human==True:
-        print getCpuBinding(archi,tasks_bounded,getCpuTaskHumanBinding)
-    
-# Imprime le binding en ascii art
-    if options.asciiart==True:
-        if tasks<=62:
-            print getCpuBindingAscii(archi,tasks_bounded,over_cores)
-        else:
-            print getCpuBinding(archi,tasks_bounded,getCpuTaskAsciiBinding)
-    
-# Imprime le binding de manière compréhensible pour srun ou numactl
-# (PAS si --check)
-    if options.check == None:
-        if options.output_mode=="srun":
-            print getCpuBindingSrun(archi,tasks_bounded)
-        if options.output_mode=="numactl":
-            print getCpuBindingNumactl(archi,tasks_bounded)
 
 def examples():
     ex = """USING placement IN AN SBATCH SCRIPT
