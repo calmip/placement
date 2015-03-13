@@ -64,7 +64,14 @@ from itertools import chain,product
 class PlacementException(Exception):
     pass
 
+#############################################################################################################
+#
+#  ARCHITECTURE: L'architecture dépend:
+#                     1/ DE LA MACHINE (variable ARCHI, classes dérivant de ARCHITECTURE) ET de son UTILISATION 
+#                     2/ DE SON UTILISATION (classe Architecture, Exclusive et Shared)
+#
 # Constantes liées à nos architectures: 
+
 class ARCHITECTURE(object):
     SOCKETS_PER_NODE = ''
     CORES_PER_SOCKET = ''
@@ -84,8 +91,8 @@ class BULLX_DLC(ARCHITECTURE):
 class UVPROD(ARCHITECTURE):
     SOCKETS_PER_NODE = 48
     CORES_PER_SOCKET = 8
-    HYPERTHREADING   = True
-    THREADS_PER_CORE = 2
+    HYPERTHREADING   = False
+    THREADS_PER_CORE = 1
     IS_SHARED        = True
 
 # 3/ BULL SMP-mesca, 8 sockets, 15 cœurs par socket, pas d'hyperthreading
@@ -114,12 +121,14 @@ if ARCHI == '':
             ARCHI = BULLX_DLC()
         else:
             raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture inconnue")
-
+    
 if ARCHI == '':
     ARCHI = BULLX_DLC()
 
 # class Architecture: 
 #       Description de l'architecture dans une classe
+#       CLASSE ABSTRAITE - NE PAS UTILISER DIRECTEMENT
+#
 #       Paramètres du constructeur:
 #           sockets_per_node: Nombre de sockets par node, doit être < ARCHI.SOCKETS_PER_NODE 
 #           tasks           : Nombre de tâches (processes) souhaité
@@ -142,9 +151,11 @@ class Architecture(object):
             raise PlacementException(msg)
 
         self.sockets_per_node = sockets_per_node+0
+        self.sockets_reserved = self.sockets_per_node
+        self.l_sockets  = None
         self.cores_per_socket = ARCHI.CORES_PER_SOCKET
         self.cores_per_node   = self.sockets_per_node * self.cores_per_socket
-        self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
+        self.cores_reserved   = self.cores_per_node
 
         #print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
 
@@ -167,7 +178,7 @@ class Architecture(object):
     #
     def activateHyper(self,hyper,cpus_per_task,tasks):
         threads_per_core=1
-        if hyper==True or (cpus_per_task*tasks>self.cores_per_node and cpus_per_task*tasks<=ARCHI.THREADS_PER_CORE*self.cores_per_node):
+        if hyper==True or (cpus_per_task*tasks>self.cores_reserved and cpus_per_task*tasks<=ARCHI.THREADS_PER_CORE*self.cores_reserved):
             if ARCHI.HYPERTHREADING:
                 threads_per_core = ARCHI.THREADS_PER_CORE
             else:
@@ -175,7 +186,81 @@ class Architecture(object):
                 raise PlacementException(msg)
         return threads_per_core
 
+#
+# class Exclusive:
+#       Description de l'architecture dans le cas où le nœud est dédié (partition exclusive)
+#
+#       Paramètres du constructeur:
+#           sockets_per_node: Nombre de sockets par node, doit être < ARCHI.SOCKETS_PER_NODE 
+#           tasks           : Nombre de tâches (processes) souhaité
+#           cpus_per_task   : Nombre de cpus par process
+#           hyper           : Si False, hyperthreading interdit
+#
+#       Construit le tableau l_sockets, qui sera utilisé pour les différents itérations
 
+class Exclusive(Architecture):
+    def __init__(self, sockets_per_node, cpus_per_task, tasks, hyper):
+        Architecture.__init__(self, sockets_per_node, cpus_per_task, tasks, hyper)
+        self.l_sockets = range(sockets_per_node)
+        self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
+
+#
+# class Shared:
+#       Description de l'architecture dans le cas où le nœud est partagé (partition shared, uvprod)
+#
+#       Paramètres du constructeur:
+#           sockets_per_node: Nombre de sockets par node, doit être < ARCHI.SOCKETS_PER_NODE 
+#           tasks           : Nombre de tâches (processes) souhaité
+#           cpus_per_task   : Nombre de cpus par process
+#           hyper           : Si False, hyperthreading interdit
+#
+#       Construit le tableau l_sockets, qui sera utilisé pour les différentes itérations:
+#           1/ Si la variable SLURM_NODELIST est définie, DONC si on tourne dans l'environnement SLURM, le tableau 
+#              est construit à partir de l'appel numactl --show
+#              Dans ce cas, on vérifie que sockets_per_node <= len(l_sockets)
+#           2/ Sinon il est construit comme pour la classe Exclusive, à partir de sockets_per_node
+#       
+
+class Shared(Architecture):
+    def __init__(self, sockets_per_node, cpus_per_task, tasks, hyper):
+        Architecture.__init__(self, sockets_per_node, cpus_per_task, tasks, hyper)
+        if 'SLURM_NODELIST' in os.environ:
+            self.l_sockets = self.__detectSockets()
+            #if len(self.l_sockets)<self.sockets_per_node:
+            #   self.sockets_per_node = len(self.l_sockets)
+               # msg  = "OUPS - Vous avez demandé "
+               # msg += str(self.sockets_per_node) 
+               # msg += " sockets, vous en avez "
+               # msg += str(len(self.l_sockets))
+               # raise PlacementException(msg)
+        else:
+            self.l_sockets = range(sockets_per_node)
+        
+        self.sockets_reserved = len(self.l_sockets)
+        self.cores_reserved   = self.cores_per_socket * self.sockets_reserved
+        self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
+
+    def __detectSockets(self):
+        cmd = "numactl --show|fgrep nodebind"
+	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	p.wait()
+        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
+	if p.returncode !=0:
+            msg = "OUPS "
+            msg += "Erreur numactl - peut-être n'êtes-vous pas sur la bonne machine ?"
+            raise PlacementException(msg)
+        else:
+            out = p.communicate()[0].split('\n')[0]
+            # nodebind: 4 5 6 => [4,5,6]
+            l_sockets = map(int,out.rpartition(':')[2].strip().split(' '))
+            if max(l_sockets)>self.sockets_per_node:
+                msg  = "OUPS - sockets_per_node=" + str(self.sockets_per_node)
+                msg += " devrait avoir au moins la valeur " +  str(max(l_sockets))
+                msg += " Vérifiez le switch -S"
+                raise PlacementException(msg)
+            return l_sockets
+
+#############################################################################################################
 #
 # Réécrit le placement pour une tâche (appelé par getCpuBindingSrun)
 # Réécriture sous forme hexadécimale pour srun
@@ -236,7 +321,7 @@ def getCpuTaskAsciiBinding(archi,cores):
             else:
                 rvl += '\\'
 
-        for j in range(archi.sockets_per_node):
+        for j in archi.l_sockets:
             for k in range(archi.cores_per_socket):
                 if (l*archi.cores_per_node+j*archi.cores_per_socket+k in cores):
                     rvl += 'X'
@@ -338,8 +423,14 @@ def getCpuBindingAscii(archi,tasks_binding,over_cores=None):
 
     # cores = tableau de cores, prérempli avec '.'
     cores=[]
-    for i in range(archi.cores_per_node*archi.threads_per_core):
-        cores.append('.')
+    for s in range(archi.sockets_per_node):
+        if s in archi.l_sockets:
+            to_app = '.'
+        else:
+            to_app = ' '
+        for t in range(archi.threads_per_core):
+            for c in range(archi.cores_per_socket):
+                cores.append(to_app)
 
     # remplir le tableau cores avec une lettre correspondant au process
     nt=0
@@ -451,6 +542,8 @@ def getCpuBindingNumactl(archi,tasks_binding):
 # distribProcesses()
 #      Construit le tableau de tableaux tasks_binding à partir des paramètres
 # 
+#      Params: check, si True (defaut), check les valeurs de tasks etc avant d'accepter
+#
 #      Return: tasks_bounded, un tableau de tableaux:
 #              Le tableau des processes, chaque process est représenté par un tableau de cœurs.
 #
@@ -461,9 +554,9 @@ class TasksBinding(object):
         self.cpus_per_task = cpus_per_task
         self.tasks = tasks
 
-    def checkParameters():
+    def checkParameters(self):
         raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
-    def distribProcesses():
+    def distribProcesses(self,check=True):
         raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
 
     # Code commun à toutes les classes dérivées
@@ -471,9 +564,9 @@ class TasksBinding(object):
     def _checkParameters(self):
         if (self.cpus_per_task<0 or self.tasks<0 ):
             raise PlacementException("OUPS - Tous les paramètres doivent être entiers positifs")
-        if self.cpus_per_task*self.tasks<=10:
-            raise PlacementException("OUPS - moins de 10 cœurs utilisés: partition shared, placement non supporté")
-        if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_per_node:
+        #if self.cpus_per_task*self.tasks <= 10:
+        #    raise PlacementException("OUPS - moins de 10 cœurs utilisés: partition shared, placement non supporté")
+        if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_reserved:
             msg = "OUPS - Pas assez de cores ! Diminuez cpus_per_task (";
             msg += str(self.cpus_per_task)
             msg += ") ou tasks ("
@@ -511,24 +604,17 @@ class ScatterMode(TasksBinding):
             msg += str(self.archi.threads_per_core*self.archi.cores_per_socket)
             raise PlacementException(msg)
         
-        if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_per_node:
-            msg = "OUPS - Pas assez de cores ! Diminuez cpus_per_task (";
-            msg += str(self.cpus_per_task)
-            msg += ") ou tasks ("
-            msg += str(self.tasks)
-            msg += ")"
-            raise PlacementException(msg)
-
         # max_tasks calculé ainsi permet d'être sûr de ne pas avoir une tâche entre deux sockets_per_node, 
-        max_tasks = self.archi.sockets_per_node * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
+        max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
         if self.cpus_per_task>1:
             if self.tasks>max_tasks and max_tasks>0:
                 msg = "OUPS - Une task est à cheval sur deux sockets ! Diminuez le nombre de tâches par nœuds, le maximum est "
                 msg += str(max_tasks)
                 raise PlacementException(msg)
 
-    def distribProcesses(self):
-        self.checkParameters()
+    def distribProcesses(self,check=True):
+        if check:
+            self.checkParameters()
 
         # cpus_per_task plus petit que cores_per_socket
         # placement -A   --mode=scatter 4 4
@@ -539,7 +625,7 @@ class ScatterMode(TasksBinding):
         #   S0-------- S1-------- 
         # P AAAA...... BBBB...... 
         # L CCCCDDDD.. DDDD...... 
-        if self.cpus_per_task <= self.archi.cores_per_socket:
+        if self.cpus_per_task <= self.archi.cores_per_socket and self.tasks>1:
             c_step = self.cpus_per_task
             tasks_bounded=[]
             t_binding=[]
@@ -547,7 +633,7 @@ class ScatterMode(TasksBinding):
             th= 0
             for c in range(0,self.archi.cores_per_socket,c_step):
                 for y in range(self.archi.threads_per_core):
-                    for s in range(self.archi.sockets_per_node):
+                    for s in self.archi.l_sockets:
                         for th in range(self.cpus_per_task):
                             # Eviter le débordement sauf s'il n'y a qu'une seule task
                             if th==0 and self.archi.cores_per_socket-c<self.cpus_per_task:
@@ -571,7 +657,7 @@ class ScatterMode(TasksBinding):
             tmp_task_distrib = ScatterMode(self.archi,
                                            self.cpus_per_task/2,
                                            self.tasks*2)
-            tmp_tasks_bounded= tmp_task_distrib.distribProcesses()
+            tmp_tasks_bounded= tmp_task_distrib.distribProcesses(check=False)
             # On a passé un nombre *2, donc on est sûr que ce nombre est bien pair
             imax = len(tmp_tasks_bounded)
 
@@ -605,8 +691,9 @@ class CompactMode(TasksBinding):
             msg += ")"
             raise PlacementException(msg)
 
-    def distribProcesses(self):
-        self.checkParameters()
+    def distribProcesses(self, check=True):
+        if check:
+            self.checkParameters()
 
         if False:
             pass
@@ -621,7 +708,7 @@ class CompactMode(TasksBinding):
             t_binding=[]
             t = 0
             th= 0
-            for s in range(self.archi.sockets_per_node):
+            for s in self.archi.l_sockets:
                 for h in range(self.archi.threads_per_core):
                     for c in range(self.archi.cores_per_socket):
                         t_binding += [h*self.archi.cores_per_node + s*self.archi.cores_per_socket + c]
@@ -646,7 +733,7 @@ class CompactMode(TasksBinding):
             tmp_task_distrib = ScatterMode(self.archi,
                                            self.cpus_per_task/2,
                                            self.tasks*2)
-            tmp_tasks_bounded= tmp_task_distrib.distribProcesses()
+            tmp_tasks_bounded= tmp_task_distrib.distribProcesses(check=False)
             # On a passé un nombre *2, donc on est sûr que ce nombre est bien pair
             imax = len(tmp_tasks_bounded)/2
 
@@ -751,11 +838,11 @@ class RunningMode(TasksBinding):
         self.cpus_per_task = len(tasks_bounded[0])
         self.tasks         = len(tasks_bounded)
         self.sockets_per_node = ARCHI.SOCKETS_PER_NODE
-        self.archi = Architecture(self.sockets_per_node, self.cpus_per_task, self.tasks, ARCHI.HYPERTHREADING)
+        self.archi = Exclusive(self.sockets_per_node, self.cpus_per_task, self.tasks, ARCHI.HYPERTHREADING)
 
     # Appelle __identProcesses pour récolter une liste de pids, la pose dans self.pid
     # puis appelle __buildTasksBounded pour construire tasks_bounded
-    def distribProcesses(self):
+    def distribProcesses(check=False):
         self.pid = self.__identProcesses()
         tasks_bounded = self.__buildTasksBounded()
         self.__buildArchi(tasks_bounded)
@@ -838,8 +925,16 @@ def computeCpusTasksFromEnv(options,args):
     # retourne les valeurs calculées
     return [cpus_per_task,tasks]
 
-
 def main():
+
+    # Si la variable PLACEMENT_DEBUG existe, on simule un environnement shared avec des réservations
+    # Exemple: export PLACEMENT_DEBUG='9,10,11,12,13' pour simuler un environnement shared, 5 sockets réservées
+    # NB - Ne pas oublier non plus de positionner SLURM_NODELIST ! (PAS PLACEMENT_ARCHI ça n'activera pas Shared)
+    if 'PLACEMENT_DEBUG' in os.environ:
+        import mock
+        placement_debug=os.environ['PLACEMENT_DEBUG']
+        rvl=map(int,placement_debug.split(','))
+        Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
     epilog = 'Environment:\n PLACEMENT_ARCHI, SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK'
     parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task",epilog=epilog)
@@ -885,7 +980,11 @@ def main():
         else:
             over_cores = None
             [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
-            archi = Architecture(int(options.sockets), cpus_per_task, tasks, options.hyper)
+            if ARCHI.IS_SHARED:
+                archi = Shared(int(options.sockets), cpus_per_task, tasks, options.hyper)
+            else:
+                archi = Exclusive(int(options.sockets), cpus_per_task, tasks, options.hyper)
+            
             task_distrib = ""
             if options.mode == "scatter":
                 task_distrib = ScatterMode(archi,cpus_per_task,tasks)

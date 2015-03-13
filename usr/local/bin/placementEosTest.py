@@ -9,13 +9,15 @@
 # Vérifiez la variable ARCHI !
 # ARCHI = 'BULLX-DLC'
 
+import os
+os.environ['PLACEMENT_ARCHI'] = 'eos'
 import placement
 import unittest
 
 # scatter, 2 sockets, 4 tasks, 4 threads/task, no hyper required
 class Test_scatter_2_4_4_F(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(2,4,4,False)
+         self.archi         = placement.Exclusive(2,4,4,False)
          task_distrib       = placement.ScatterMode(self.archi,4,4)
          self.tasks_bounded = task_distrib.distribProcesses()
 
@@ -40,7 +42,7 @@ P AAAACCCC.. BBBBDDDD..
 # scatter, 2 sockets, 4 tasks, 4 threads/task, hyper required
 class Test_scatter_2_4_4_T(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(2,4,4,True)
+         self.archi         = placement.Exclusive(2,4,4,True)
          task_distrib       = placement.ScatterMode(self.archi,4,4)
          self.tasks_bounded = task_distrib.distribProcesses()
 
@@ -66,7 +68,7 @@ L CCCC...... DDDD......
 # scatter, 1 socket, 4 tasks, 4 threads/task, no hyper required
 class Test_scatter_1_4_4_F(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(1,4,4,False)
+         self.archi         = placement.Exclusive(1,4,4,False)
          task_distrib       = placement.ScatterMode(self.archi,4,4)
          self.tasks_bounded = task_distrib.distribProcesses()
 
@@ -92,7 +94,7 @@ L BBBBDDDD..
 # compact, 2 sockets, 4 tasks, 4 threads/task, no hyper required
 class Test_compact_2_4_4_F(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(2,4,4,False)
+         self.archi         = placement.Exclusive(2,4,4,False)
          task_distrib       = placement.CompactMode(self.archi,4,4)
          self.tasks_bounded = task_distrib.distribProcesses()
 
@@ -117,7 +119,7 @@ P AAAABBBBCC CCDDDD....
 # compact, 2 sockets, 4 tasks, 4 threads/task, hyper required
 class Test_compact_2_4_4_T(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(2,4,4,True)
+         self.archi         = placement.Exclusive(2,4,4,True)
          task_distrib       = placement.CompactMode(self.archi,4,4)
          self.tasks_bounded = task_distrib.distribProcesses()
 
@@ -144,7 +146,7 @@ L CCDDDD.... ..........
 # compact, 1 sockets, 4 tasks, 4 threads/task, no hyper required 
 class Test_compact_1_4_4_F(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(1,4,4,False)
+         self.archi         = placement.Exclusive(1,4,4,False)
          task_distrib       = placement.CompactMode(self.archi,4,4)
          self.tasks_bounded = task_distrib.distribProcesses()
 
@@ -171,7 +173,7 @@ L CCDDDD....
 # scatter, 2 sockets, 1 task, 20 threads/task, no hyper required
 class Test_scatter_2_1_20_F(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(2,20,1,False)
+         self.archi         = placement.Exclusive(2,20,1,False)
          task_distrib       = placement.ScatterMode(self.archi,20,1)
          self.tasks_bounded = task_distrib.distribProcesses()
 
@@ -196,7 +198,7 @@ P AAAAAAAAAA AAAAAAAAAA
 # compact, 2 sockets, 1 task, 20 threads/task, no hyper required
 class Test_compact_2_1_20_F(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(2,20,1,False)
+         self.archi         = placement.Exclusive(2,20,1,False)
          task_distrib       = placement.CompactMode(self.archi,20,1)
          self.tasks_bounded = task_distrib.distribProcesses()
 
@@ -221,7 +223,7 @@ P AAAAAAAAAA AAAAAAAAAA
 # scatter, 2 sockets, 2 tasks, 16 threads/task, no hyper required
 class Test_scatter_2_2_16_F(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(2,16,2,False)
+         self.archi         = placement.Exclusive(2,16,2,False)
          task_distrib       = placement.ScatterMode(self.archi,16,2)
          self.tasks_bounded = task_distrib.distribProcesses()
          task_distrib.threadsSort(self.tasks_bounded)
@@ -248,7 +250,7 @@ L BBBBBBBB.. BBBBBBBB..
 # compact, 2 sockets, 2 tasks, 16 threads/task, no hyper required
 class Test_compact_2_2_16_F(unittest.TestCase):
     def setUp(self):
-         self.archi         = placement.Architecture(2,16,2,False)
+         self.archi         = placement.Exclusive(2,16,2,False)
          task_distrib       = placement.CompactMode(self.archi,16,2)
          self.tasks_bounded = task_distrib.distribProcesses()
          task_distrib.threadsSort(self.tasks_bounded)
