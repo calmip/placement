@@ -539,12 +539,12 @@ def getCpuBindingNumactl(archi,tasks_binding):
 #      En scatter seulement, on refuse les tâches à cheval sur deux sockets, sauf s'il n'y a qu'une tâche 
 #      (tâche unique avec 20 threads: OK, 5 tâches de 4 threads, HTOFF: NON)
 #
-# distribProcesses()
+# distribTasks()
 #      Construit le tableau de tableaux tasks_binding à partir des paramètres
 # 
 #      Params: check, si True (defaut), check les valeurs de tasks etc avant d'accepter
 #
-#      Return: tasks_bounded, un tableau de tableaux:
+#      Return: tasks_bound, un tableau de tableaux:
 #              Le tableau des processes, chaque process est représenté par un tableau de cœurs.
 #
     
@@ -556,7 +556,7 @@ class TasksBinding(object):
 
     def checkParameters(self):
         raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
-    def distribProcesses(self,check=True):
+    def distribTasks(self,check=True):
         raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
 
     # Code commun à toutes les classes dérivées
@@ -612,7 +612,7 @@ class ScatterMode(TasksBinding):
                 msg += str(max_tasks)
                 raise PlacementException(msg)
 
-    def distribProcesses(self,check=True):
+    def distribTasks(self,check=True):
         if check:
             self.checkParameters()
 
@@ -627,7 +627,7 @@ class ScatterMode(TasksBinding):
         # L CCCCDDDD.. DDDD...... 
         if self.cpus_per_task <= self.archi.cores_per_socket and self.tasks>1:
             c_step = self.cpus_per_task
-            tasks_bounded=[]
+            tasks_bound=[]
             t_binding=[]
             t = 0
             th= 0
@@ -639,11 +639,11 @@ class ScatterMode(TasksBinding):
                             if th==0 and self.archi.cores_per_socket-c<self.cpus_per_task:
                                 continue
                             t_binding += [y*self.archi.cores_per_node + s*self.archi.cores_per_socket + c + th]
-                        tasks_bounded += [t_binding]
+                        tasks_bound += [t_binding]
                         t_binding = []
                         t += 1
                         if (t==self.tasks):
-                            return tasks_bounded
+                            return tasks_bound
 
         # cpu_per_task plus grand que cores_per_socket 
         # on n'a pas plus d'une tâche par socket en moyenne
@@ -657,21 +657,21 @@ class ScatterMode(TasksBinding):
             tmp_task_distrib = ScatterMode(self.archi,
                                            self.cpus_per_task/2,
                                            self.tasks*2)
-            tmp_tasks_bounded= tmp_task_distrib.distribProcesses(check=False)
+            tmp_tasks_bound= tmp_task_distrib.distribTasks(check=False)
             # On a passé un nombre *2, donc on est sûr que ce nombre est bien pair
-            imax = len(tmp_tasks_bounded)
+            imax = len(tmp_tasks_bound)
 
-            tasks_bounded = []
+            tasks_bound = []
             for i in range(0,imax,2):
                 t=[]
-                t.extend(tmp_tasks_bounded[i])
-                t.extend(tmp_tasks_bounded[i+1])
-                tasks_bounded.append(t)
+                t.extend(tmp_tasks_bound[i])
+                t.extend(tmp_tasks_bound[i+1])
+                tasks_bound.append(t)
             
-            return tasks_bounded
+            return tasks_bound
 
         # normalement on ne passe pas par là on a déjà retourné
-        return tasks_bounded
+        return tasks_bound
 
 #
 # class CompactMode, dérive de TaskBuilding, implémente les algos utilisés en mode scatter
@@ -691,7 +691,7 @@ class CompactMode(TasksBinding):
             msg += ")"
             raise PlacementException(msg)
 
-    def distribProcesses(self, check=True):
+    def distribTasks(self, check=True):
         if check:
             self.checkParameters()
 
@@ -704,7 +704,7 @@ class CompactMode(TasksBinding):
         # P AAAABBBBCC .......... 
         # L CCDDDD.... ..........
         if self.cpus_per_task <= self.archi.cores_per_socket:
-            tasks_bounded=[]
+            tasks_bound=[]
             t_binding=[]
             t = 0
             th= 0
@@ -714,12 +714,12 @@ class CompactMode(TasksBinding):
                         t_binding += [h*self.archi.cores_per_node + s*self.archi.cores_per_socket + c]
                         th+=1
                         if th==self.cpus_per_task:
-                            tasks_bounded += [t_binding]
+                            tasks_bound += [t_binding]
                             t_binding = []
                             th = 0
                             t += 1
                             if (t==self.tasks):
-                                return tasks_bounded
+                                return tasks_bound
 
         # cpu_per_task plus grand que cores_per_socket 
         # on n'a pas plus d'une tâche par socket en moyenne
@@ -733,21 +733,21 @@ class CompactMode(TasksBinding):
             tmp_task_distrib = ScatterMode(self.archi,
                                            self.cpus_per_task/2,
                                            self.tasks*2)
-            tmp_tasks_bounded= tmp_task_distrib.distribProcesses(check=False)
+            tmp_tasks_bound= tmp_task_distrib.distribTasks(check=False)
             # On a passé un nombre *2, donc on est sûr que ce nombre est bien pair
-            imax = len(tmp_tasks_bounded)/2
+            imax = len(tmp_tasks_bound)/2
 
-            tasks_bounded = []
+            tasks_bound = []
             for i in range(imax):
                 t=[]
-                t.extend(tmp_tasks_bounded[i])
-                t.extend(tmp_tasks_bounded[i+imax])
-                tasks_bounded.append(t)
+                t.extend(tmp_tasks_bound[i])
+                t.extend(tmp_tasks_bound[i+imax])
+                tasks_bound.append(t)
             
-            return tasks_bounded
+            return tasks_bound
 
         # normalement on ne passe pas par là on a déjà retourné
-        return tasks_bounded
+        return tasks_bound
 
 #
 # class RunningMode, dérive de TaskBuilding, implémente les algos utilisés en mode running, ie observe ce qui se passe
@@ -821,32 +821,32 @@ class RunningMode(TasksBinding):
 
     # Appelle __runTaskSet taskset sur le tableau self.pid
     # Transforme les affinités retrounées: 0-3 ==> [0,1,2,3]
-    # Renvoie tasks_bounded
-    def __buildTasksBounded(self):
-        tasks_bounded=[]
+    # Renvoie tasks_bound
+    def __buildTasksBound(self):
+        tasks_bound=[]
         for p in self.pid:
             aff = self.__runTaskSet(p)
             self.aff.append(aff)
 
-            tasks_bounded.append(compactString2List(aff))
-        return tasks_bounded
+            tasks_bound.append(compactString2List(aff))
+        return tasks_bound
 
-    # A partir de tasks_bounded, détermine l'architecture
-    def __buildArchi(self,tasks_bounded):
+    # A partir de tasks_bound, détermine l'architecture
+    def __buildArchi(self,tasks_bound):
 
-        # On fait l'hypothèse que tous les tableaux de tasks_bounded ont la même longueur
-        self.cpus_per_task = len(tasks_bounded[0])
-        self.tasks         = len(tasks_bounded)
+        # On fait l'hypothèse que tous les tableaux de tasks_bound ont la même longueur
+        self.cpus_per_task = len(tasks_bound[0])
+        self.tasks         = len(tasks_bound)
         self.sockets_per_node = ARCHI.SOCKETS_PER_NODE
         self.archi = Exclusive(self.sockets_per_node, self.cpus_per_task, self.tasks, ARCHI.HYPERTHREADING)
 
     # Appelle __identProcesses pour récolter une liste de pids, la pose dans self.pid
-    # puis appelle __buildTasksBounded pour construire tasks_bounded
-    def distribProcesses(check=False):
+    # puis appelle __buildTasksBound pour construire tasks_bound
+    def distribTasks(self,check=False):
         self.pid = self.__identProcesses()
-        tasks_bounded = self.__buildTasksBounded()
-        self.__buildArchi(tasks_bounded)
-        return tasks_bounded
+        tasks_bound = self.__buildTasksBound()
+        self.__buildArchi(tasks_bound)
+        return tasks_bound
 
     # Renvoie (pour impression) la correspondance Tâche => pid
     def getTask2Pid(self):
@@ -864,12 +864,12 @@ class RunningMode(TasksBinding):
 
 # Renvoie les couples de processes qui présentent un recouvrement, ainsi que
 # la liste des cœurs en cause
-def detectOverlap(tasks_bounded):
+def detectOverlap(tasks_bound):
     over=[]
     over_cores=[]
-    for i in range(len(tasks_bounded)):
-        for j in range(i+1,len(tasks_bounded)):
-            overlap = list(set(tasks_bounded[i])&set(tasks_bounded[j]))
+    for i in range(len(tasks_bound)):
+        for j in range(i+1,len(tasks_bound)):
+            overlap = list(set(tasks_bound[i])&set(tasks_bound[j]))
             if len(overlap)!=0:
                 over.append((i,j))
                 over_cores.extend(overlap)
@@ -960,8 +960,8 @@ def main():
         # Option --check
         if options.check != None:
             task_distrib = RunningMode(options.check)
-            tasks_bounded= task_distrib.distribProcesses()
-            #print tasks_bounded
+            tasks_bound= task_distrib.distribTasks()
+            #print tasks_bound
             #print task_distrib.pid
             archi = task_distrib.archi
             cpus_per_task = task_distrib.cpus_per_task
@@ -970,7 +970,7 @@ def main():
             print task_distrib.getTask2Pid()
             print
 
-            (overlap,over_cores) = detectOverlap(tasks_bounded)
+            (overlap,over_cores) = detectOverlap(tasks_bound)
             if len(overlap)>0:
                 print "ATTENTION LES TACHES SUIVANTES ONT DES RECOUVREMENTS:"
                 print "====================================================="
@@ -991,30 +991,30 @@ def main():
             else:
                 task_distrib = CompactMode(archi,cpus_per_task,tasks)
             
-            tasks_bounded = task_distrib.distribProcesses()
+            tasks_bound = task_distrib.distribTasks()
 
-        task_distrib.threadsSort(tasks_bounded)
+        task_distrib.threadsSort(tasks_bound)
 
 
         # Imprime le binding de manière compréhensible pour les humains
         if options.human==True:
-            print getCpuBinding(archi,tasks_bounded,getCpuTaskHumanBinding)
+            print getCpuBinding(archi,tasks_bound,getCpuTaskHumanBinding)
     
         # Imprime le binding en ascii art
         if options.asciiart==True:
             if tasks<=62:
-                print getCpuBindingAscii(archi,tasks_bounded,over_cores)
+                print getCpuBindingAscii(archi,tasks_bound,over_cores)
             else:
-                # print getCpuBinding(archi,tasks_bounded,getCpuTaskAsciiBinding)
+                # print getCpuBinding(archi,tasks_bound,getCpuTaskAsciiBinding)
                 raise PlacementException("OUPS - switch --ascii interdit pour plus de 62 tâches !")
     
         # Imprime le binding de manière compréhensible pour srun ou numactl
         # (PAS si --check)
         if options.check == None:
             if options.output_mode=="srun":
-                print getCpuBindingSrun(archi,tasks_bounded)
+                print getCpuBindingSrun(archi,tasks_bound)
             if options.output_mode=="numactl":
-                print getCpuBindingNumactl(archi,tasks_bounded)
+                print getCpuBindingNumactl(archi,tasks_bound)
 
     except PlacementException, e:
         print e

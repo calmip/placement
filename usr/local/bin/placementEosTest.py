@@ -19,7 +19,7 @@ class Test_scatter_2_4_4_F(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(2,4,4,False)
          task_distrib       = placement.ScatterMode(self.archi,4,4)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[0,1,2,3],[10,11,12,13],[4,5,6,7],[14,15,16,17]])
@@ -44,7 +44,7 @@ class Test_scatter_2_4_4_T(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(2,4,4,True)
          task_distrib       = placement.ScatterMode(self.archi,4,4)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[0,1,2,3],[10,11,12,13],[20,21,22,23],[30,31,32,33]])
@@ -70,7 +70,7 @@ class Test_scatter_1_4_4_F(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(1,4,4,False)
          task_distrib       = placement.ScatterMode(self.archi,4,4)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[0,1,2,3],[10,11,12,13],[4,5,6,7],[14,15,16,17]])
@@ -96,7 +96,7 @@ class Test_compact_2_4_4_F(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(2,4,4,False)
          task_distrib       = placement.CompactMode(self.archi,4,4)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[0,1,2,3],[4,5,6,7],[8,9,10,11],[12,13,14,15]])
@@ -121,7 +121,7 @@ class Test_compact_2_4_4_T(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(2,4,4,True)
          task_distrib       = placement.CompactMode(self.archi,4,4)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[0,1,2,3],[4,5,6,7],[8,9,20,21],[22,23,24,25]])
@@ -148,7 +148,7 @@ class Test_compact_1_4_4_F(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(1,4,4,False)
          task_distrib       = placement.CompactMode(self.archi,4,4)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[0,1,2,3],[4,5,6,7],[8,9,10,11],[12,13,14,15]])
@@ -175,7 +175,7 @@ class Test_scatter_2_1_20_F(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(2,20,1,False)
          task_distrib       = placement.ScatterMode(self.archi,20,1)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]])
@@ -200,7 +200,7 @@ class Test_compact_2_1_20_F(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(2,20,1,False)
          task_distrib       = placement.CompactMode(self.archi,20,1)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]])
@@ -225,7 +225,7 @@ class Test_scatter_2_2_16_F(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(2,16,2,False)
          task_distrib       = placement.ScatterMode(self.archi,16,2)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
          task_distrib.threadsSort(self.tasks_bounded)
 
     def test_tasks_bounded(self):
@@ -252,7 +252,7 @@ class Test_compact_2_2_16_F(unittest.TestCase):
     def setUp(self):
          self.archi         = placement.Exclusive(2,16,2,False)
          task_distrib       = placement.CompactMode(self.archi,16,2)
-         self.tasks_bounded = task_distrib.distribProcesses()
+         self.tasks_bounded = task_distrib.distribTasks()
          task_distrib.threadsSort(self.tasks_bounded)
 
     def test_tasks_bounded(self):

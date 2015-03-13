@@ -22,7 +22,7 @@ class Test_scatter_24_2_4_4(unittest.TestCase):
         placement.Shared._Shared__detectSockets = mock.Mock(return_value=[9,10])
         self.archi         = placement.Shared(24,4,4,False)
         task_distrib       = placement.ScatterMode(self.archi,4,4)
-        self.tasks_bounded = task_distrib.distribProcesses()
+        self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[72,73,74,75],[80,81,82,83],[76,77,78,79],[84,85,86,87]])
@@ -63,7 +63,7 @@ class Test_scatter_24_3_3_4(unittest.TestCase):
         placement.Shared._Shared__detectSockets = mock.Mock(return_value=[9,10,12])
         self.archi         = placement.Shared(24,4,3,False)
         task_distrib       = placement.ScatterMode(self.archi,4,3)
-        self.tasks_bounded = task_distrib.distribProcesses()
+        self.tasks_bounded = task_distrib.distribTasks()
 
     def test_tasks_bounded(self):
         self.assertEqual(self.tasks_bounded,[[72,73,74,75],[80,81,82,83],[96,97,98,99]])
@@ -106,7 +106,7 @@ class Test_scatter_24_2_3_8(unittest.TestCase):
         self.task_distrib  = placement.ScatterMode(self.archi,8,3)
 
     def test_except(self):
-        self.assertRaises(placement.PlacementException,self.task_distrib.distribProcesses)
+        self.assertRaises(placement.PlacementException,self.task_distrib.distribTasks)
 
 
         
