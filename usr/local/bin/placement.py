@@ -121,6 +121,8 @@ if ARCHI == '':
             ARCHI = BULLX_DLC()
         else:
             raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture inconnue")
+    elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'uvprod':
+            ARCHI = UVPROD()
     
 if ARCHI == '':
     ARCHI = BULLX_DLC()
