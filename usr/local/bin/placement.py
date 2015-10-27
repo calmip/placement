@@ -73,6 +73,7 @@ class PlacementException(Exception):
 # Constantes liées à nos architectures: 
 
 class ARCHITECTURE(object):
+    NAME             = 'unknown'
     SOCKETS_PER_NODE = ''
     CORES_PER_SOCKET = ''
     HYPERTHREADING   = ''
@@ -81,6 +82,7 @@ class ARCHITECTURE(object):
 
 # 1/ BULLx DLC (eos), 2 sockets Intel Ivybridge 10 cœurs, hyperthreading activé
 class BULLX_DLC(ARCHITECTURE):
+    NAME             = 'Bullx_dlc'
     SOCKETS_PER_NODE = 2
     CORES_PER_SOCKET = 10
     HYPERTHREADING   = True
@@ -89,6 +91,7 @@ class BULLX_DLC(ARCHITECTURE):
 
 # 2 / SGI UV, uvprod, 48 sockets, 8 cœurs par socket, pas d'hyperthreading, SHARED
 class UVPROD(ARCHITECTURE):
+    NAME             = 'uvprod'
     SOCKETS_PER_NODE = 48
     CORES_PER_SOCKET = 8
     HYPERTHREADING   = False
@@ -97,6 +100,7 @@ class UVPROD(ARCHITECTURE):
 
 # 3/ BULL SMP-mesca, 8 sockets, 15 cœurs par socket, pas d'hyperthreading
 class MESCA(ARCHITECTURE):
+    NAME             = 'bull mesca1'
     SOCKETS_PER_NODE = 8
     CORES_PER_SOCKET = 15
     HYPERTHREADING   = False
@@ -940,6 +944,7 @@ def main():
 
     epilog = 'Environment:\n PLACEMENT_ARCHI, SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK'
     parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task",epilog=epilog)
+    parser.add_option("-I","--archi",dest='show_archi',action="store_true",help="Show the currently selected architecture")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
     parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,ARCHI.SOCKETS_PER_NODE+1)),default=ARCHI.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
     parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of ARCHI.HYPERTHREADING (%default)")
@@ -958,7 +963,9 @@ def main():
         if options.example==True:
             examples()
             exit(0)
-
+        if options.show_archi==True:
+            show_archi()
+            exit(0)
         # Option --check
         if options.check != None:
             task_distrib = RunningMode(options.check)
@@ -1040,6 +1047,20 @@ fi
 srun $(placement) ./my_application
 """
     print ex
+
+def show_archi():
+    msg = "Current architecture = " + ARCHI.NAME + " "
+    if ARCHI.NAME != 'unknown':
+        msg += '(' + str(ARCHI.SOCKETS_PER_NODE) + ' sockets/node, '
+        msg += str(ARCHI.CORES_PER_SOCKET) + ' cores/socket, '
+        if ARCHI.HYPERTHREADING:
+            msg += 'Hyperthreading ON, ' + str(ARCHI.THREADS_PER_CORE) + ' threads/core, '
+        if ARCHI.IS_SHARED:
+            msg += 'SHARED'
+        else:
+            msg += 'EXCLUSIVE'
+        msg += ')'
+        print(msg)
 
 if __name__ == "__main__":
     main()
