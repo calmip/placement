@@ -1,0 +1,10 @@
+#! /bin/bash
+
+dir=$(dirname $0)
+
+export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P)
+#echo $PYTHONPATH
+placement="$0.py"
+#shift
+exec $placement $*
+
