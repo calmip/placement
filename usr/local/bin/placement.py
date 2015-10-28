@@ -67,12 +67,12 @@ class PlacementException(Exception):
 #############################################################################################################
 #
 #  ARCHITECTURE: L'architecture dépend:
-#                     1/ DE LA MACHINE (variable ARCHI, classes dérivant de ARCHITECTURE) ET de son UTILISATION 
+#                     1/ DE LA MACHINE (variable ARCHI, classes dérivant de Hardware)
 #                     2/ DE SON UTILISATION (classe Architecture, Exclusive et Shared)
 #
 # Constantes liées à nos architectures: 
 
-class ARCHITECTURE(object):
+class Hardware(object):
     NAME             = 'unknown'
     SOCKETS_PER_NODE = ''
     CORES_PER_SOCKET = ''
@@ -81,7 +81,7 @@ class ARCHITECTURE(object):
     IS_SHARED        = ''
 
 # 1/ BULLx DLC (eos), 2 sockets Intel Ivybridge 10 cœurs, hyperthreading activé
-class BULLX_DLC(ARCHITECTURE):
+class Bullx_dlc(Hardware):
     NAME             = 'Bullx_dlc'
     SOCKETS_PER_NODE = 2
     CORES_PER_SOCKET = 10
@@ -90,7 +90,7 @@ class BULLX_DLC(ARCHITECTURE):
     IS_SHARED        = False
 
 # 2 / SGI UV, uvprod, 48 sockets, 8 cœurs par socket, pas d'hyperthreading, SHARED
-class UVPROD(ARCHITECTURE):
+class Uvprod(Hardware):
     NAME             = 'uvprod'
     SOCKETS_PER_NODE = 48
     CORES_PER_SOCKET = 8
@@ -99,37 +99,52 @@ class UVPROD(ARCHITECTURE):
     IS_SHARED        = True
 
 # 3/ BULL SMP-mesca, 8 sockets, 15 cœurs par socket, pas d'hyperthreading
-class MESCA(ARCHITECTURE):
-    NAME             = 'bull mesca1'
+class Mesca(Hardware):
+    NAME             = 'bull_mesca1'
     SOCKETS_PER_NODE = 8
     CORES_PER_SOCKET = 15
     HYPERTHREADING   = False
     THREADS_PER_CORE = 1
     IS_SHARED        = False
 
+# 4/ BULL SMP-mesca2, 8 sockets, 16 cœurs par socket, pas d'hyperthreading (pour l'instant)
+class Mesca2(Hardware):
+    NAME             = 'bull_mesca2'
+    SOCKETS_PER_NODE = 8
+    CORES_PER_SOCKET = 16
+    HYPERTHREADING   = False
+    THREADS_PER_CORE = 1
+    IS_SHARED        = True
+
 # Changer cette variable en changeant d'architecture (cf. lignes 70 et suivantes)
 ARCHI = ''
-#ARCHI = BULLX_DLC()
-#ARCHI = UVPROD()
-#ARCHI = MESCA()
+#ARCHI = Bullx_dlc()
+#ARCHI = Uvprod()
+#ARCHI = Mesca()
 if ARCHI == '':
     if 'SLURM_NODELIST' in os.environ:
         if os.environ['SLURM_NODELIST'] == 'uvprod':
-            ARCHI = UVPROD()
+            ARCHI = Uvprod()
+        elif os.environ['SLURM_NODELIST'] == 'eosmesca1':
+            ARCHI = Mesca2()
         else:
-            ARCHI = BULLX_DLC()
+            ARCHI = Bullx_dlc()
     elif 'PLACEMENT_ARCHI' in os.environ:
         if os.environ['PLACEMENT_ARCHI'] == 'uvprod':
-            ARCHI = UVPROD()
+            ARCHI = Uvprod()
+        elif os.environ['PLACEMENT_ARCHI'] == 'mesca':
+            ARCHI = Mesca2()
+        elif os.environ['PLACEMENT_ARCHI'] == 'exclusiv':
+            ARCHI = Bullx_dlc()
         elif os.environ['PLACEMENT_ARCHI'] == 'eos':
-            ARCHI = BULLX_DLC()
+            ARCHI = Bullx_dlc()
         else:
-            raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture inconnue")
+            raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture hardware inconnue")
     elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'uvprod':
-            ARCHI = UVPROD()
+            ARCHI = Uvprod()
     
 if ARCHI == '':
-    ARCHI = BULLX_DLC()
+    ARCHI = Bullx_dlc()
 
 # class Architecture: 
 #       Description de l'architecture dans une classe
@@ -188,7 +203,7 @@ class Architecture(object):
             if ARCHI.HYPERTHREADING:
                 threads_per_core = ARCHI.THREADS_PER_CORE
             else:
-                msg = "OUPS - l'ARCHI.HYPERTHREADING n'est pas actif sur cette machine"
+                msg = "OUPS - l'hyperthreading n'est pas actif sur cette machine"
                 raise PlacementException(msg)
         return threads_per_core
 
@@ -589,6 +604,7 @@ class TasksBinding(object):
 #
 class ScatterMode(TasksBinding):
     def __init__(self,archi,cpus_per_task,tasks):
+        #print "KOUKOU "+str(cpus_per_task)
         TasksBinding.__init__(self,archi,cpus_per_task,tasks)
         
     def checkParameters(self):
@@ -637,9 +653,19 @@ class ScatterMode(TasksBinding):
             t_binding=[]
             t = 0
             th= 0
+            #print str(range(0,self.archi.cores_per_socket,c_step))+' ('+str(0)+','+str(self.archi.cores_per_socket)+','+str(c_step)+')'
             for c in range(0,self.archi.cores_per_socket,c_step):
+                #print "   "+str(range(self.archi.threads_per_core))
+                
+                # Boucle sur les threads
                 for y in range(self.archi.threads_per_core):
+                    #print "      "+str(self.archi.l_sockets)
+
+                    # Boucle sur les sockets
                     for s in self.archi.l_sockets:
+                        #print "         "+str(range(self.cpus_per_task))
+
+                        # Boucle sur les cœurs
                         for th in range(self.cpus_per_task):
                             # Eviter le débordement sauf s'il n'y a qu'une seule task
                             if th==0 and self.archi.cores_per_socket-c<self.cpus_per_task:
@@ -942,7 +968,7 @@ def main():
         rvl=map(int,placement_debug.split(','))
         Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
-    epilog = 'Environment:\n PLACEMENT_ARCHI, SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK'
+    epilog = 'Environment:\n PLACEMENT_ARCHI (nom de partition: mesca, exclusiv etc), SLURM_NODELIST (noms de nodes), SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK'
     parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task",epilog=epilog)
     parser.add_option("-I","--archi",dest='show_archi',action="store_true",help="Show the currently selected architecture")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
