@@ -89,7 +89,7 @@ class Exclusive(Architecture):
 
 #
 # class Shared:
-#       Description de l'architecture dans le cas où le nœud est partagé (partition shared, uvprod)
+#       Description de l'architecture dans le cas où le nœud est partagé (partitions shared, mesca)
 #
 #       Paramètres du constructeur:
 #           hardware        : Un objet de classe Hardware (les limites hardware du système)
@@ -137,9 +137,10 @@ class Shared(Architecture):
             out = p.communicate()[0].split('\n')[0]
             # nodebind: 4 5 6 => [4,5,6]
             l_sockets = map(int,out.rpartition(':')[2].strip().split(' '))
-            if max(l_sockets)>self.sockets_per_node:
+            #if max(l_sockets)>self.sockets_per_node:
+            if len(l_sockets) > self.sockets_per_node:
                 msg  = "OUPS - sockets_per_node=" + str(self.sockets_per_node)
-                msg += " devrait avoir au moins la valeur " +  str(max(l_sockets))
+                msg += " devrait avoir au moins la valeur " +  str(len(l_sockets))
                 msg += " Vérifiez le switch -S"
                 raise PlacementException(msg)
             return l_sockets
