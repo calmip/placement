@@ -4,6 +4,7 @@
 import os
 from exception import *
 from tasksbinding import *
+from scatter import *
 
 #
 # class CompactMode, dérive de TaskBinding, implémente les algos utilisés en mode compact
@@ -35,7 +36,8 @@ class CompactMode(TasksBinding):
         # S0-------- S1-------- 
         # P AAAABBBBCC .......... 
         # L CCDDDD.... ..........
-        if self.cpus_per_task <= self.archi.cores_per_socket:
+#        if self.cpus_per_task <= self.archi.cores_per_socket:
+        if True:
             tasks_bound=[]
             t_binding=[]
             t = 0

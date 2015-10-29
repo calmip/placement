@@ -3,6 +3,7 @@
 
 import os
 from exception import *
+from itertools import chain,product
 
 #############################################################################################################
 #

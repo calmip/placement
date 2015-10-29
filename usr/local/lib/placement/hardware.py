@@ -47,6 +47,8 @@ class Hardware(object):
         # Si aucune de ces variables n'est définie, on fait la même chose avec le hostname !
         elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'uvprod':
             return Uvprod()
+        elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'eosmesca1':
+            return Mesca2()
         else:
             raise(PlacementException("OUPS - Architecture indéfinie ! - Vérifiez $SLURM_NODELIST, $PLACEMENT_ARCHI, $HOSTNAME"))
 
@@ -78,7 +80,7 @@ class Mesca(Hardware):
     THREADS_PER_CORE = 1
     IS_SHARED        = False
 
-# 4/ BULL SMP-mesca2, 8 sockets, 16 cœurs par socket, pas d'hyperthreading (pour l'instant)
+# 4/ BULL SMP-mesca2, 8 sockets, 16 cœurs par socket, pas d'hyperthreading (pour l'instant), machine partagée
 class Mesca2(Hardware):
     NAME             = 'bull_mesca2'
     SOCKETS_PER_NODE = 8
@@ -86,4 +88,3 @@ class Mesca2(Hardware):
     HYPERTHREADING   = False
     THREADS_PER_CORE = 1
     IS_SHARED        = True
-

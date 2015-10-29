@@ -3,6 +3,7 @@
 
 import os
 from exception import *
+import subprocess
 
 # class Architecture: 
 #       Description de l'architecture dans une classe

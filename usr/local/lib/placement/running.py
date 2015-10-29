@@ -4,6 +4,9 @@
 import os
 from exception import *
 from tasksbinding import *
+from utilities import *
+from architecture import *
+import subprocess
 
 #
 # class RunningMode, dérive de TaskBuilding, implémente les algos utilisés en mode running, ie observe ce qui se passe
@@ -11,9 +14,10 @@ from tasksbinding import *
 #                    En déduit archi, cpus_per_task,tasks !
 #
 class RunningMode(TasksBinding):
-    def __init__(self,path):
+    def __init__(self,path,hardware):
         TasksBinding.__init__(self,None,0,0)
         self.path = path
+        self.hardware = hardware
         self.pid=[]
         self.aff=[]
         self.archi = None
@@ -93,8 +97,8 @@ class RunningMode(TasksBinding):
         # On fait l'hypothèse que tous les tableaux de tasks_bound ont la même longueur
         self.cpus_per_task = len(tasks_bound[0])
         self.tasks         = len(tasks_bound)
-        self.sockets_per_node = ARCHI.SOCKETS_PER_NODE
-        self.archi = Exclusive(ARCHI,self.sockets_per_node, self.cpus_per_task, self.tasks, ARCHI.HYPERTHREADING)
+        self.sockets_per_node = self.hardware.SOCKETS_PER_NODE
+        self.archi = Exclusive(self.hardware,self.sockets_per_node, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
 
     # Appelle __identProcesses pour récolter une liste de pids, la pose dans self.pid
     # puis appelle __buildTasksBound pour construire tasks_bound

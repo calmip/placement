@@ -60,7 +60,7 @@ import os
 from optparse import OptionParser
 import subprocess
 from itertools import chain,product
-from hardware import *
+import hardware
 from architecture import *
 from exception import *
 from tasksbinding import *
@@ -69,20 +69,16 @@ from compact import *
 from running import *
 from utilities import *
 
-# Changer cette variable en changeant d'architecture (cf. lignes 70 et suivantes)
-ARCHI = ''
-#ARCHI = Bullx_dlc()
-#ARCHI = Uvprod()
-#ARCHI = Mesca()
-try:
-    if ARCHI == '':
-        ARCHI = Hardware.factory()
-
-except PlacementException, e:
-    print e
-    exit(1)
-
 def main():
+
+    # Recherche le hardware, actuellement à partir de variables d'environnement ou à partir du nom de la machine
+    hard = '';
+    try:
+        hard = hardware.Hardware.factory()
+            
+    except PlacementException, e:
+        print e
+        exit(1)
 
     # Si la variable PLACEMENT_DEBUG existe, on simule un environnement shared avec des réservations
     # Exemple: export PLACEMENT_DEBUG='9,10,11,12,13' pour simuler un environnement shared, 5 sockets réservées
@@ -95,10 +91,10 @@ def main():
 
     epilog = 'Environment:\n PLACEMENT_ARCHI (nom de partition: mesca, exclusiv etc), SLURM_NODELIST (noms de nodes), SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK'
     parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task",epilog=epilog)
-    parser.add_option("-I","--archi",dest='show_archi',action="store_true",help="Show the currently selected architecture")
+    parser.add_option("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
-    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,ARCHI.SOCKETS_PER_NODE+1)),default=ARCHI.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
-    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of ARCHI.HYPERTHREADING (%default)")
+    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
+    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of hard.HYPERTHREADING (%default)")
     parser.add_option("-M","--mode",type="choice",choices=["compact","scatter"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, compact (%default)")
     parser.add_option("-H","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
     parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
@@ -114,36 +110,20 @@ def main():
         if options.example==True:
             examples()
             exit(0)
-        if options.show_archi==True:
-            show_archi()
+        if options.show_hard==True:
+            show_hard(hard)
             exit(0)
         # Option --check
         if options.check != None:
-            task_distrib = RunningMode(options.check)
-            tasks_bound= task_distrib.distribTasks()
-            #print tasks_bound
-            #print task_distrib.pid
-            archi = task_distrib.archi
-            cpus_per_task = task_distrib.cpus_per_task
-            tasks         = task_distrib.tasks
-
-            print task_distrib.getTask2Pid()
-            print
-
-            (overlap,over_cores) = detectOverlap(tasks_bound)
-            if len(overlap)>0:
-                print "ATTENTION LES TACHES SUIVANTES ONT DES RECOUVREMENTS:"
-                print "====================================================="
-                print overlap
-                print
-
+            check_running(options.check,hard)
+            exit(0)
         else:
             over_cores = None
             [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
-            if ARCHI.IS_SHARED:
-                archi = Shared(ARCHI,int(options.sockets), cpus_per_task, tasks, options.hyper)
+            if hard.IS_SHARED:
+                archi = Shared(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
             else:
-                archi = Exclusive(ARCHI,int(options.sockets), cpus_per_task, tasks, options.hyper)
+                archi = Exclusive(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
             
             task_distrib = ""
             if options.mode == "scatter":
@@ -180,6 +160,11 @@ def main():
         print e
         exit(1)
 
+####################
+#
+# affiche quelques exemple d'utilisation
+#
+####################
 def examples():
     ex = """USING placement IN AN SBATCH SCRIPT
 ===================================
@@ -199,19 +184,50 @@ srun $(placement) ./my_application
 """
     print ex
 
-def show_archi():
-    msg = "Current architecture = " + ARCHI.NAME + " "
-    if ARCHI.NAME != 'unknown':
-        msg += '(' + str(ARCHI.SOCKETS_PER_NODE) + ' sockets/node, '
-        msg += str(ARCHI.CORES_PER_SOCKET) + ' cores/socket, '
-        if ARCHI.HYPERTHREADING:
-            msg += 'Hyperthreading ON, ' + str(ARCHI.THREADS_PER_CORE) + ' threads/core, '
-        if ARCHI.IS_SHARED:
+###########################################################
+# @brief imprime quelques informations sur le hardware
+#
+# @param hard Un objet de type Hardware
+#
+###########################################################
+def show_hard(hard):
+    msg = "Current architecture = " + hard.NAME + " "
+    if hard.NAME != 'unknown':
+        msg += '(' + str(hard.SOCKETS_PER_NODE) + ' sockets/node, '
+        msg += str(hard.CORES_PER_SOCKET) + ' cores/socket, '
+        if hard.HYPERTHREADING:
+            msg += 'Hyperthreading ON, ' + str(hard.THREADS_PER_CORE) + ' threads/core, '
+        if hard.IS_SHARED:
             msg += 'SHARED'
         else:
             msg += 'EXCLUSIVE'
         msg += ')'
         print(msg)
+
+##########################################################
+# @brief vérifie le taskset sur un programme en exécution
+#
+# @param Le nom du code exécutable (pour sélectionner les processus)
+# @param Le hardware
+##########################################################
+def check_running(path,hard):
+    task_distrib = RunningMode(path,hard)
+    tasks_bound= task_distrib.distribTasks()
+    #print tasks_bound
+    #print task_distrib.pid
+    archi = task_distrib.archi
+    cpus_per_task = task_distrib.cpus_per_task
+    tasks         = task_distrib.tasks
+
+    print task_distrib.getTask2Pid()
+    print
+
+    (overlap,over_cores) = detectOverlap(tasks_bound)
+    if len(overlap)>0:
+        print "ATTENTION LES TACHES SUIVANTES ONT DES RECOUVREMENTS:"
+        print "====================================================="
+        print overlap
+        print
 
 if __name__ == "__main__":
     main()
