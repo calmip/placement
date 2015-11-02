@@ -115,26 +115,9 @@ def main():
             exit(0)
         # Option --check
         if options.check != None:
-            check_running(options.check,hard)
-            exit(0)
+            [tasks,tasks_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
         else:
-            over_cores = None
-            [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
-            if hard.IS_SHARED:
-                archi = Shared(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
-            else:
-                archi = Exclusive(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
-            
-            task_distrib = ""
-            if options.mode == "scatter":
-                task_distrib = ScatterMode(archi,cpus_per_task,tasks)
-            else:
-                task_distrib = CompactMode(archi,cpus_per_task,tasks)
-            
-            tasks_bound = task_distrib.distribTasks()
-
-        task_distrib.threadsSort(tasks_bound)
-
+            [tasks,tasks_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
 
         # Imprime le binding de manière compréhensible pour les humains
         if options.human==True:
@@ -205,12 +188,17 @@ def show_hard(hard):
         print(msg)
 
 ##########################################################
-# @brief vérifie le taskset sur un programme en exécution
+# @brief Calcule les structures de données en vérifiant le taskset sur un programme en exécution
 #
-# @param Le nom du code exécutable (pour sélectionner les processus)
+# @param options Les switches de la ligne de commande
+# @param args (non utilisé)
 # @param Le hardware
+#
+# @return Un tableau de tableaux: les taches, les coeurs utilisés, les coeurs en conflit, l'architecture
+#
 ##########################################################
-def check_running(path,hard):
+def compute_data_from_running(options,args,hard):
+    path = options.check
     task_distrib = RunningMode(path,hard)
     tasks_bound= task_distrib.distribTasks()
     #print tasks_bound
@@ -228,6 +216,42 @@ def check_running(path,hard):
         print "====================================================="
         print overlap
         print
+
+    # Trie et renvoie tasks_bound
+    task_distrib.threadsSort(tasks_bound)
+    return [tasks,tasks_bound,over_cores,archi]
+
+
+##########################################################
+# @brief Calcule les structures de données à partir des paramètres de la ligne de commande
+#
+# @param options Les switches de la ligne de commande
+# @param args (non utilisé)
+# @param Le hardware
+#
+# @return Un tableau de tableaux: les taches, les coeurs utilisés, les coeurs en conflit, l'architecture
+#
+##########################################################
+def compute_data_from_parameters(options,args,hard):
+    over_cores = None
+    [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
+    if hard.IS_SHARED:
+        archi = Shared(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
+    else:
+        archi = Exclusive(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
+            
+    task_distrib = ""
+    if options.mode == "scatter":
+        task_distrib = ScatterMode(archi,cpus_per_task,tasks)
+    else:
+        task_distrib = CompactMode(archi,cpus_per_task,tasks)
+            
+    tasks_bound = task_distrib.distribTasks()
+
+    # Trie et renvoie tasks_bound
+    task_distrib.threadsSort(tasks_bound)
+    return [tasks,tasks_bound,over_cores,archi]
+
 
 if __name__ == "__main__":
     main()
