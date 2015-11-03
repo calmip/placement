@@ -199,12 +199,13 @@ def show_hard(hard):
 ##########################################################
 def compute_data_from_running(options,args,hard):
     path = options.check
+
     task_distrib = RunningMode(path,hard)
     tasks_bound= task_distrib.distribTasks()
     #print tasks_bound
     #print task_distrib.pid
     archi = task_distrib.archi
-    cpus_per_task = task_distrib.cpus_per_task
+    #cpus_per_task = task_distrib.cpus_per_task
     tasks         = task_distrib.tasks
 
     print task_distrib.getTask2Pid()
@@ -216,7 +217,7 @@ def compute_data_from_running(options,args,hard):
         print "====================================================="
         print overlap
         print
-
+            
     # Trie et renvoie tasks_bound
     task_distrib.threadsSort(tasks_bound)
     return [tasks,tasks_bound,over_cores,archi]

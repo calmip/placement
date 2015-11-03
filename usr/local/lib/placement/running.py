@@ -59,6 +59,19 @@ class RunningMode(TasksBinding):
                     pid.append(tmp_pid[i])
             return pid
 
+    # Appelle ps en lui passant le pid et renvoie le nom de la commande
+    def __pid2cmd(self,pid):
+        cmd = "ps --no-headers -o %c -p " + str(pid)
+	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	p.wait()
+        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
+	if p.returncode !=0:
+            msg = "OUPS "
+            msg += "AUCUNE TACHE TROUVEE: peut-etre le pid vient-il de mourir ?"
+            raise PlacementException(msg)
+        else:
+            return p.communicate()[0].split("\n")[0]
+
     # Appelle taskset sur le pid passé en paramètre et renvoie l'affinité
     # Format retourné: 0-3
     def __runTaskSet(self,p):
@@ -110,13 +123,15 @@ class RunningMode(TasksBinding):
 
     # Renvoie (pour impression) la correspondance Tâche => pid
     def getTask2Pid(self):
-        rvl  = "TACHE ==> PID ==> AFFINITE\n"
+        rvl  = "TACHE ==> PID (CMD) ==> AFFINITE\n"
         rvl += "==========================\n"
         for i in range(len(self.pid)):
             rvl += numTaskToLetter(i)
             rvl += " ==> "
             rvl += self.pid[i]
-            rvl += " ==> "
+            rvl += ' ('
+            rvl += self.__pid2cmd(self.pid[i])
+            rvl += ") ==> "
             rvl += self.aff[i]
             rvl += "\n"
             i += 1
