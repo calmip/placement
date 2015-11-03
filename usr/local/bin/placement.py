@@ -71,15 +71,6 @@ from utilities import *
 
 def main():
 
-    # Recherche le hardware, actuellement à partir de variables d'environnement ou à partir du nom de la machine
-    hard = '';
-    try:
-        hard = hardware.Hardware.factory()
-            
-    except PlacementException, e:
-        print e
-        exit(1)
-
     # Si la variable PLACEMENT_DEBUG existe, on simule un environnement shared avec des réservations
     # Exemple: export PLACEMENT_DEBUG='9,10,11,12,13' pour simuler un environnement shared, 5 sockets réservées
     # NB - Ne pas oublier non plus de positionner SLURM_NODELIST ! (PAS PLACEMENT_ARCHI ça n'activera pas Shared)
@@ -89,11 +80,11 @@ def main():
         rvl=map(int,placement_debug.split(','))
         Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
-    epilog = 'Environment:\n PLACEMENT_ARCHI (nom de partition: mesca, exclusiv etc), SLURM_NODELIST (noms de nodes), SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK'
+    epilog = "Environment: PLACEMENT_ARCHI " + str(hardware.Hardware.catalogue()) + " SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
     parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task",epilog=epilog)
     parser.add_option("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
-    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
+#    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
     parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of hard.HYPERTHREADING (%default)")
     parser.add_option("-M","--mode",type="choice",choices=["compact","scatter"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, compact (%default)")
     parser.add_option("-H","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
@@ -104,6 +95,16 @@ def main():
     parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process")
     parser.set_defaults(output_mode="srun")
     (options, args) = parser.parse_args()
+
+
+    # Recherche le hardware, actuellement à partir de variables d'environnement
+    hard = '';
+    try:
+        hard = hardware.Hardware.factory()
+            
+    except PlacementException, e:
+        print e
+        exit(1)
 
     try:
 
@@ -237,9 +238,13 @@ def compute_data_from_parameters(options,args,hard):
     over_cores = None
     [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
     if hard.IS_SHARED:
-        archi = Shared(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
+        # Suppression du switch -S permettant de "choisir" le nombre de sockets !
+        #archi = Shared(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
+        archi = Shared(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, options.hyper)
     else:
-        archi = Exclusive(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
+        # Suppression du switch -S permettant de "choisir" le nombre de sockets !
+        #archi = Exclusive(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
+        archi = Exclusive(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, options.hyper)
             
     task_distrib = ""
     if options.mode == "scatter":

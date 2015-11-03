@@ -93,7 +93,7 @@ class Exclusive(Architecture):
 #
 #       Paramètres du constructeur:
 #           hardware        : Un objet de classe Hardware (les limites hardware du système)
-#           sockets_per_node: Nombre de sockets par node, doit être < ARCHI.SOCKETS_PER_NODE 
+#           sockets_per_node: Nombre de sockets par node, doit être <= hard.SOCKETS_PER_NODE 
 #           tasks           : Nombre de tâches (processes) souhaité
 #           cpus_per_task   : Nombre de cpus par process
 #           hyper           : Si False, hyperthreading interdit

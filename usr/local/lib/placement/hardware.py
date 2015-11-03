@@ -19,15 +19,34 @@ class Hardware(object):
     IS_SHARED        = ''
 
     @staticmethod
+    def catalogue():
+        return [ 'uvprod','eosmesca1','mesca','exclusiv','shared' ]
+
+    ####################################################################
+    #
+    # @brief Construit un objet à partir des variables d'environnement: SLURM_NODELIST, PLACEMENT_ARCHI, HOSTNAME
+    #
+    ####################################################################
+    @staticmethod
     def factory():
-        # Si ne contient qu'un seule nœud, c'est peut-être uvprod ou eosmesca1
-        if 'SLURM_NODELIST' in os.environ:
-            if os.environ['SLURM_NODELIST'] == 'uvprod':
+        # Construction de la partition shared
+        partition_shared = [ ]
+        for i in range(604,612):
+            partition_shared.append('eoscomp'+str(i))
+
+        # Si SLURM_NODELIST est défini, on est dans un sbatch
+        if 'HOSTNAME' in os.environ:
+            # Machines particulières
+            if os.environ['HOSTNAME'] == 'uvprod':
                 return Uvprod()
-            elif os.environ['SLURM_NODELIST'] == 'eosmesca1':
+            elif os.environ['HOSTNAME'] == 'eosmesca1':
                 return Mesca2()
 
-            # Par défaut un nœud d'eos ordinaire
+            # Nœuds shared d'eos
+            elif os.environ['HOSTNAME'] in partition_shared:
+                return Bullx_dlc_shared()
+
+            # Nœuds d'eos ordinaires
             else:
                 return Bullx_dlc()
         
@@ -39,16 +58,16 @@ class Hardware(object):
                 return Mesca2()
             elif os.environ['PLACEMENT_ARCHI'] == 'exclusiv':
                 return Bullx_dlc()
-            elif os.environ['PLACEMENT_ARCHI'] == 'eos':
-                return Bullx_dlc()
+            elif os.environ['PLACEMENT_ARCHI'] == 'shared':
+                return Bullx_dlc_shared()
             else:
                 raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture hardware inconnue")
 
         # Si aucune de ces variables n'est définie, on fait la même chose avec le hostname !
-        elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'uvprod':
-            return Uvprod()
-        elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'eosmesca1':
-            return Mesca2()
+        #elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'uvprod':
+        #    return Uvprod()
+        #elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'eosmesca1':
+        #    return Mesca2()
         else:
             raise(PlacementException("OUPS - Architecture indéfinie ! - Vérifiez $SLURM_NODELIST, $PLACEMENT_ARCHI, $HOSTNAME"))
 
@@ -61,6 +80,15 @@ class Bullx_dlc(Hardware):
     HYPERTHREADING   = True
     THREADS_PER_CORE = 2
     IS_SHARED        = False
+
+# 1/ BULLx DLC (eos), 2 sockets Intel Ivybridge 10 cœurs, hyperthreading activé, shared
+class Bullx_dlc_shared(Hardware):
+    NAME             = 'Bullx_dlc'
+    SOCKETS_PER_NODE = 2
+    CORES_PER_SOCKET = 10
+    HYPERTHREADING   = True
+    THREADS_PER_CORE = 2
+    IS_SHARED        = True
 
 # 2 / SGI UV, uvprod, 48 sockets, 8 cœurs par socket, pas d'hyperthreading, SHARED
 class Uvprod(Hardware):
