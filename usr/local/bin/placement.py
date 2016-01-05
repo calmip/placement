@@ -69,6 +69,9 @@ from compact import *
 from running import *
 from utilities import *
 
+# Si execute via ssh, on ne peut pas utiliser la variable d'environnement
+from socket import gethostname
+
 def main():
 
     # Si la variable PLACEMENT_DEBUG existe, on simule un environnement shared avec des réservations
@@ -93,6 +96,7 @@ def main():
     parser.add_option("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
     parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process")
+    parser.add_option("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
     parser.set_defaults(output_mode="srun")
     (options, args) = parser.parse_args()
 
@@ -209,8 +213,10 @@ def compute_data_from_running(options,args,hard):
     #cpus_per_task = task_distrib.cpus_per_task
     tasks         = task_distrib.tasks
 
-    print task_distrib.getTask2Pid()
-    print
+    print gethostname()
+    if options.verbose != False:
+        print task_distrib.getTask2Pid()
+        print
 
     (overlap,over_cores) = detectOverlap(tasks_bound)
     if len(overlap)>0:

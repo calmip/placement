@@ -18,4 +18,4 @@ nytprof.out
 *.o
 *.bs
 *~
-
+*.pyc

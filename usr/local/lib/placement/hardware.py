@@ -20,7 +20,7 @@ class Hardware(object):
 
     @staticmethod
     def catalogue():
-        return [ 'uvprod','eosmesca1','mesca','exclusiv','shared' ]
+        return [ 'uvprod','eosmesca1','mesca','exclusive','shared' ]
 
     ####################################################################
     #
@@ -56,7 +56,7 @@ class Hardware(object):
                 return Uvprod()
             elif os.environ['PLACEMENT_ARCHI'] == 'mesca':
                 return Mesca2()
-            elif os.environ['PLACEMENT_ARCHI'] == 'exclusiv':
+            elif os.environ['PLACEMENT_ARCHI'] == 'exclusive':
                 return Bullx_dlc()
             elif os.environ['PLACEMENT_ARCHI'] == 'shared':
                 return Bullx_dlc_shared()
