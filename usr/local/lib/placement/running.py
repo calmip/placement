@@ -19,11 +19,13 @@ class RunningMode(TasksBinding):
         self.path = path
         self.hardware = hardware
         self.pid=[]
-        self.aff=[]
+        self.tasks_bound=[]
         self.archi = None
         self.cpus_per_task = 0
         self.tasks = 0
         self.over_cores = []
+        self.__buildTasksBound = BuildTasksBoundFromPs()
+        #self.__buildTasksBound = BuildTasksBoundFromTaskSet()
         
     # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
     # Afin d'éviter tout doublon (une hiérarchie de processes qui se partage le même cœur, on filtre les pid
@@ -76,8 +78,64 @@ class RunningMode(TasksBinding):
             cu = c+','+u
             return cu
 
-    # Appelle taskset sur le pid passé en paramètre et renvoie l'affinité
-    # Format retourné: 0-3
+    # A partir de tasks_bound, détermine l'architecture
+    def __buildArchi(self,tasks_bound):
+
+        # On fait l'hypothèse que tous les tableaux de tasks_bound ont la même longueur
+        self.cpus_per_task = len(tasks_bound[0])
+        self.tasks         = len(tasks_bound)
+        self.sockets_per_node = self.hardware.SOCKETS_PER_NODE
+        self.archi = Exclusive(self.hardware,self.sockets_per_node, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
+
+    # Appelle __identProcesses pour récolter une liste de pids, la pose dans self.pid
+    # puis appelle __buildTasksBound pour construire tasks_bound
+    def distribTasks(self,check=False):
+        # Récupère la liste des processes à étudier par ps
+        self.pid = self.__identProcesses()
+
+        # Détermine l'affinité des processes en utilisant taskset
+        self.tasks_bound = self.__buildTasksBound(self)
+
+        # Détermine l'architecture à partir des infos de hardware et des infos de processes ou de threads
+        self.__buildArchi(self.tasks_bound)
+
+        return self.tasks_bound
+
+    # Renvoie (pour impression) la correspondance Tâche => pid
+    def getTask2Pid(self):
+        rvl  = "TACHE ==> PID (CMD) ==> AFFINITE\n"
+        rvl += "==========================\n"
+        for i in range(len(self.pid)):
+            rvl += numTaskToLetter(i)
+            rvl += " ==> "
+            rvl += self.pid[i]
+            rvl += ' ('
+            rvl += self.__pid2cmdu(self.pid[i])
+            rvl += ") ==> "
+            rvl += list2CompactString(self.tasks_bound[i])
+            rvl += "\n"
+            i += 1
+        return rvl
+
+
+# Classe abstraite de base
+class BuildTasksBound:
+    def __call__(self):
+        raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
+
+# Fonction-objet pour construire la structure de données tasksBinding à partir de taskset
+class BuildTasksBoundFromTaskSet(BuildTasksBound):
+    # Appelle __taskset sur le tableau tasksBinding.pid
+    # Transforme les affinités retournées: 0-3 ==> [0,1,2,3]
+    # Renvoie tasks_bound
+    def __call__(self,tasksBinding):
+        tasks_bound=[]
+        for p in tasksBinding.pid:
+            aff = self.__runTaskSet(p)
+            tasks_bound.append(compactString2List(aff))
+        return tasks_bound
+
+    # Appelle taskset pour le ps passé en paramètre
     def __runTaskSet(self,p):
         cmd = "taskset -c -p "
         cmd += p
@@ -96,47 +154,38 @@ class RunningMode(TasksBinding):
             out = p.communicate()[0].split('\n')[0]
             return out.rpartition(" ")[2]
 
-    # Appelle __runTaskSet taskset sur le tableau self.pid
-    # Transforme les affinités retrounées: 0-3 ==> [0,1,2,3]
-    # Renvoie tasks_bound
-    def __buildTasksBound(self):
+# Appelle ps pour chaque process de self.pid
+# Renvoie tasks_bound
+class BuildTasksBoundFromPs(BuildTasksBound):
+    def __call__(self,tasksBinding):
         tasks_bound=[]
-        for p in self.pid:
-            aff = self.__runTaskSet(p)
-            self.aff.append(aff)
-
-            tasks_bound.append(compactString2List(aff))
+        for p in tasksBinding.pid:
+            aff = self.__runPs(p)
+            tasks_bound.append(aff)
         return tasks_bound
 
-    # A partir de tasks_bound, détermine l'architecture
-    def __buildArchi(self,tasks_bound):
+    # Appelle ps pour le process passé en paramètre
+    # Renvoie un tableau contenant la liste des cpus associés aux threads de ce process
+    def __runPs(self,p):
+        cmd = "ps -m --no-header -o psr,s -p "
+        cmd += p
+	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	p.wait()
+        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
+	if p.returncode !=0:
+            msg = "OUPS "
+            msg += "La commande "
+            msg += cmd
+            msg += " a renvoyé l'erreur "
+            msg += p.returncode
+            raise PlacementException(msg)
+        else:
+            # On récupère l'affinité
+            psout = p.communicate()[0].split('\n')
+            out   = []
+            for l in psout:
+                if l.endswith('R'):
+                    out.append(int(l.split(' ')[0]))
+            return out
 
-        # On fait l'hypothèse que tous les tableaux de tasks_bound ont la même longueur
-        self.cpus_per_task = len(tasks_bound[0])
-        self.tasks         = len(tasks_bound)
-        self.sockets_per_node = self.hardware.SOCKETS_PER_NODE
-        self.archi = Exclusive(self.hardware,self.sockets_per_node, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
 
-    # Appelle __identProcesses pour récolter une liste de pids, la pose dans self.pid
-    # puis appelle __buildTasksBound pour construire tasks_bound
-    def distribTasks(self,check=False):
-        self.pid = self.__identProcesses()
-        tasks_bound = self.__buildTasksBound()
-        self.__buildArchi(tasks_bound)
-        return tasks_bound
-
-    # Renvoie (pour impression) la correspondance Tâche => pid
-    def getTask2Pid(self):
-        rvl  = "TACHE ==> PID (CMD) ==> AFFINITE\n"
-        rvl += "==========================\n"
-        for i in range(len(self.pid)):
-            rvl += numTaskToLetter(i)
-            rvl += " ==> "
-            rvl += self.pid[i]
-            rvl += ' ('
-            rvl += self.__pid2cmdu(self.pid[i])
-            rvl += ") ==> "
-            rvl += self.aff[i]
-            rvl += "\n"
-            i += 1
-        return rvl
