@@ -12,17 +12,35 @@ then
 	job_id=$1
 	shift
     PN=$( squeue -j $job_id --noheader -o "%.9P@%.16R" )
+	if [[ $? != 0 ]]
+    then
+		echo "ERREUR - Mauvais jobid ! ($job_id)"
+		exit 1
+	fi
+
 	[[ $PN =~ (.*)@(.*) ]]
 
 	# P = partition, N = nodeset
 	P=${BASH_REMATCH[1]}
 	N=${BASH_REMATCH[2]}
-	
+
+	if [[ $N =~ \(.*\) ]] 
+	then
+       echo "ERREUR - Mauvais jobid ! ($job_id)"
+	   exit 1
+	fi
+
 	for n in $(nodeset -e $N)
 	do
 		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 $*
 	done
 else
-    exec $placement $*
+	if [[ "$*" =~ --jobid ]]
+	then
+       echo "Usage: placement --jobid 12345 --check=EXE [--ascii] [--taskset]"
+	   exit 1
+	else
+	   exec $placement $*
+	fi
 fi
 

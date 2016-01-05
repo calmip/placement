@@ -95,7 +95,8 @@ def main():
 
     parser.add_option("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
-    parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process")
+    parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (specify the command name OR the user name !)")
+    parser.add_option("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
     parser.add_option("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
     parser.set_defaults(output_mode="srun")
     (options, args) = parser.parse_args()
@@ -138,7 +139,7 @@ def main():
     
         # Imprime le binding de manière compréhensible pour srun ou numactl
         # (PAS si --check)
-        if options.check == None:
+        if options.check==None and options.asciiart==False and options.human==False:
             if options.output_mode=="srun":
                 print getCpuBindingSrun(archi,tasks_bound)
             if options.output_mode=="numactl":
@@ -205,8 +206,17 @@ def show_hard(hard):
 def compute_data_from_running(options,args,hard):
     path = options.check
 
-    task_distrib = RunningMode(path,hard)
-    tasks_bound= task_distrib.distribTasks()
+    # Vérifie qu'au moins une sortie est programmée, sinon force le mode --ascii
+    if options.asciiart==False and options.verbose==False:
+        options.asciiart = True
+
+    if options.taskset == True:
+        buildTasksBound = BuildTasksBoundFromTaskSet()
+    else:
+        buildTasksBound = BuildTasksBoundFromPs()
+
+    task_distrib = RunningMode(path,hard,buildTasksBound)
+    tasks_bound  = task_distrib.distribTasks()
     #print tasks_bound
     #print task_distrib.pid
     archi = task_distrib.archi

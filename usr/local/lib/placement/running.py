@@ -14,7 +14,7 @@ import subprocess
 #                    En déduit archi, cpus_per_task,tasks !
 #
 class RunningMode(TasksBinding):
-    def __init__(self,path,hardware):
+    def __init__(self,path,hardware,buildTasksBound):
         TasksBinding.__init__(self,None,0,0)
         self.path = path
         self.hardware = hardware
@@ -24,7 +24,8 @@ class RunningMode(TasksBinding):
         self.cpus_per_task = 0
         self.tasks = 0
         self.over_cores = []
-        self.__buildTasksBound = BuildTasksBoundFromPs()
+        self.__buildTasksBound = buildTasksBound
+        #self.__buildTasksBound = BuildTasksBoundFromPs()
         #self.__buildTasksBound = BuildTasksBoundFromTaskSet()
         
     # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
@@ -35,31 +36,38 @@ class RunningMode(TasksBinding):
         cmd += self.path
 	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	p.wait()
-        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-	if p.returncode !=0:
-            msg = "OUPS "
-            msg += "AUCUNE TACHE TROUVEE: peut être n'êtes-vous pas sur la bonne machine ?"
-            raise PlacementException(msg)
-        else:
-            # On met les ppid et les pid dans deux tableaux différents
-            tmp_ppid=[]
-            tmp_pid=[]
-            pid=[]
-            out = p.communicate()[0].split('\n')
-            for p in out:
-                if p != '':
-                    tmp = p.split(',')
-                    tmp_ppid.append(tmp[0].strip())
-                    tmp_pid.append(tmp[1].strip())
+        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas: on essaie avec le user !
+        if p.returncode !=0:
+            cmd = "ps --no-headers -o %P,%p -U "
+            cmd += self.path
+            p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            p.wait()
+
+            # Si returncode toujours non nul, on laisse bertom
+            if p.returncode !=0:
+                msg = "OUPS "
+                msg += "AUCUNE TACHE TROUVEE: peut être n'êtes-vous pas sur la bonne machine ?"
+                raise PlacementException(msg)
+
+        # On met les ppid et les pid dans deux tableaux différents
+        tmp_ppid=[]
+        tmp_pid=[]
+        pid=[]
+        out = p.communicate()[0].split('\n')
+        for p in out:
+            if p != '':
+                tmp = p.split(',')
+                tmp_ppid.append(tmp[0].strip())
+                tmp_pid.append(tmp[1].strip())
             
-            # On ne garde dans pid que les processes tels que ppid est absent de tmp_pid, afin de ne pas
-            # sélectionner un process ET son père
-            for i in range(len(tmp_ppid)):
-                if tmp_ppid[i] in tmp_pid:
-                    pass
-                else:
-                    pid.append(tmp_pid[i])
-            return pid
+        # On ne garde dans pid que les processes tels que ppid est absent de tmp_pid, afin de ne pas
+        # sélectionner un process ET son père
+        for i in range(len(tmp_ppid)):
+            if tmp_ppid[i] in tmp_pid:
+                pass
+            else:
+                pid.append(tmp_pid[i])
+        return pid
 
     # Appelle ps en lui passant le pid et renvoie le nom de la commande
     def __pid2cmdu(self,pid):
@@ -185,7 +193,7 @@ class BuildTasksBoundFromPs(BuildTasksBound):
             out   = []
             for l in psout:
                 if l.endswith('R'):
-                    out.append(int(l.split(' ')[0]))
+                    out.append(int(l.strip(' R')))
             return out
 
 
