@@ -20,7 +20,7 @@ then
 	
 	for n in $(nodeset -e $N)
 	do
-		ssh $n export PLACEMENT_ARCHI=$P \; $0 $*
+		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 $*
 	done
 else
     exec $placement $*

@@ -52,13 +52,14 @@ class Hardware(object):
         
         # Permet de forcer une architecture en reprenant les noms des partitions
         elif 'PLACEMENT_ARCHI' in os.environ:
-            if os.environ['PLACEMENT_ARCHI'] == 'uvprod':
+            placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
+            if placement_archi == 'uvprod':
                 return Uvprod()
-            elif os.environ['PLACEMENT_ARCHI'] == 'mesca':
+            elif placement_archi == 'mesca':
                 return Mesca2()
-            elif os.environ['PLACEMENT_ARCHI'] == 'exclusive':
+            elif placement_archi == 'exclusive':
                 return Bullx_dlc()
-            elif os.environ['PLACEMENT_ARCHI'] == 'shared':
+            elif placement_archi == 'shared':
                 return Bullx_dlc_shared()
             else:
                 raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture hardware inconnue")
