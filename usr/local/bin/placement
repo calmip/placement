@@ -6,11 +6,41 @@ export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P)
 
 placement="$0.py"
 
+if [[ "$*" =~ "--verb" ]]
+then
+	verb=1
+else
+	verb=0
+fi
+
+# --checkme => On checke le job qui est en etat "RUNNING"
+if [[ $1 == "--checkme" ]]
+then
+	shift
+	job_id=$(squeue --noheader -u $(whoami) -t R -o %A|head -1)
+	if [[ $job_id == "" ]]
+	then
+		echo "ERREUR - Vous devez avoir des jobs en état RUNNING pour que --checkme ait un sens"
+		exit 1
+	fi
+	if [[ $verb == 1 ]]
+	then
+		echo "OPTION --checkme: Check du job $job_id utilisateur $(whoami)"
+	fi
+	set -- $* "--check=$(whoami)"
+fi
+	
+# --job_id 12345 => On checke le job 12345
 if [[ $1 == "--jobid" ]]
 then
 	shift
 	job_id=$1
 	shift
+fi
+
+# $job_id est spécifié => On va checker sur les nœuds
+if [[ $job_id != "" ]]
+then
     PN=$( squeue -j $job_id --noheader -o "%.9P@%.16R" )
 	if [[ $? != 0 ]]
     then
@@ -32,8 +62,11 @@ then
 
 	for n in $(nodeset -e $N)
 	do
+		echo "nœud $n: APPEL DE $0 $*"
 		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 $*
 	done
+
+# Pas de $job_id: on passe les swtiches à placement.py
 else
 	if [[ "$*" =~ --jobid ]]
 	then
