@@ -31,14 +31,20 @@ class RunningMode(TasksBinding):
     # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
     # Afin d'éviter tout doublon (une hiérarchie de processes qui se partage le même cœur, on filtre les pid
     # en rejetant les processes si le ppid figure lui aussi dans la liste des pid
+    # Afin d'éviter les ps accessoires (ssh) on ne garde que les processes dont le sid est celui d'un process slurmdstepd
     def __identProcesses(self):
-        cmd = "ps --no-headers -o %P,%p -C "
+        slurmstepd_sid = self.__identSlurmStepd()
+        if len(slurmstepd_sid)==0:
+            msg = "OUPS - PAS DE PROCESS slurmstepd TROUVE, CE NOEUD NE FAIT RIEN !"
+            raise PlacementException(msg)
+
+        cmd = "ps --no-headers -o %P,%p, -o sid -C "
         cmd += self.path
 	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	p.wait()
         # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas: on essaie avec le user !
         if p.returncode !=0:
-            cmd = "ps --no-headers -o %P,%p -U "
+            cmd = "ps --no-headers -o %P,%p, -o sid -U "
             cmd += self.path
             p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             p.wait()
@@ -49,41 +55,72 @@ class RunningMode(TasksBinding):
                 msg += "AUCUNE TACHE TROUVEE: peut être n'êtes-vous pas sur la bonne machine ?"
                 raise PlacementException(msg)
 
-        # On met les ppid et les pid dans deux tableaux différents
+        # On met les ppid, les pid et les sid dans trois tableaux différents
         tmp_ppid=[]
         tmp_pid=[]
+        tmp_sid=[]
         pid=[]
         out = p.communicate()[0].split('\n')
+
         for p in out:
             if p != '':
                 tmp = p.split(',')
                 tmp_ppid.append(tmp[0].strip())
                 tmp_pid.append(tmp[1].strip())
-            
-        # On ne garde dans pid que les processes tels que ppid est absent de tmp_pid, afin de ne pas
+                tmp_sid.append(tmp[2].strip())
+
+        #print str(tmp_ppid)
+        #print str(tmp_pid)
+        #print str(tmp_sid)
+        #print str(slurmstepd_sid)
+
+        # On ne garde dans pid que les processes tels que pid est absent de tmp_ppid, afin de ne pas
         # sélectionner un process ET son père
+        # De plus on ne garde que les processes tels que sid est present dans slurmstepd_sid, afin de ne sélectionner QUE
+        # les processus réellement lancés par slurm
         for i in range(len(tmp_ppid)):
-            if tmp_ppid[i] in tmp_pid:
+            if tmp_pid[i] in tmp_ppid:
                 pass
             else:
-                pid.append(tmp_pid[i])
+                if tmp_sid[i] in slurmstepd_sid:
+                    pid.append(tmp_pid[i])
+                else:
+                    pass
+        #print ('pid => ' + str(pid))
         return pid
+
+    # Renvoie la liste des sid des processes slurmstepd
+    def __identSlurmStepd (self):
+        cmd = "ps --no-header -C slurmstepd  -o sid"
+	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	p.wait()
+
+        def f(s):
+            return s.strip()
+
+        # Si returncode non nul, aucun de job ne troune sur cette machine
+        if p.returncode !=0:
+            return []
+        else:
+            return map(f,p.communicate()[0].split("\n"))
+            
 
     # Appelle ps en lui passant le pid et renvoie le nom de la commande
     def __pid2cmdu(self,pid):
-        cmd = "ps --no-headers -o %c%u -p " + str(pid)
-	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	p.wait()
+        cmd = "ps --no-headers -o %c,%u -p " + str(pid)
+        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p.wait()
         # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-	if p.returncode !=0:
+        if p.returncode !=0:
             msg = "OUPS "
             msg += "AUCUNE TACHE TROUVEE: peut-etre le pid vient-il de mourir ?"
             raise PlacementException(msg)
         else:
             cu = p.communicate()[0].split("\n")[0]
-            [c,space,u] = cu.split(' ',2)
-            u = u.strip()
-            cu = c+','+u
+            #print 'hoho'+cu
+            #[c,space,u] = cu.split(' ',2)
+            #u = u.strip()
+            #cu = c+','+u
             return cu
 
     # A partir de tasks_bound, détermine l'architecture

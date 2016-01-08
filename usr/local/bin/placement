@@ -62,7 +62,7 @@ then
 
 	for n in $(nodeset -e $N)
 	do
-		echo "nœud $n: APPEL DE $0 $*"
+		#echo "nœud $n: APPEL DE $0 $*"
 		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 $*
 	done
 
