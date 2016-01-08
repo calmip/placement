@@ -41,18 +41,19 @@ fi
 # $job_id est spécifié => On va checker sur les nœuds
 if [[ $job_id != "" ]]
 then
-    PN=$( squeue -j $job_id --noheader -o "%.9P@%.16R" )
+    PN=$( squeue -j $job_id --noheader -o "%.9P@%.16R@%.8u" )
 	if [[ $? != 0 ]]
     then
 		echo "ERREUR - Mauvais jobid ! ($job_id)"
 		exit 1
 	fi
 
-	[[ $PN =~ (.*)@(.*) ]]
+	[[ $PN =~ (.*)@(.*)@(.*) ]]
 
 	# P = partition, N = nodeset
 	P=${BASH_REMATCH[1]}
 	N=${BASH_REMATCH[2]}
+	U=${BASH_REMATCH[3]}
 
 	if [[ $N =~ \(.*\) ]] 
 	then
@@ -62,11 +63,11 @@ then
 
 	for n in $(nodeset -e $N)
 	do
-		#echo "nœud $n: APPEL DE $0 $*"
-		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 $*
+		echo "nœud $n: APPEL DE $0 --check $U $*"
+		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 --check $U $*
 	done
 
-# Pas de $job_id: on passe les swtiches à placement.py
+# Pas de $job_id: on passe les switches à placement.py
 else
 	if [[ "$*" =~ --jobid ]]
 	then
