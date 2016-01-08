@@ -38,22 +38,33 @@ class RunningMode(TasksBinding):
             msg = "OUPS - PAS DE PROCESS slurmstepd TROUVE, CE NOEUD NE FAIT RIEN !"
             raise PlacementException(msg)
 
-        cmd = "ps --no-headers -o %P,%p, -o sid -C "
-        cmd += self.path
-	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	p.wait()
-        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas: on essaie avec le user !
-        if p.returncode !=0:
+        # --check='*' ==> Pas de sélection de tâches !
+        if self.path == '*':
+            cmd = "ps --no-headers -o %P,%p, -o sid ax"
+            p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            p.wait()
+            if p.returncode !=0:
+                msg = "OUPS " + cmd + " retourne une erreur: " + str(p.returncode)
+                raise PlacementException(msg)
+
+        # Sinon --check peut renvoyer sur un user OU sur une commande
+        else:
             cmd = "ps --no-headers -o %P,%p, -o sid -U "
             cmd += self.path
             p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             p.wait()
 
-            # Si returncode toujours non nul, on laisse bertom
             if p.returncode !=0:
-                msg = "OUPS "
-                msg += "AUCUNE TACHE TROUVEE: peut être n'êtes-vous pas sur la bonne machine ?"
-                raise PlacementException(msg)
+                cmd = "ps --no-headers -o %P,%p, -o sid -C "
+                cmd += self.path
+                p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+                p.wait()
+
+                # Si returncode toujours non nul, on laisse beton
+                if p.returncode !=0:
+                    msg = "OUPS "
+                    msg += "AUCUNE TACHE TROUVEE: peut être n'êtes-vous pas sur la bonne machine ?"
+                    raise PlacementException(msg)
 
         # On met les ppid, les pid et les sid dans trois tableaux différents
         tmp_ppid=[]

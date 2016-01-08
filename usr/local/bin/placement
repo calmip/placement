@@ -38,6 +38,14 @@ then
 	shift
 fi
 
+# --host taratata => On checke le host taratata
+if [[ $1 == "--host" ]]
+then
+	shift
+	host=$1
+	shift
+fi
+
 # $job_id est spécifié => On va checker sur les nœuds
 if [[ $job_id != "" ]]
 then
@@ -63,9 +71,30 @@ then
 
 	for n in $(nodeset -e $N)
 	do
-		echo "nœud $n: APPEL DE $0 --check $U $*"
+		if [[ $verb == 1 ]]
+		then
+			echo "$n: APPEL DE $0 --check $U $*"
+		fi
 		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 --check $U $*
 	done
+
+# --host: on envoie la commande sur le hote concerné avec check='*'
+elif [[ $host != "" ]]
+then
+	# Détecter la partition, à condition qu'un job soit exécuté sur le host !
+	# Et sinon la commande n'a aucun intérêt
+	P=$(squeue --noheader -w $host -o "%.9P"|head -1)
+	if [[ $P == "" ]]
+	then
+		echo "OUPS - Pas de job sur $host actuellement"
+		exit 1
+	fi
+	if [[ $verb == 1 ]]
+	then
+		echo "$host: APPEL DE $0 $* --check='*'"
+	fi
+
+	ssh $host export PLACEMENT_ARCHI=\"$P\" \;  $0 $* --check='*'
 
 # Pas de $job_id: on passe les switches à placement.py
 else
