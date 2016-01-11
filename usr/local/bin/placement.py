@@ -84,7 +84,7 @@ def main():
         Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
     epilog = "Environment: PLACEMENT_ARCHI " + str(hardware.Hardware.catalogue()) + " SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
-    parser = OptionParser(version="%prog 1.0",usage="%prog [options] tasks cpus_per_task",epilog=epilog)
+    parser = OptionParser(version="%prog 1.0.1",epilog=epilog)
     parser.add_option("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
 #    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
