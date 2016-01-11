@@ -45,6 +45,9 @@ class CompactMode(TasksBinding):
             for s in self.archi.l_sockets:
                 for h in range(self.archi.threads_per_core):
                     for c in range(self.archi.cores_per_socket):
+                        c1 = s*self.archi.cores_per_socket + c
+                        if self.archi.m_cores != None and self.archi.m_cores[s][c1] == False:
+                            continue
                         t_binding += [h*self.archi.cores_per_node + s*self.archi.cores_per_socket + c]
                         th+=1
                         if th==self.cpus_per_task:
