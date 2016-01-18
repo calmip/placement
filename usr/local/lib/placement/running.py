@@ -25,8 +25,7 @@ class RunningMode(TasksBinding):
         self.tasks = 0
         self.over_cores = []
         self.__buildTasksBound = buildTasksBound
-        #self.__buildTasksBound = BuildTasksBoundFromPs()
-        #self.__buildTasksBound = BuildTasksBoundFromTaskSet()
+        self.__processes_reserves = ['srun', 'mpirun' ]
         
     # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
     # Afin d'éviter tout doublon (une hiérarchie de processes qui se partage le même cœur, on filtre les pid
@@ -49,13 +48,13 @@ class RunningMode(TasksBinding):
 
         # Sinon --check peut renvoyer sur un user OU sur une commande
         else:
-            cmd = "ps --no-headers -o %P,%p, -o sid -U "
+            cmd = "ps --no-headers -o %P,%p, -o sid -o,%c -U "
             cmd += self.path
             p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             p.wait()
 
             if p.returncode !=0:
-                cmd = "ps --no-headers -o %P,%p, -o sid -C "
+                cmd = "ps --no-headers -o %P,%p, -o sid -o,%c -C "
                 cmd += self.path
                 p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                 p.wait()
@@ -70,6 +69,7 @@ class RunningMode(TasksBinding):
         tmp_ppid=[]
         tmp_pid=[]
         tmp_sid=[]
+        tmp_c=[]
         pid=[]
         out = p.communicate()[0].split('\n')
 
@@ -79,6 +79,7 @@ class RunningMode(TasksBinding):
                 tmp_ppid.append(tmp[0].strip())
                 tmp_pid.append(tmp[1].strip())
                 tmp_sid.append(tmp[2].strip())
+                tmp_c.append(tmp[3].strip())
 
         #print str(tmp_ppid)
         #print str(tmp_pid)
@@ -87,10 +88,13 @@ class RunningMode(TasksBinding):
 
         # On ne garde dans pid que les processes tels que pid est absent de tmp_ppid, afin de ne pas
         # sélectionner un process ET son père
-        # De plus on ne garde que les processes tels que sid est present dans slurmstepd_sid, afin de ne sélectionner QUE
-        # les processus réellement lancés par slurm
+        # De plus on retire les tâches ayant un nom "réservé" srun, mpirun, etc. qui utilisent peu le cpu
+        # Enfin on ne garde que les processes tels que sid est present dans slurmstepd_sid, 
+        # afin de ne sélectionner QUE les processus réellement lancés par slurm et qui calculent
         for i in range(len(tmp_ppid)):
             if tmp_pid[i] in tmp_ppid:
+                pass
+            elif tmp_c[i] in self.__processes_reserves:
                 pass
             else:
                 if tmp_sid[i] in slurmstepd_sid:
