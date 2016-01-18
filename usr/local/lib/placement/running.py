@@ -156,6 +156,11 @@ class RunningMode(TasksBinding):
         # Détermine l'affinité des processes en utilisant taskset
         self.tasks_bound = self.__buildTasksBound(self)
 
+        # Si aucune tâche trouvée, pas la peine d'insister
+        if len(self.tasks_bound)==0:
+            msg = "OUPS Aucune tâche trouvée !"
+            raise PlacementException(msg)
+
         # Détermine l'architecture à partir des infos de hardware et des infos de processes ou de threads
         self.__buildArchi(self.tasks_bound)
 
