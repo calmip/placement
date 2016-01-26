@@ -90,7 +90,7 @@ class RunningMode(TasksBinding):
 ###        pid=[]
 ###       tid=[]qq
 
-        # Création de la structure de données processus
+        # Création des structures de données processus et pid
         # Dictionnaire:
         #    k = pid
         #    v = {'pid':pid, 'user':'utilisateur', 'cmd':'commande','threads':{'tid':{'tid':tid, 'psr';psr}}
@@ -106,8 +106,8 @@ class RunningMode(TasksBinding):
             mp=re.match(' *(\d+) +- +- +([^ ]+)',l)
             if mp != None:
 
-                # S'il y a un processus_courant avec des threads actifs, on le sauve !
-                if processus_courant.has_key('threads')==True:
+                # S'il y a un processus_courant au moins un thread actif, on le sauve !
+                if processus_courant.has_key('R'):
                     processus[processus_courant['pid']] = processus_courant
                 
                 # On vide le processus courant, si processus réservé on passe à la ligne suivante
@@ -128,23 +128,24 @@ class RunningMode(TasksBinding):
                 if len(processus_courant)==0:
                     continue
                 
-                # Si state n'est pas R, on passe
+                # Si state est R, on s'en souvient
                 state = mt.group(3)
-                if state != 'R':
-                    continue
+                if state == 'R':
+                    processus_courant['R']=True
 
-                # Sinon on garde la trace de ce thread dans processus_courant
+                # On garde la trace de ce thread dans processus_courant
                 tid   = int(mt.group(1))
                 psr   = int(mt.group(2))
                 thread_courant        = {}
                 thread_courant['tid'] = tid
                 thread_courant['psr'] = psr
+                thread_courant['state'] = state
                 if processus_courant.has_key('threads')== False:
                     processus_courant['threads'] = {}
                 processus_courant['threads'][tid] = thread_courant
 
         self.processus = processus
-        self.pid = processus.keys()
+        self.pid = sorted(processus.keys())
 
 
     # A partir du pid, renvoie le nom de la commande

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from matrix import *
 from exception import *
 from itertools import chain,product
 
@@ -93,30 +94,43 @@ def getCpuTaskNumactlBinding(archi,cores):
 # Réécriture matricielle, une colonne par cœur et une ligne par thread
 #
 # Params: archi (l'architecture processeurs)
-#         threads (un dictionnaire, clés=tid, valeurs=cpus
-# Return: 
+#         threads_bound (le tableau self.processus de la classe RunningMode, cf running.py)
+# Return: la chaine de caracteres pour affichage
 #
 
 def getCpuThreadsMatrixBinding(archi,threads_bound):
-    print str(threads_bound)
-    print 'coucou'
-    return
-    cpu_min = 0
-    cpu_max = 9999
-    for k in threads_bound.keys():
-        cmin = min(threads_bound[k].values())
-        cmax = max(threads_bound[k].values())
-        if cpu_min > cmin:
-            cpu_min = cmin
-        if cpu_max < cmax:
-            cpu_max = cmax
-    nb_cols = cpu_max-cpu_min+1
-    print cpu_min
-    print cpu_max
-    print nb_cols
+    #print str(threads_bound)
+    psr_min = 9999
+    psr_max = 0
+    for pid in threads_bound.keys():
+        threads = threads_bound[pid]['threads']
+        for tid in threads:
+            psr = threads[tid]['psr']
+            if psr_min>psr:
+                psr_min=psr
+            if psr_max<psr:
+                psr_max=psr
 
+    m = Matrix(psr_min,psr_max)
+    rvl = ''
+    rvl += m.getHeader(14*' ')
+    for pid in sorted(threads_bound.keys()):
+        threads = threads_bound[pid]['threads']
+        for tid in sorted(threads):
+            if threads[tid]['state'] == 'R':
+                S = '*'
+            elif threads[tid]['state'] == 'S':
+                S = '.'
+            else:
+                S = '?'
+            rvl += m.getLine(pid,tid,threads[tid]['psr'],S)
+    return rvl
 
-
+#    nb_cols = psr_max-psr_min+1
+ #   print psr_min
+ #   print psr_max
+ #   print nb_cols
+ #   return getMatrixHeader(14*' ',psr_min,psr_max) + 'coucou'
 
 
 #
