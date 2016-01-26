@@ -6,6 +6,14 @@ from exception import *
 from itertools import chain,product
 
 #############################################################################################################
+# retire tous les blancs de la list passée en paramètres
+def removeBlanks(L):
+    try:
+        while True:
+            L.remove('')
+    except:
+        pass
+
 #
 # Réécrit le placement pour une tâche (appelé par getCpuBindingSrun)
 # Réécriture sous forme hexadécimale pour srun
@@ -79,6 +87,37 @@ def getCpuTaskAsciiBinding(archi,cores):
 
 def getCpuTaskNumactlBinding(archi,cores):
     return list2CompactString(cores)
+
+#
+# Réécrit le placement pour des ensembles de threads et de tâches
+# Réécriture matricielle, une colonne par cœur et une ligne par thread
+#
+# Params: archi (l'architecture processeurs)
+#         threads (un dictionnaire, clés=tid, valeurs=cpus
+# Return: 
+#
+
+def getCpuThreadsMatrixBinding(archi,threads_bound):
+    print str(threads_bound)
+    print 'coucou'
+    return
+    cpu_min = 0
+    cpu_max = 9999
+    for k in threads_bound.keys():
+        cmin = min(threads_bound[k].values())
+        cmax = max(threads_bound[k].values())
+        if cpu_min > cmin:
+            cpu_min = cmin
+        if cpu_max < cmax:
+            cpu_max = cmax
+    nb_cols = cpu_max-cpu_min+1
+    print cpu_min
+    print cpu_max
+    print nb_cols
+
+
+
+
 
 #
 # Conversion de  numéro de tâche (0..61) vers lettre(A-Za-z0-9)

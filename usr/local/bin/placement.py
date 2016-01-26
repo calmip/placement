@@ -90,12 +90,13 @@ def main():
 #    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
     parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of hard.HYPERTHREADING (%default)")
     parser.add_option("-M","--mode",type="choice",choices=["compact","scatter"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, compact (%default)")
-    parser.add_option("-H","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
+    parser.add_option("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
     parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
 
     parser.add_option("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
     parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name)")
+    parser.add_option("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
     parser.add_option("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
     parser.add_option("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
     parser.set_defaults(output_mode="srun")
@@ -121,9 +122,9 @@ def main():
             exit(0)
         # Option --check
         if options.check != None:
-            [tasks,tasks_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
+            [tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
         else:
-            [tasks,tasks_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
+            [tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
 
         # Imprime le binding de manière compréhensible pour les humains
         if options.human==True:
@@ -137,6 +138,10 @@ def main():
                 # print getCpuBinding(archi,tasks_bound,getCpuTaskAsciiBinding)
                 raise PlacementException("OUPS - switch --ascii interdit pour plus de 62 tâches !")
     
+        # Imprime l'affinite des threads et des cpus
+        if options.check!=None and options.threads==True:
+            print getCpuThreadsMatrixBinding(archi,threads_bound)
+
         # Imprime le binding de manière compréhensible pour srun ou numactl
         # (PAS si --check)
         if options.check==None and options.asciiart==False and options.human==False:
@@ -194,7 +199,7 @@ def show_hard(hard):
         print(msg)
 
 ##########################################################
-# @brief Calcule les structures de données en vérifiant le taskset sur un programme en exécution
+# @brief Calcule les structures de données en vérifiant le taskset ou le ps sur un programme en exécution
 #
 # @param options Les switches de la ligne de commande
 # @param args (non utilisé)
@@ -217,6 +222,8 @@ def compute_data_from_running(options,args,hard):
 
     task_distrib = RunningMode(path,hard,buildTasksBound)
     tasks_bound  = task_distrib.distribTasks()
+    threads_bound= task_distrib.distribThreads()
+
     #print tasks_bound
     #print task_distrib.pid
     archi = task_distrib.archi
@@ -236,8 +243,9 @@ def compute_data_from_running(options,args,hard):
         print
             
     # Trie et renvoie tasks_bound
-    task_distrib.threadsSort(tasks_bound)
-    return [tasks,tasks_bound,over_cores,archi]
+###    task_distrib.threadsSort(tasks_bound)
+
+    return [tasks,tasks_bound,threads_bound,over_cores,archi]
 
 
 ##########################################################
@@ -272,7 +280,7 @@ def compute_data_from_parameters(options,args,hard):
 
     # Trie et renvoie tasks_bound
     task_distrib.threadsSort(tasks_bound)
-    return [tasks,tasks_bound,over_cores,archi]
+    return [tasks,tasks_bound,[],over_cores,archi]
 
 
 if __name__ == "__main__":

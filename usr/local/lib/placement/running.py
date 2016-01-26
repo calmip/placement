@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 from exception import *
 from tasksbinding import *
 from utilities import *
@@ -19,168 +20,142 @@ class RunningMode(TasksBinding):
         self.path = path
         self.hardware = hardware
         self.pid=[]
-        self.tasks_bound=[]
+        self.processus=[]
+        self.tasks_bound   = None
+        self.threads_bound = None
         self.archi = None
         self.cpus_per_task = 0
         self.tasks = 0
         self.over_cores = []
         self.__buildTasksBound = buildTasksBound
-        self.__processes_reserves = ['srun', 'mpirun' ]
+        self.__processus_reserves = ['srun', 'mpirun', 'ps', 'sshd' ]
         
     # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
     # OU au user passé en paramètre OU sans sélection préalable
     # ne garde ensuite que les processes en état Run, et supprime les processes style ps
+    # Initialise self.pid (la liste des processes_id) ET self.processes (TOUT sur les processes)
     def __identProcesses(self):
+
+        ps_res=''
+
+        # --check='+' ==> Recherche le fichier PROCESSES.txt dans le répertoire courant - pour déboguage
+        if self.path == '+':
+            fh_processes = open('PROCESSES.txt','r')
+            #            for l in fh_processes:
+            #                ps_res += l
+            ps_res = fh_processes.readlines()
+            fh_processes.close()
+            for i,l in enumerate(ps_res):
+                ps_res[i] = l.replace('\n','')
+                
+
         # --check='*' ==> Pas de sélection de tâches !
-        if self.path == '*':
+        elif self.path == '*':
             cmd = "ps --no-headers -o %p -o tid -o %c -o state ax"
             p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             p.wait()
             if p.returncode !=0:
                 msg = "OUPS " + cmd + " retourne une erreur: " + str(p.returncode)
                 raise PlacementException(msg)
-
-        # Sinon --check peut renvoyer sur un user OU sur une commande
+            else:
+                ps_res = p.communicate()[0]
+        
+        # --check='un_nom' Supposons qu'il s'agisse d'un nom d'utilisateur
         else:
             cmd = "ps --no-headers -o %p -o tid -o %c -o state -U "
             cmd += self.path
             p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             p.wait()
 
+            # code de retour non nul, essayons avec un nom de commande
             if p.returncode !=0:
                 cmd = "ps --no-headers -o %p -o tid -o %c -o state -C "
                 cmd += self.path
                 p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                 p.wait()
 
-                # Si returncode toujours non nul, on laisse beton
+                # Si code de retour toujours non nul, on laisse beton
                 if p.returncode !=0:
                     msg = "OUPS "
                     msg += "AUCUNE TACHE TROUVEE: peut être n'êtes-vous pas sur la bonne machine ?"
                     raise PlacementException(msg)
-
-        # On met les pid, les tid dans deux tableaux différents
-        # On ne garde que les processes/threads en 'R' et qui ne sont pas ps ou autres
-        pid=[]
-        tid=[]
-        out = p.communicate()[0].split('\n')
-
-        for p in out:
-            if p != '':
-                tmp = p.split(' ')
-                self.__removeBlanks(tmp)
-                if tmp[2] in self.__processes_reserves:
-                    continue
-                if tmp[3] != 'R':
-                    continue
-                pid.append(tmp[0].strip())
-                tid.append(tmp[1].strip())
-        return pid
-
-
-    # retire tous les blancs de la list passée en paramètres
-    def __removeBlanks(self,L):
-        try:
-            while True:
-                L.remove('')
-        except:
-            pass
-
-    # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
-    # Afin d'éviter tout doublon (une hiérarchie de processes qui se partage le même cœur, on filtre les pid
-    # en rejetant les processes si le ppid figure lui aussi dans la liste des pid
-    # Afin d'éviter les ps accessoires (ssh) on ne garde que les processes dont le sid est celui d'un process slurmdstepd
-    def __identProcesses_OBSOLETE(self):
-#        slurmstepd_sid = self.__identSlurmStepd()
-        if len(slurmstepd_sid)==0:
-            msg = "OUPS - PAS DE PROCESS slurmstepd TROUVE, CE NOEUD NE FAIT RIEN !"
-            raise PlacementException(msg)
-
-        # --check='*' ==> Pas de sélection de tâches !
-        if self.path == '*':
-            cmd = "ps --no-headers -o %P,%p, -o sid ax"
-            p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            p.wait()
-            if p.returncode !=0:
-                msg = "OUPS " + cmd + " retourne une erreur: " + str(p.returncode)
-                raise PlacementException(msg)
-
-        # Sinon --check peut renvoyer sur un user OU sur une commande
-        else:
-            cmd = "ps --no-headers -o %P,%p, -o sid -o,%c -U "
-            cmd += self.path
-            p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            p.wait()
-
-            if p.returncode !=0:
-                cmd = "ps --no-headers -o %P,%p, -o sid -o,%c -C "
-                cmd += self.path
-                p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                p.wait()
-
-                # Si returncode toujours non nul, on laisse beton
-                if p.returncode !=0:
-                    msg = "OUPS "
-                    msg += "AUCUNE TACHE TROUVEE: peut être n'êtes-vous pas sur la bonne machine ?"
-                    raise PlacementException(msg)
-
-        # On met les ppid, les pid et les sid dans trois tableaux différents
-        tmp_ppid=[]
-        tmp_pid=[]
-        tmp_sid=[]
-        tmp_c=[]
-        pid=[]
-        out = p.communicate()[0].split('\n')
-
-        for p in out:
-            if p != '':
-                tmp = p.split(',')
-                tmp_ppid.append(tmp[0].strip())
-                tmp_pid.append(tmp[1].strip())
-                tmp_sid.append(tmp[2].strip())
-                tmp_c.append(tmp[3].strip())
-
-        #print str(tmp_ppid)
-        #print str(tmp_pid)
-        #print str(tmp_sid)
-        #print str(slurmstepd_sid)
-
-        # On ne garde dans pid que les processes tels que pid est absent de tmp_ppid, afin de ne pas
-        # sélectionner un process ET son père
-        # De plus on retire les tâches ayant un nom "réservé" srun, mpirun, etc. qui utilisent peu le cpu
-        # Enfin on ne garde que les processes tels que sid est present dans slurmstepd_sid, 
-        # afin de ne sélectionner QUE les processus réellement lancés par slurm et qui calculent
-        for i in range(len(tmp_ppid)):
-            if tmp_pid[i] in tmp_ppid:
-                pass
-            elif tmp_c[i] in self.__processes_reserves:
-                pass
+                else:
+                    ps_res = p.communicate()[0]
             else:
-#                if tmp_sid[i] in slurmstepd_sid:
-                    pid.append(tmp_pid[i])
-#                else:
-#                    pass
-        #print ('pid => ' + str(pid))
-        return pid
+                ps_res = p.communicate()[0]
 
-    # Renvoie la liste des sid des processes slurmstepd ==> Ne sert plus à rien !
-    def __identSlurmStepd_obsolete (self):
-        cmd = "ps --no-header -C slurmstepd  -o sid"
-	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	p.wait()
+        
+###        # On met les pid, les tid dans deux tableaux différents
+###        # On ne garde que les processes/threads en 'R' et qui ne sont pas ps ou autres noms "réservés"
+###        pid=[]
+###       tid=[]qq
 
-        def f(s):
-            return s.strip()
+        # Création de la structure de données processus
+        # Dictionnaire:
+        #    k = pid
+        #    v = {'pid':pid, 'user':'utilisateur', 'cmd':'commande','threads':{'tid':{'tid':tid, 'psr';psr}}
+        # On ne garde que les threads en état 'R' et on supprime les pid dont on a écarté tous les threads
+        # On écarte aussi les pid dont le nom de commande est "réservé" (ps, top etc)
+        # 
+        processus         = {}
+        processus_courant = {}
+        
+        for l in ps_res:
 
-        # Si returncode non nul, aucun de job ne troune sur cette machine
-        if p.returncode !=0:
-            return []
-        else:
-            return map(f,p.communicate()[0].split("\n"))
-            
+            # Détection des lignes représentant un processus
+            mp=re.match(' *(\d+) +- +- +([^ ]+)',l)
+            if mp != None:
 
-    # Appelle ps en lui passant le pid et renvoie le nom de la commande
+                # S'il y a un processus_courant avec des threads actifs, on le sauve !
+                if processus_courant.has_key('threads')==True:
+                    processus[processus_courant['pid']] = processus_courant
+                
+                # On vide le processus courant, si processus réservé on passe à la ligne suivante
+                processus_courant={}
+                pid = int(mp.group(1))
+                cmd = mp.group(2)
+                if cmd in self.__processus_reserves:
+                    continue
+                else:
+                    processus_courant['pid']=pid
+                    processus_courant['cmd']=cmd
+                    continue
+
+            # Détection des lignes représentant un thread
+            mt = re.match(' *- +(\d+) +(\d+) +- +([A-Z])',l)
+            if mt != None:
+                # Si pas de processus courant (en principe pas possible) ou processus courant non conservé, on passe
+                if len(processus_courant)==0:
+                    continue
+                
+                # Si state n'est pas R, on passe
+                state = mt.group(3)
+                if state != 'R':
+                    continue
+
+                # Sinon on garde la trace de ce thread dans processus_courant
+                tid   = int(mt.group(1))
+                psr   = int(mt.group(2))
+                thread_courant        = {}
+                thread_courant['tid'] = tid
+                thread_courant['psr'] = psr
+                if processus_courant.has_key('threads')== False:
+                    processus_courant['threads'] = {}
+                processus_courant['threads'][tid] = thread_courant
+
+        self.processus = processus
+        self.pid = processus.keys()
+
+
+    # A partir du pid, renvoie le nom de la commande
+    # Si possible on utilise self.processus, sinon on appelle la commande ps
     def __pid2cmdu(self,pid):
+        if len(self.processus)==0:
+            return self.__pid2cmduPs(pid)
+        else:
+            return self.processus[pid]['cmd']+','+'****'
+
+    def __pid2cmduPs(self,pid):
         cmd = "ps --no-headers -o %c,%u -p " + str(pid)
         p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         p.wait()
@@ -192,29 +167,42 @@ class RunningMode(TasksBinding):
         else:
             cu = p.communicate()[0].split("\n")[0]
             #print 'hoho'+cu
-            #[c,space,u] = cu.split(' ',2)
-            #u = u.strip()
-            #cu = c+','+u
+            [c,space,u] = cu.split(' ',2)
+            u = u.strip()
+            cu = c+','+u
             return cu
 
     # A partir de tasks_bound, détermine l'architecture
     def __buildArchi(self,tasks_bound):
 
-        # On fait l'hypothèse que tous les tableaux de tasks_bound ont la même longueur
-        self.cpus_per_task = len(tasks_bound[0])
+        # On n'utilise pas cpus_per_task, puisque les cœurs sont déjà distribués !
+        self.cpus_per_task = -1
         self.tasks         = len(tasks_bound)
         self.sockets_per_node = self.hardware.SOCKETS_PER_NODE
         self.archi = Exclusive(self.hardware,self.sockets_per_node, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
 
-    # Appelle __identProcesses pour récolter une liste de pids, la pose dans self.pid
-    # puis appelle __buildTasksBound pour construire tasks_bound
     def distribTasks(self,check=False):
+        if self.tasks_bound==None:
+            self.__initTasksThreadsBound()
+        return self.tasks_bound 
+
+    def distribThreads(self,check=False):
+        if self.threads_bound==None:
+
+            self.__initTasksThreadsBound()
+        return self.threads_bound
+
+    # Appelle __identProcesses pour récolter une liste de pids (self.pid)
+    # puis appelle __buildTasksBound pour construire tasks_bound et threads_bound
+    def __initTasksThreadsBound(self):
+        
         # Récupère la liste des processes à étudier par ps
-        self.pid = self.__identProcesses()
+        self.__identProcesses()
 
-        # Détermine l'affinité des processes 
-        self.tasks_bound = self.__buildTasksBound(self)
-
+        # Détermine l'affinité des processes et des threads
+        self.tasks_bound   = self.__buildTasksBound(self)
+        self.threads_bound = self.processus
+        
         # Si aucune tâche trouvée, pas la peine d'insister
         if len(self.tasks_bound)==0:
             msg = "OUPS Aucune tâche trouvée !"
@@ -223,8 +211,6 @@ class RunningMode(TasksBinding):
         # Détermine l'architecture à partir des infos de hardware et des infos de processes ou de threads
         self.__buildArchi(self.tasks_bound)
 
-        return self.tasks_bound
-
     # Renvoie (pour impression) la correspondance Tâche => pid
     def getTask2Pid(self):
         rvl  = "TACHE ==> PID (CMD) ==> AFFINITE\n"
@@ -232,7 +218,7 @@ class RunningMode(TasksBinding):
         for i in range(len(self.pid)):
             rvl += numTaskToLetter(i)
             rvl += " ==> "
-            rvl += self.pid[i]
+            rvl += str(self.pid[i])
             rvl += ' ('
             rvl += self.__pid2cmdu(self.pid[i])
             rvl += ") ==> "
@@ -251,7 +237,7 @@ class BuildTasksBound:
 class BuildTasksBoundFromTaskSet(BuildTasksBound):
     # Appelle __taskset sur le tableau tasksBinding.pid
     # Transforme les affinités retournées: 0-3 ==> [0,1,2,3]
-    # Renvoie tasks_bound
+    # Renvoie tasks_bound + tableau vide (pas d'infos sur les threads)
     def __call__(self,tasksBinding):
         tasks_bound=[]
         for p in tasksBinding.pid:
@@ -271,7 +257,7 @@ class BuildTasksBoundFromTaskSet(BuildTasksBound):
             msg += "La commande "
             msg += cmd
             msg += " a renvoyé l'erreur "
-            msg += p.returncode
+            msg += str(p.returncode)
             raise PlacementException(msg)
         else:
             # On récupère l'affinité
@@ -280,37 +266,51 @@ class BuildTasksBoundFromTaskSet(BuildTasksBound):
 
 # Fonction-objet pour construire la structure de données tasksBinding à partir de ps
 # Appelle ps pour chaque process de self.pid
-# Renvoie tasks_bound
+# Renvoie tasks_bound et threads_bound
 class BuildTasksBoundFromPs(BuildTasksBound):
     def __call__(self,tasksBinding):
         tasks_bound=[]
-        for p in tasksBinding.pid:
-            aff = self.__runPs(p)
-            tasks_bound.append(aff)
+        for pid in tasksBinding.processus.keys():
+            cores=[]
+            threads=tasksBinding.processus[pid]['threads']
+            for tid in threads.keys():
+                cores.append(threads[tid]['psr'])
+            tasks_bound.append(cores)
+
         return tasks_bound
 
-    # Appelle ps pour le process passé en paramètre
-    # Renvoie un tableau contenant la liste des cpus associés aux threads de ce process
-    def __runPs(self,p):
-        cmd = "ps -m --no-header -o psr,s -p "
-        cmd += p
-	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	p.wait()
-        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-	if p.returncode !=0:
-            msg = "OUPS "
-            msg += "La commande "
-            msg += cmd
-            msg += " a renvoyé l'erreur "
-            msg += p.returncode
-            raise PlacementException(msg)
-        else:
-            # On récupère l'affinité
-            psout = p.communicate()[0].split('\n')
-            out   = []
-            for l in psout:
-                if l.endswith('R'):
-                    out.append(int(l.strip(' R')))
-            return out
+#    # Passe en threads mode, c-à-d que __call__ renvoie DEUX tableaux: 
+#    # le tasks_bound d'une part, le threads_bound d'autre part
+#    def setThreadsMode(self):
+#        self.thrds_mode = True
 
+#    # Appelle ps pour le process passé en paramètre
+#    # Renvoie deux tableaux: l'un contenant la liste des cpus associés aux threads de ce process, l'autre est une 
+#    # structure de données du type dictionnairesemboités:   {pid : {tid : psr,...}}
+#   def __runPs(self,pid):
+#        cmd = "ps -m --no-header -o psr,tid,s -p "
+#        cmd += pid
+#	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+#	p.wait()
+#        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
+#	if p.returncode !=0:
+#            msg = "OUPS "
+#            msg += "La commande "
+#            msg += cmd
+#           msg += " a renvoyé l'erreur "
+#            msg += str(p.returncode)
+#            raise PlacementException(msg)
+#        else:
+#            # On récupère l'affinité
+#            psout = p.communicate()[0].split('\n')
+#            out_psr = []
+#            out_tid = {}
+#            for l in psout:
+#                tmp = l.split(' ');
+#                removeBlanks(tmp)
+#                if len(tmp)>0 and tmp[2] == 'R':
+#                    out_psr.append(int(tmp[0]))
+#                    out_tid[tmp[1]] = int(tmp[0])
+#            return [out_psr,{pid:out_tid}]
+#
 
