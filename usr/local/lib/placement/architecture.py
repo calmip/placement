@@ -38,7 +38,7 @@ class Architecture(object):
         self.cores_per_socket = self.hardware.CORES_PER_SOCKET
         self.cores_per_node   = self.sockets_per_node * self.cores_per_socket
         self.cores_reserved   = self.cores_per_node
-
+        self.m_cores          = None
         #print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
 
     # Accepte d'initialiser un attribut seulement s'il n'existe pas

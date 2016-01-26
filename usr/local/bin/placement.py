@@ -84,7 +84,7 @@ def main():
         Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
     epilog = "Environment: PLACEMENT_ARCHI " + str(hardware.Hardware.catalogue()) + " SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
-    parser = OptionParser(version="%prog 1.0.1",epilog=epilog)
+    parser = OptionParser(version="%prog 1.0.2",epilog=epilog)
     parser.add_option("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
 #    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
@@ -125,6 +125,16 @@ def main():
         else:
             [tasks,tasks_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
 
+        # Imprime le binding de manière compréhensible pour srun ou numactl puis sort
+        # (PAS si --check, --ascii ou --human)
+        if options.check==None and options.asciiart==False and options.human==False:
+            if options.output_mode=="srun":
+                print getCpuBindingSrun(archi,tasks_bound)
+                exit(0)
+            if options.output_mode=="numactl":
+                print getCpuBindingNumactl(archi,tasks_bound)
+                exit(0)
+
         # Imprime le binding de manière compréhensible pour les humains
         if options.human==True:
             print getCpuBinding(archi,tasks_bound,getCpuTaskHumanBinding)
@@ -137,14 +147,6 @@ def main():
                 # print getCpuBinding(archi,tasks_bound,getCpuTaskAsciiBinding)
                 raise PlacementException("OUPS - switch --ascii interdit pour plus de 62 tâches !")
     
-        # Imprime le binding de manière compréhensible pour srun ou numactl
-        # (PAS si --check)
-        if options.check==None and options.asciiart==False and options.human==False:
-            if options.output_mode=="srun":
-                print getCpuBindingSrun(archi,tasks_bound)
-            if options.output_mode=="numactl":
-                print getCpuBindingNumactl(archi,tasks_bound)
-
     except PlacementException, e:
         print e
         exit(1)
