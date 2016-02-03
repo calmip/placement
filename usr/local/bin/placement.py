@@ -95,7 +95,7 @@ def main():
 
     parser.add_option("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
-    parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name)")
+    parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
     parser.add_option("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
     parser.add_option("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
     parser.add_option("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")

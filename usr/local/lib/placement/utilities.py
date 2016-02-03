@@ -113,17 +113,21 @@ def getCpuThreadsMatrixBinding(archi,threads_bound):
 
     m = Matrix(psr_min,psr_max)
     rvl = ''
-    rvl += m.getHeader(14*' ')
+    rvl += m.getHeader()
+
+    nt=0
     for pid in sorted(threads_bound.keys()):
+        l = numTaskToLetter(nt)
         threads = threads_bound[pid]['threads']
         for tid in sorted(threads):
             if threads[tid]['state'] == 'R':
-                S = '*'
+                S = l
             elif threads[tid]['state'] == 'S':
                 S = '.'
             else:
                 S = '?'
-            rvl += m.getLine(pid,tid,threads[tid]['psr'],S)
+            rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'])
+        nt += 1
     return rvl
 
 #    nb_cols = psr_max-psr_min+1

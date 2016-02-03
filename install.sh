@@ -48,7 +48,7 @@ ssh -p $PORT $USER@$HOST "[ ! -d $LIB ] && echo Pas de répertoire $LIB sur $HOS
 
 SRC=usr/local
 
-for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py
 do
   scp -P $PORT $SRC/lib/placement/$f "$USER@$HOST:$LIB"
 done
