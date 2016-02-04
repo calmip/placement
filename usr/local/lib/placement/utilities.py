@@ -111,7 +111,8 @@ def getCpuThreadsMatrixBinding(archi,threads_bound):
             if psr_max<psr:
                 psr_max=psr
 
-    m = Matrix(psr_min,psr_max)
+    m = Matrix(archi,psr_min,psr_max)
+    #m = Matrix(archi)
     rvl = ''
     rvl += m.getHeader()
 

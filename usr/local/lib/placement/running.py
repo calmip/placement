@@ -29,7 +29,7 @@ class RunningMode(TasksBinding):
         self.over_cores = []
         self.__buildTasksBound = buildTasksBound
         self.__processus_reserves = ['srun', 'mpirun', 'ps', 'sshd' ]
-        self.__users_reserves     = ['srun', 'mpirun', 'ps', 'sshd' ]
+        self.__users_reserves     = ['root' ]
         
     # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
     # OU au user passé en paramètre OU sans sélection préalable

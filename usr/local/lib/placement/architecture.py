@@ -68,6 +68,24 @@ class Architecture(object):
                 raise PlacementException(msg)
         return threads_per_core
 
+    # Renvoie le numéro de socket à prtir du numéro de cœur
+    # Utilisé par certains affichages
+    # TODO - Pour le moment IGNORE L'HYPERTHREADING OULALA
+    def getCore2Socket(self,core):
+        return core / self.cores_per_socket
+
+    # Renvoie le numéro de cœur sur le socket courant
+    # Utilisé par certains affichages
+    # TODO - Pour le moment IGNORE L'HYPERTHREADING OULALA
+    def getCore2Core(self,core):
+        return core % self.cores_per_socket
+
+    def getSocket2CoreMax(self,s):
+        return (s+1) * self.cores_per_socket - 1
+
+    def getSocket2CoreMin(self,s):
+        return s * self.cores_per_socket
+
 #
 # class Exclusive:
 #       Description de l'architecture dans le cas où le nœud est dédié (partition exclusive)
