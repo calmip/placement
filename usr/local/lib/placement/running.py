@@ -49,7 +49,7 @@ class RunningMode(TasksBinding):
                 
         # On utilise une commande ps
         else:
-            cmd = 'ps --no-headers -m -o %u -o %p -o tid -o psr -o %c -o state -o %cpu '
+            cmd = 'ps --no-headers -m -o %u -o %p -o tid -o psr -o %c -o state -o %cpu -o %mem '
             
             # --check=ALL ==> Pas de sélection de tâches !
             if self.path == 'ALL':
@@ -115,7 +115,7 @@ class RunningMode(TasksBinding):
         for l in ps_res:
 
             # Détection des lignes représentant un processus
-            mp=re.match('([a-z0-9]+) +(\d+) +- +- +([^ ]+) +',l)
+            mp=re.match('([a-z0-9]+) +(\d+) +- +- +([^ ]+).+([0-9.]+$)',l)
             if mp != None:
 
                 # S'il y a dans processus_courant au moins un thread actif, on le sauve !
@@ -127,6 +127,7 @@ class RunningMode(TasksBinding):
                 user= mp.group(1)
                 pid = int(mp.group(2))
                 cmd = mp.group(3)
+                mem = int(mp.group(4))
                 if cmd in self.__processus_reserves:
                     continue
                 if user in self.__users_reserves:
@@ -135,6 +136,7 @@ class RunningMode(TasksBinding):
                 processus_courant['user']=user
                 processus_courant['pid']=pid
                 processus_courant['cmd']=cmd
+                processus_courant['mem']=mem
                 continue
 
             # S'il y a dans processus_courant au moins un thread actif quand on sort de la boucle, on le sauve
@@ -163,8 +165,11 @@ class RunningMode(TasksBinding):
                 thread_courant['psr'] = psr
                 thread_courant['cpu'] = cpu
                 thread_courant['state'] = state
+                thread_courant['mem'] = processus_courant['mem']
+
                 if processus_courant.has_key('threads')== False:
                     processus_courant['threads'] = {}
+
                 processus_courant['threads'][tid] = thread_courant
 
         self.processus = processus

@@ -127,7 +127,10 @@ def getCpuThreadsMatrixBinding(archi,threads_bound):
                 S = '.'
             else:
                 S = '?'
-            rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'])
+            if threads[tid].has_key('mem'):
+                rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'],threads[tid]['mem'])
+            else:
+                rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'])
         nt += 1
     return rvl
 

@@ -32,14 +32,14 @@ class Matrix(object):
 
             # En cas d'hyperthreading, corriger psr_max et psr_min
             if self.__archi.threads_per_core == 2:
-                # Si seuls les curs logiques sont utilisés...
+                # Si seuls les cœurs logiques sont utilisés...
                 if self.__psr_min >= self.__archi.cores_per_node:
                     self.__psr_min -= self.__archi.cores_per_node
                     self.__socket_min -= self.__archi.sockets_per_node
                 # @todo - un truc plus subtil
                 if self.__psr_max > self.__archi.cores_per_node:
                     self.__psr_max    = self.__archi.cores_per_node - 1
-                    self.__socket_max = self.__archi.sockets_per_node + 1
+                    self.__socket_max = self.__archi.sockets_per_node - 1
 
         self.__last_pid = 0
 
@@ -71,11 +71,11 @@ class Matrix(object):
             if self.__archi.getCore2Core(p)==0:
                 rvl += ' '
             rvl += str(p%10)
-        rvl += '  %CPU'
+        rvl += '  %CPU %MEM'
         rvl += '\n'
         return rvl
 
-    def getLine(self,pid,tid,psr,S,H,cpu=100):
+    def getLine(self,pid,tid,psr,S,H,cpu=100,mem='-'):
         '''Renvoie une ligne pleine de blancs avec H en colonne 0 et S sur la colonne psr, et cpu sur la colonne adhoc'''
         if psr > self.__psr_max and self.__archi.threads_per_core == 2:
             psr -= self.__archi.cores_per_node
@@ -95,7 +95,12 @@ class Matrix(object):
         tekcos= self.__socket_max - socket
         socket= socket - self.__socket_min
         debut = (psr-self.__psr_min) * ' ' + socket * ' '
-        fin   = (self.__psr_max-psr) * ' ' + tekcos * ' ' + ' ' + fmt2.format(cpu)
+        if mem=='-':
+            mem = '    -'
+        else:
+            mem = fmt2.format(mem)
+
+        fin   = (self.__psr_max-psr) * ' ' + tekcos * ' ' + ' ' + fmt2.format(cpu) + mem
         return pre + ' ' + debut + S[0] + fin + '\n'
 
 #def getBlankOrDigit(d,flg):
