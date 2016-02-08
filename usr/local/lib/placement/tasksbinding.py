@@ -28,6 +28,7 @@ from exception import *
 #
 #      Return: tasks_bound, un tableau de tableaux:
 #              Le tableau des processes, chaque process est représenté par un tableau de cœurs.
+#              [[psr1,...],[psr3,...],...]
 #
     
 class TasksBinding(object):

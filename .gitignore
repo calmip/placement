@@ -19,3 +19,5 @@ nytprof.out
 *.bs
 *~
 *.pyc
+.emacs.desktop*
+

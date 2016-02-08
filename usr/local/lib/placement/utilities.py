@@ -2,10 +2,19 @@
 # -*- coding: utf-8 -*-
 
 import os
+from matrix import *
 from exception import *
 from itertools import chain,product
 
 #############################################################################################################
+# retire tous les blancs de la list passée en paramètres
+def removeBlanks(L):
+    try:
+        while True:
+            L.remove('')
+    except:
+        pass
+
 #
 # Réécrit le placement pour une tâche (appelé par getCpuBindingSrun)
 # Réécriture sous forme hexadécimale pour srun
@@ -79,6 +88,58 @@ def getCpuTaskAsciiBinding(archi,cores):
 
 def getCpuTaskNumactlBinding(archi,cores):
     return list2CompactString(cores)
+
+#
+# Réécrit le placement pour des ensembles de threads et de tâches
+# Réécriture matricielle, une colonne par cœur et une ligne par thread
+#
+# Params: archi (l'architecture processeurs)
+#         threads_bound (le tableau self.processus de la classe RunningMode, cf running.py)
+# Return: la chaine de caracteres pour affichage
+#
+
+def getCpuThreadsMatrixBinding(archi,threads_bound):
+    #print str(threads_bound)
+    psr_min = 9999
+    psr_max = 0
+    for pid in threads_bound.keys():
+        threads = threads_bound[pid]['threads']
+        for tid in threads:
+            psr = threads[tid]['psr']
+            if psr_min>psr:
+                psr_min=psr
+            if psr_max<psr:
+                psr_max=psr
+
+    m = Matrix(archi,psr_min,psr_max)
+    #m = Matrix(archi)
+    rvl = ''
+    rvl += m.getHeader()
+
+    nt=0
+    for pid in sorted(threads_bound.keys()):
+        l = numTaskToLetter(nt)
+        threads = threads_bound[pid]['threads']
+        for tid in sorted(threads):
+            if threads[tid]['state'] == 'R':
+                S = l
+            elif threads[tid]['state'] == 'S':
+                S = '.'
+            else:
+                S = '?'
+            if threads[tid].has_key('mem'):
+                rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'],threads[tid]['mem'])
+            else:
+                rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'])
+        nt += 1
+    return rvl
+
+#    nb_cols = psr_max-psr_min+1
+ #   print psr_min
+ #   print psr_max
+ #   print nb_cols
+ #   return getMatrixHeader(14*' ',psr_min,psr_max) + 'coucou'
+
 
 #
 # Conversion de  numéro de tâche (0..61) vers lettre(A-Za-z0-9)

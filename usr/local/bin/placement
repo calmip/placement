@@ -1,11 +1,22 @@
 #! /bin/bash
 
-dir=$(dirname $0)
+# Version de Python: nous avons besoin de Python 2.7, ce qui nécessite un module sur eos
+# (pas eosmesca1)
+version=$(python --version 2>&1)
+if [[ "$version" =~ "2.6" ]]
+then
+	module purge 2>/dev/null
+	module load python 2>/dev/null
+fi
 
+# pythonpath 
+dir=$(dirname $0)
 export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P)
 
-placement="$0.py"
+# nom du sript python
+placement="python $0.py"
 
+# verbose !
 if [[ "$*" =~ "--verb" ]]
 then
 	verb=1
@@ -50,7 +61,7 @@ fi
 if [[ $job_id != "" ]]
 then
     PN=$( squeue -j $job_id --noheader -o "%.9P@%.16R@%.8u" )
-	if [[ $? != 0 ]]
+	if [[ $? != 0 || $PN == "" ]]
     then
 		echo "ERREUR - Mauvais jobid ! ($job_id)"
 		exit 1
@@ -78,7 +89,7 @@ then
 		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 --check $U $*
 	done
 
-# --host: on envoie la commande sur le hote concerné avec check='*'
+# --host: on envoie la commande sur le hote concerné avec check=ALL
 elif [[ $host != "" ]]
 then
 	# Détecter la partition, à condition qu'un job soit exécuté sur le host !
@@ -91,10 +102,10 @@ then
 	fi
 	if [[ $verb == 1 ]]
 	then
-		echo "$host: APPEL DE $0 $* --check='*'"
+		echo "$host: APPEL DE $0 $* --check=ALL"
 	fi
 
-	ssh $host export PLACEMENT_ARCHI=\"$P\" \;  $0 $* --check='*'
+	ssh $host export PLACEMENT_ARCHI=\"$P\" \;  $0 $* --check=ALL
 
 # Pas de $job_id: on passe les switches à placement.py
 else
