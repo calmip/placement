@@ -161,7 +161,9 @@ def numTaskToLetter(n):
 # return: Chaine de caractères
 def list2CompactString(A):
 
-    A.sort()
+    #A.sort()
+    # On tansforme A en set, qui sera aussitôt trié
+    s = set(A)
 
     # réécrire tout ça avec la syntaxe: 1,2,3,5 => 1-3,5
     # cl_cpus = Compact List of A
@@ -177,7 +179,7 @@ def list2CompactString(A):
         else:
             tmp += [str(start)+'-'+str(end)]
 
-    for c in A:
+    for c in s:
         if start==-1:
             start=c
         if last_c==-1:
@@ -195,7 +197,7 @@ def list2CompactString(A):
     return ','.join(tmp)
 
 # Conversion d'une chaine compacte vers une listre triée:
-#            [0-3,5] ==> [0,1,2,3,5]
+#            "0-3,5" ==> [0,1,2,3,5]
 # 
 # params: S, chaine compacte
 # return: Liste d'entiers
@@ -210,8 +212,13 @@ def compactString2List(S):
                 rvl.append([int(c[0])])
             else:
                 # [0-3] ==> 0,1,2 + 3
-                rvl.append(range(int(c[0]),int(c[1])))
-                rvl.append([int(c[1])])
+                if c[0] < c[1]:
+                    rvl.append(range(int(c[0]),int(c[1])))
+                    rvl.append([int(c[1])])
+                else:
+                    rvl.append(range(int(c[1]),int(c[0])))
+                    rvl.append([int(c[0])])
+
         rvl = list(chain(*rvl))
     return rvl
 
