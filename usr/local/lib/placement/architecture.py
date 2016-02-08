@@ -93,6 +93,8 @@ class Architecture(object):
 #       Paramètres du constructeur:
 #           hardware        : Un objet de classe Hardware (les limites hardware du système)
 #           sockets_per_node: Nombre de sockets par node, doit être < hardware.SOCKETS_PER_NODE 
+#           TODO            : Idiot de passer 2 sockets per node puisque c'est exclusif !
+
 #           tasks           : Nombre de tâches (processes) souhaité
 #           cpus_per_task   : Nombre de cpus par process
 #           hyper           : Si False, hyperthreading interdit

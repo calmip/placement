@@ -7,13 +7,15 @@ from tasksbinding import *
 
 #
 # class ScatterMode, dérive de TaskBinding, implémente les algos utilisés en mode scatter
-#
+# TODO Il SUFFIT de passer archi 10000 sabords !!!!!!!!!!!!!
+
 class ScatterMode(TasksBinding):
     def __init__(self,archi,cpus_per_task,tasks):
         #print "KOUKOU "+str(cpus_per_task)
         TasksBinding.__init__(self,archi,cpus_per_task,tasks)
         
     def checkParameters(self):
+        '''Renvoie None si le check est positif, généère une exception sinon'''
         self._checkParameters()
 
         if self.cpus_per_task % self.archi.threads_per_core!=0:
@@ -24,13 +26,15 @@ class ScatterMode(TasksBinding):
             msg += ")"
             raise PlacementException(msg)
 
-        if self.tasks>1 and \
-                self.cpus_per_task<self.archi.cores_per_socket and \
-                self.cpus_per_task>self.archi.threads_per_core*self.archi.cores_per_socket:
+        ### CODE DEBILE ON NE PASSERA JAMAIS PAR LA !!!
+        ### Je supprime cette condition pour l'instant
+        #if self.tasks>1 and \
+        #        self.cpus_per_task<self.archi.cores_per_socket and \
+        #        self.cpus_per_task>self.archi.threads_per_core*self.archi.cores_per_socket:
 
-            msg =  "OUPS - Votre task déborde du socket, cpus_per_task doit être <= "
-            msg += str(self.archi.threads_per_core*self.archi.cores_per_socket)
-            raise PlacementException(msg)
+        #    msg =  "OUPS - Votre task déborde du socket, cpus_per_task doit être <= "
+        #    msg += str(self.archi.threads_per_core*self.archi.cores_per_socket)
+        #    raise PlacementException(msg)
         
         # max_tasks calculé ainsi permet d'être sûr de ne pas avoir une tâche entre deux sockets_per_node, 
         max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
@@ -41,6 +45,7 @@ class ScatterMode(TasksBinding):
                 raise PlacementException(msg)
 
     def distribTasks(self,check=True):
+        '''Renvoie tasks_bound, ie une liste de listes'''
         if check:
             self.checkParameters()
 
@@ -60,10 +65,11 @@ class ScatterMode(TasksBinding):
             t = 0
             th= 0
             #print str(range(0,self.archi.cores_per_socket,c_step))+' ('+str(0)+','+str(self.archi.cores_per_socket)+','+str(c_step)+')'
+            # boucle sur les cœurs de calculs
             for c in range(0,self.archi.cores_per_socket,c_step):
                 #print "   "+str(range(self.archi.threads_per_core))
                 
-                # Boucle sur les threads
+                # Boucle sur les threads des cœurs (hyperthreading)
                 for y in range(self.archi.threads_per_core):
                     #print "      "+str(self.archi.l_sockets)
 
@@ -71,11 +77,12 @@ class ScatterMode(TasksBinding):
                     for s in self.archi.l_sockets:
                         #print "         "+str(range(self.cpus_per_task))
 
-                        # Boucle sur les cœurs
+                        # Boucle sur les threads des processes
                         for th in range(self.cpus_per_task):
                             # Eviter le débordement sauf s'il n'y a qu'une seule task
-                            if th==0 and self.archi.cores_per_socket-c<self.cpus_per_task:
-                                continue
+                            # Ne sert à rien puisqu'on a le c_step
+                            #if th==0 and self.archi.cores_per_socket-c < self.cpus_per_task:
+                            #    continue
                             t_binding += [y*self.archi.cores_per_node + s*self.archi.cores_per_socket + c + th]
                         tasks_bound += [t_binding]
                         t_binding = []
