@@ -186,20 +186,20 @@ class RunningMode(TasksBinding):
 
     def __pid2cmduPs(self,pid):
         cmd = "ps --no-headers -o %c,%u -p " + str(pid)
-        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        p.wait()
-        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-        if p.returncode !=0:
+        try:
+            cu = subprocess.check_output(cmd.split(' ')).rstrip('\n')
+
+        except subprocess.CalledProcessError,e:
+            # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
             msg = "OUPS "
             msg += "AUCUNE TACHE TROUVEE: peut-etre le pid vient-il de mourir ?"
             raise PlacementException(msg)
-        else:
-            cu = p.communicate()[0].split("\n")[0]
-            #print 'hoho'+cu
-            [c,space,u] = cu.split(' ',2)
-            u = u.strip()
-            cu = c+','+u
-            return cu
+
+        #print 'hoho'+cu
+        [c,space,u] = cu.split(' ',2)
+        u = u.strip()
+        cu = c+','+u
+        return cu
 
     # A partir de tasks_bound, détermine l'architecture
     def __buildArchi(self,tasks_bound):
@@ -277,21 +277,20 @@ class BuildTasksBoundFromTaskSet(BuildTasksBound):
     # Appelle taskset pour le ps passé en paramètre
     def __runTaskSet(self,p):
         cmd = "taskset -c -p "
-        cmd += p
-	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	p.wait()
-        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-	if p.returncode !=0:
+        cmd += str(p)
+        try:
+            out = subprocess.check_output(cmd.split(' ')).rstrip('\n')
+
+        except subprocess.CalledProcessError,e:
             msg = "OUPS "
             msg += "La commande "
             msg += cmd
             msg += " a renvoyé l'erreur "
             msg += str(p.returncode)
             raise PlacementException(msg)
-        else:
-            # On récupère l'affinité
-            out = p.communicate()[0].split('\n')[0]
-            return out.rpartition(" ")[2]
+
+        # On renvoie l'affinité
+        return out.rpartition(" ")[2]
 
 # Fonction-objet pour construire la structure de données tasksBinding
 # Construit tasks_bound à partir de la structure de données tasksBinding.processus
