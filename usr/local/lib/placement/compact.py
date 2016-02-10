@@ -10,8 +10,8 @@ from scatter import *
 # class CompactMode, dérive de TaskBinding, implémente les algos utilisés en mode compact
 #
 class CompactMode(TasksBinding):
-    def __init__(self,archi,cpus_per_task,tasks):
-        TasksBinding.__init__(self,archi,cpus_per_task,tasks)
+    def __init__(self,archi):
+        TasksBinding.__init__(self,archi)
         
     def checkParameters(self):
         self._checkParameters()
@@ -27,9 +27,6 @@ class CompactMode(TasksBinding):
     def distribTasks(self, check=True):
         if check:
             self.checkParameters()
-
-        if False:
-            pass
 
         # cpus_per_task plus petit que cores_per_socket
         # ./placement -A   --mode=compact --hyper 4 4
@@ -64,24 +61,24 @@ class CompactMode(TasksBinding):
         #   S0-------- S1-------- 
         # P AAAAAAAA.. BBBBBBBB.. 
         # L AAAAAAAA.. BBBBBBBB.. 
-        else:
+        #else:
             # TODO - testé seulement pour au max 2 threads par core !!!
             # On multiplie le nb de tâches et divise le nb de threads, on distribue, on coalesce les tableaux de tâches
-            tmp_task_distrib = ScatterMode(self.archi,
-                                           self.cpus_per_task/2,
-                                           self.tasks*2)
-            tmp_tasks_bound= tmp_task_distrib.distribTasks(check=False)
-            # On a passé un nombre *2, donc on est sûr que ce nombre est bien pair
-            imax = len(tmp_tasks_bound)/2
+        #    tmp_task_distrib = ScatterMode(self.archi,
+        #                                   self.cpus_per_task/2,
+        #                                   self.tasks*2)
+        #    tmp_tasks_bound= tmp_task_distrib.distribTasks(check=False)
+        #    # On a passé un nombre *2, donc on est sûr que ce nombre est bien pair
+        #    imax = len(tmp_tasks_bound)/2
 
-            tasks_bound = []
-            for i in range(imax):
-                t=[]
-                t.extend(tmp_tasks_bound[i])
-                t.extend(tmp_tasks_bound[i+imax])
-                tasks_bound.append(t)
+        #    tasks_bound = []
+        #    for i in range(imax):
+        #        t=[]
+        #        t.extend(tmp_tasks_bound[i])
+        #        t.extend(tmp_tasks_bound[i+imax])
+        #        tasks_bound.append(t)
             
-            return tasks_bound
+        #    return tasks_bound
 
         # normalement on ne passe pas par là on a déjà retourné
         return tasks_bound

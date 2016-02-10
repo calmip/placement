@@ -142,15 +142,15 @@ def getCpuThreadsMatrixBinding(archi,threads_bound):
 
 
 #
-# Conversion de  numéro de tâche (0..61) vers lettre(A-Za-z0-9)
+# Conversion de  numéro de tâche (0..66) vers lettre(A-Za-z0-9)
 def numTaskToLetter(n):
-    if n<0 or n>61:
+    if n<0 or n>66:
         raise PlacementException("ERREUR INTERNE - Si plus de 62 tâches, utilisez getCpuTaskAsciiBinding")
     if n<26:
         return chr(65+n)   # A..Z
     if n<52:
         return chr(71+n)   # a..z  (71=97-26)
-    return chr(n-4)        # 0..9  (-4=53-48)
+    return chr(n-4)        # 0..>  (-4=53-48)
 
 # Conversion d'une liste d'entiers triée vers une chaine compacte:
 # ATTENTION - On fait un tri Inplace de A, qui est donc a priori modifié

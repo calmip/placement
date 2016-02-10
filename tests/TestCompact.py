@@ -13,46 +13,46 @@ class TestCompactExclusive(unittest.TestCase):
 
         # Architecture = 4 tâches/4 threads
         self.exclu_ok1   = Exclusive(self.hardware,2,4,4,False)
-        self.compact_ok1 = CompactMode(self.exclu_ok1,4,4)
+        self.compact_ok1 = CompactMode(self.exclu_ok1)
         # Architecture = 4 tâches/8 threads hyperthreading
         self.exclu_ok2   = Exclusive(self.hardware,2,8,4,True)
-        self.compact_ok2 = CompactMode(self.exclu_ok2,8,4)
+        self.compact_ok2 = CompactMode(self.exclu_ok2)
         # Architecture = 20 tâches/1 thread no hyperthreading
         self.exclu_ok3   = Exclusive(self.hardware,2,1,20,False)
-        self.compact_ok3 = CompactMode(self.exclu_ok3,1,20)
+        self.compact_ok3 = CompactMode(self.exclu_ok3)
         # Architecture = 20 tâches/2 threads hyperthreading
         self.exclu_ok4   = Exclusive(self.hardware,2,2,20,True)
-        self.compact_ok4 = CompactMode(self.exclu_ok4,2,20)
+        self.compact_ok4 = CompactMode(self.exclu_ok4)
 
         # Architecture = 4 tâches/8 threads no hyperthreading
         self.exclu_ok5   = Exclusive(self.hardware,2,4,8,False)
-        self.compact_ok5 = CompactMode(self.exclu_ok5,4,8)
+        self.compact_ok5 = CompactMode(self.exclu_ok5)
 
         # Architecture = 20 tâches/2 threads no hyperthreading (en fait l'hyper est forcé)
         self.exclu_ok6   = Exclusive(self.hardware,2,2,20,False)
-        self.compact_ok6 = CompactMode(self.exclu_ok6,2,20)
+        self.compact_ok6 = CompactMode(self.exclu_ok6)
 
         # Architecture = 21 tâches/2 threads  hyperthreading
         self.exclu_ko7   = Exclusive(self.hardware,2,2,21,True)
-        self.compact_ko7 = CompactMode(self.exclu_ko7,2,21)
+        self.compact_ko7 = CompactMode(self.exclu_ko7)
 
         # Si pas d'hyperthreading, autant de threads qu'on veut
         self.exclu_ok8   = Exclusive(self.hardware,2,1,5,False)
-        self.compact_ok8 = CompactMode(self.exclu_ok8,1,5)
+        self.compact_ok8 = CompactMode(self.exclu_ok8)
 
         self.exclu_ok9   = Exclusive(self.hardware,2,2,5,False)
-        self.compact_ok9 = CompactMode(self.exclu_ok9,2,5)
+        self.compact_ok9 = CompactMode(self.exclu_ok9)
 
         # Si hyperthreading activé, seulement nombre PAIR de threads !
         self.exclu_ko10 = Exclusive(self.hardware,2,1,5,True)
-        self.compact_ko10 = CompactMode(self.exclu_ko10,1,5)
+        self.compact_ko10 = CompactMode(self.exclu_ko10)
         self.exclu_ok11 = Exclusive(self.hardware,2,2,5,True)
-        self.compact_ok11 = CompactMode(self.exclu_ok11,2,5)
+        self.compact_ok11 = CompactMode(self.exclu_ok11)
 
         # Si une seule tache elle peut déborder du socket
         # cf. compact.py L 30-32
         self.exclu_ok12 = Exclusive(self.hardware,2,12,1,False)
-        self.compact_ok12 = CompactMode(self.exclu_ok12,12,1)
+        self.compact_ok12 = CompactMode(self.exclu_ok12)
         #self.exclu_ok13 = Exclusive(self.hardware,2,22,1,True)
         #self.compact_ok13 = CompactMode(self.exclu_ok13,22,1)
         #self.compact_ko14 = CompactMode(self.exclu_ko14,12,2)
@@ -62,7 +62,7 @@ class TestCompactExclusive(unittest.TestCase):
 
         # Si plusieurs tâches elles ne doivent pas être à cheval sur deux sockets
         self.exclu_ok15 = Exclusive(self.hardware,2,4,5,False)
-        self.compact_ok15 = CompactMode(self.exclu_ok15,4,5)
+        self.compact_ok15 = CompactMode(self.exclu_ok15)
 
     def test_exclusive_check(self):
         ok = [self.compact_ok1,self.compact_ok2,self.compact_ok3,self.compact_ok4,self.compact_ok5,self.compact_ok6,self.compact_ok8,self.compact_ok9,self.compact_ok11,self.compact_ok12,self.compact_ok15]

@@ -7,11 +7,10 @@ from tasksbinding import *
 
 #
 # class ScatterMode, dérive de TaskBinding, implémente les algos utilisés en mode scatter
-# TODO Il SUFFIT de passer archi 10000 sabords !!!!!!!!!!!!!
+#
 
 class ScatterMode(TasksBinding):
-    def __init__(self,archi,cpus_per_task,tasks):
-        #print "KOUKOU "+str(cpus_per_task)
+    def __init__(self,archi,cpus_per_task=0,tasks=0):
         TasksBinding.__init__(self,archi,cpus_per_task,tasks)
         
     def checkParameters(self):
@@ -117,4 +116,3 @@ class ScatterMode(TasksBinding):
 
         # normalement on ne passe pas par là on a déjà retourné
         return tasks_bound
-
