@@ -142,15 +142,20 @@ def main():
     
         # Imprime le binding en ascii art
         if options.asciiart==True:
-            if tasks<=62:
+            if tasks<=66:
                 print getCpuBindingAscii(archi,tasks_bound,over_cores)
             else:
-                # print getCpuBinding(archi,tasks_bound,getCpuTaskAsciiBinding)
-                raise PlacementException("OUPS - switch --ascii interdit pour plus de 62 tâches !")
+                # cf. la fonction numTaskToLetter
+                print ("OUPS - switch --ascii interdit pour plus de 66 tâches !")
     
         # Imprime l'affinite des threads et des cpus
         if options.check!=None and options.threads==True:
-            print getCpuThreadsMatrixBinding(archi,threads_bound)
+            if tasks<67:
+                print getCpuThreadsMatrixBinding(archi,threads_bound)
+            else:
+                # cf. la fonction numTaskToLetter
+                print ("OUPS - switch --threads interdit pour plus de 66 tâches !")
+
 
         # Imprime le binding de manière compréhensible pour srun ou numactl
         # (PAS si --check)
@@ -282,9 +287,9 @@ def compute_data_from_parameters(options,args,hard):
             
     task_distrib = ""
     if options.mode == "scatter":
-        task_distrib = ScatterMode(archi,cpus_per_task,tasks)
+        task_distrib = ScatterMode(archi)
     else:
-        task_distrib = CompactMode(archi,cpus_per_task,tasks)
+        task_distrib = CompactMode(archi)
             
     tasks_bound = task_distrib.distribTasks()
 
