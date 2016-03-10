@@ -208,6 +208,8 @@ class RunningMode(TasksBinding):
         self.cpus_per_task = -1
         self.tasks         = len(tasks_bound)
         self.sockets_per_node = self.hardware.SOCKETS_PER_NODE
+        
+        # Même si on est sur une machine partagée, on est exclusif sur ce qu'on nous a attribué
         self.archi = Exclusive(self.hardware,self.sockets_per_node, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
 
     def distribTasks(self,check=False):
@@ -217,7 +219,6 @@ class RunningMode(TasksBinding):
 
     def distribThreads(self,check=False):
         if self.threads_bound==None:
-
             self.__initTasksThreadsBound()
         return self.threads_bound
 
@@ -272,6 +273,7 @@ class BuildTasksBoundFromTaskSet(BuildTasksBound):
         for p in tasksBinding.pid:
             aff = self.__runTaskSet(p)
             tasks_bound.append(compactString2List(aff))
+
         return tasks_bound
 
     # Appelle taskset pour le ps passé en paramètre

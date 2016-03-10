@@ -45,6 +45,7 @@ class TasksBinding(object):
             self.tasks         = self.archi.tasks
         else:
             self.tasks         = tasks
+        self.over_cores = []
 
     def checkParameters(self):
         raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")

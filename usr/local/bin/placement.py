@@ -120,38 +120,65 @@ def main():
         if options.show_hard==True:
             show_hard(hard)
             exit(0)
-        # Option --check
+
+        # Première étape = Collecte des données résultat dans tasks_binding
+        # Option --check -> Collecte à partir des jobs
         if options.check != None:
-            [tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
+            #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
+            tasks_binding = compute_data_from_running(options,args,hard)
         else:
-            [tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
+            #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
+            tasks_binding = compute_data_from_parameters(options,args,hard)
+
+        # Seconde étape = Impression des résultats sous plusieurs formats
+        #outputs = buildOutputs(options,tasks_binding)
+
+        #for o in outputs:
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         # Imprime le binding de manière compréhensible pour srun ou numactl puis sort
         # (PAS si --check, --ascii ou --human)
         if options.check==None and options.asciiart==False and options.human==False:
             if options.output_mode=="srun":
-                print getCpuBindingSrun(archi,tasks_bound)
+                print getCpuBindingSrun(tasks_binding.archi,tasks_binding.tasks_bound)
                 exit(0)
             if options.output_mode=="numactl":
-                print getCpuBindingNumactl(archi,tasks_bound)
+                print getCpuBindingNumactl(tasks_binding.archi,tasks_binding.tasks_bound)
                 exit(0)
 
         # Imprime le binding de manière compréhensible pour les humains
         if options.human==True:
-            print getCpuBinding(archi,tasks_bound,getCpuTaskHumanBinding)
+            print getCpuBinding(tasks_binding.archi,tasks_binding.tasks_bound,getCpuTaskHumanBinding)
     
         # Imprime le binding en ascii art
         if options.asciiart==True:
-            if tasks<=66:
-                print getCpuBindingAscii(archi,tasks_bound,over_cores)
+            if tasks_binding.tasks<=66:
+                print getCpuBindingAscii(tasks_binding.archi,tasks_binding.tasks_bound,tasks_binding.over_cores)
             else:
                 # cf. la fonction numTaskToLetter
                 print ("OUPS - switch --ascii interdit pour plus de 66 tâches !")
     
         # Imprime l'affinite des threads et des cpus
         if options.check!=None and options.threads==True:
-            if tasks<67:
-                print getCpuThreadsMatrixBinding(archi,threads_bound)
+            if tasks_binding.tasks<67:
+                print getCpuThreadsMatrixBinding(tasks_binding.archi,tasks_binding.threads_bound)
             else:
                 # cf. la fonction numTaskToLetter
                 print ("OUPS - switch --threads interdit pour plus de 66 tâches !")
@@ -161,13 +188,68 @@ def main():
         # (PAS si --check)
         if options.check==None and options.asciiart==False and options.human==False:
             if options.output_mode=="srun":
-                print getCpuBindingSrun(archi,tasks_bound)
+                print getCpuBindingSrun(tasks_binding.archi,tasks_binding.tasks_bound)
             if options.output_mode=="numactl":
-                print getCpuBindingNumactl(archi,tasks_bound)
+                print getCpuBindingNumactl(tasks_binding.archi,tasks_binding.tasks_bound)
 
     except PlacementException, e:
         print e
         exit(1)
+
+
+
+######################################################
+#
+# construit un tableau de sorties avec différents formats d'impression, en fonction des options
+#
+######################################################
+def buildOutputs(options,tasks_binding):
+
+    outputs = []
+
+    # Imprime le binding de manière compréhensible pour srun ou numactl puis sort
+    # (PAS si --check, --ascii ou --human)
+    if options.check==None and options.asciiart==False and options.human==False:
+        if options.output_mode=="srun":
+            outputs.append(PrintingForSrun(tasks_binding))
+            return
+        if options.output_mode=="numactl":
+            outputs.append(PrintingForNumactl(tasks_binding))
+            return
+
+    # Imprime le binding de manière compréhensible pour les humains
+    if options.human==True:
+        outputs.append(PrintingForHuman(tasks_binding))
+    
+    # Imprime le binding en ascii art
+    if options.asciiart==True:
+        outputs.append(PrintingForAsciiArt(tasks_binding))
+#            if tasks<=66:
+#                print getCpuBindingAscii(archi,tasks_bound,over_cores)
+#            else:
+#                # cf. la fonction numTaskToLetter
+#                print ("OUPS - switch --ascii interdit pour plus de 66 tâches !")
+    
+    # Imprime l'affinite des threads et des cpus
+    if options.check!=None and options.threads==True:
+        outputs.append(PrintingForThreadsBindingMatrix(tasks_bound))
+#            if tasks<67:
+#                print getCpuThreadsMatrixBinding(archi,threads_bound)
+#            else:
+#                # cf. la fonction numTaskToLetter
+#                print ("OUPS - switch --threads interdit pour plus de 66 tâches !")
+
+
+    # Imprime le binding de manière compréhensible pour srun ou numactl
+    # (PAS si --check)
+    if options.check==None and options.asciiart==False and options.human==False:
+        if options.output_mode=="srun":
+            outputs.append(PrintingForSrun(tasks_binding))
+        if options.output_mode=="numactl":
+            outputs.append(PrintingForNumactl(tasks_binding))
+
+    return outputs
+        
 
 ####################
 #
@@ -243,8 +325,9 @@ def compute_data_from_running(options,args,hard):
     #print task_distrib.pid
     archi = task_distrib.archi
     #cpus_per_task = task_distrib.cpus_per_task
-    tasks         = task_distrib.tasks
+    tasks = task_distrib.tasks
 
+    
     print gethostname()
     if options.verbose != False:
         print task_distrib.getTask2Pid()
@@ -256,11 +339,14 @@ def compute_data_from_running(options,args,hard):
         print "====================================================="
         print overlap
         print
-            
-    # Trie et renvoie tasks_bound
-###    task_distrib.threadsSort(tasks_bound)
 
-    return [tasks,tasks_bound,threads_bound,over_cores,archi]
+    task_distrib.overlap    = overlap
+    task_distrib.over_cores = over_cores
+    # Trie et renvoie tasks_bound
+    ###    task_distrib.threadsSort(tasks_bound)
+
+    #return [tasks,tasks_bound,threads_bound,over_cores,archi]
+    return task_distrib
 
 
 ##########################################################
@@ -295,8 +381,8 @@ def compute_data_from_parameters(options,args,hard):
 
     # Trie et renvoie tasks_bound
     task_distrib.threadsSort(tasks_bound)
-    return [tasks,tasks_bound,[],over_cores,archi]
-
+    #return [tasks,tasks_bound,[],over_cores,archi]
+    return task_distrib
 
 if __name__ == "__main__":
     main()

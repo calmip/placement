@@ -44,7 +44,7 @@ class ScatterMode(TasksBinding):
                 raise PlacementException(msg)
 
     def distribTasks(self,check=True):
-        '''Renvoie tasks_bound, ie une liste de listes'''
+        '''Init et renvoie self.tasks_bound, ie une liste de listes'''
         if check:
             self.checkParameters()
 
@@ -87,7 +87,8 @@ class ScatterMode(TasksBinding):
                         t_binding = []
                         t += 1
                         if (t==self.tasks):
-                            return tasks_bound
+                            self.tasks_bound = tasks_bound
+                            return self.tasks_bound
 
         # cpu_per_task plus grand que cores_per_socket 
         # on n'a pas plus d'une tâche par socket en moyenne
@@ -112,7 +113,9 @@ class ScatterMode(TasksBinding):
                 t.extend(tmp_tasks_bound[i+1])
                 tasks_bound.append(t)
             
-            return tasks_bound
+            self.tasks_bound = tasks_bound
+            return self.tasks_bound
 
         # normalement on ne passe pas par là on a déjà retourné
-        return tasks_bound
+        self.tasks_bound = tasks_bound
+        return self.tasks_bound

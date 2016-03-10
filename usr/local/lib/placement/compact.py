@@ -53,7 +53,8 @@ class CompactMode(TasksBinding):
                             th = 0
                             t += 1
                             if (t==self.tasks):
-                                return tasks_bound
+                                self.tasks_bound = tasks_bound
+                                return self.tasks_bound
 
         # cpu_per_task plus grand que cores_per_socket 
         # on n'a pas plus d'une tâche par socket en moyenne
@@ -78,7 +79,9 @@ class CompactMode(TasksBinding):
         #        t.extend(tmp_tasks_bound[i+imax])
         #        tasks_bound.append(t)
             
+        #    self.tasks_bound = tasks_bound
         #    return tasks_bound
 
         # normalement on ne passe pas par là on a déjà retourné
+        self.tasks_bound = tasks_bound
         return tasks_bound
