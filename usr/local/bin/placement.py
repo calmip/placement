@@ -296,10 +296,10 @@ def compute_data_from_parameters(options,args,hard):
     else:
         task_distrib = CompactMode(archi)
             
-    tasks_bound = task_distrib.distribTasks()
+    #tasks_bound = task_distrib.distribTasks()
 
     # Trie les threads et renvoie task_distrib
-    task_distrib.threadsSort(tasks_bound)
+    task_distrib.threadsSort()
     return task_distrib
 
 if __name__ == "__main__":

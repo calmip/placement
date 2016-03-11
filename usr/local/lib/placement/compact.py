@@ -12,6 +12,7 @@ from scatter import *
 class CompactMode(TasksBinding):
     def __init__(self,archi):
         TasksBinding.__init__(self,archi)
+        self.distribTasks(False)
         
     def checkParameters(self):
         self._checkParameters()
@@ -27,6 +28,9 @@ class CompactMode(TasksBinding):
     def distribTasks(self, check=True):
         if check:
             self.checkParameters()
+
+        if self.tasks_bound != None:
+            return self.tasks_bound
 
         # cpus_per_task plus petit que cores_per_socket
         # ./placement -A   --mode=compact --hyper 4 4

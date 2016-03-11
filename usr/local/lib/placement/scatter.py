@@ -12,9 +12,10 @@ from tasksbinding import *
 class ScatterMode(TasksBinding):
     def __init__(self,archi,cpus_per_task=0,tasks=0):
         TasksBinding.__init__(self,archi,cpus_per_task,tasks)
+        self.distribTasks(False)
         
     def checkParameters(self):
-        '''Renvoie None si le check est positif, généère une exception sinon'''
+        '''Renvoie None si le check est positif, génère une exception sinon'''
         self._checkParameters()
 
         if self.cpus_per_task % self.archi.threads_per_core!=0:
@@ -47,6 +48,9 @@ class ScatterMode(TasksBinding):
         '''Init et renvoie self.tasks_bound, ie une liste de listes'''
         if check:
             self.checkParameters()
+
+        if self.tasks_bound != None:
+            return self.tasks_bound
 
         # cpus_per_task plus petit que cores_per_socket
         # placement -A   --mode=scatter 4 4

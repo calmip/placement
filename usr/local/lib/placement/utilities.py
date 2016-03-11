@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import copy
 from matrix import *
 from exception import *
 from itertools import chain,product
@@ -35,8 +36,11 @@ def numTaskToLetter(n):
 # return: Chaine de caractères
 def list2CompactString(A):
 
-    # On tansforme A en set, qui sera aussitôt trié
-    s = set(A)
+    # On passe par un set pour supprimer les doublons, puis par une nouvelle liste
+    # On la trie
+    s0 = set(A)
+    s  = list(s0)
+    s.sort()
 
     # réécrire tout ça avec la syntaxe: 1,2,3,5 => 1-3,5
     # cl_cpus = Compact List of A
