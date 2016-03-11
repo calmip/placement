@@ -13,6 +13,11 @@ import subprocess
 # class RunningMode, dérive de TaskBuilding, implémente les algos utilisés en mode running, ie observe ce qui se passe
 #                    lorsque l'application est exécutée
 #                    En déduit archi, cpus_per_task,tasks !
+# 
+# Paramètres: 
+#     path, le binaire ou le user sur lequel on a fait le --check
+#     hardware
+#     buildTasksBound L'algorithme utilisé pour savoir qui fait quoi où
 #
 class RunningMode(TasksBinding):
     def __init__(self,path,hardware,buildTasksBound):
@@ -26,10 +31,12 @@ class RunningMode(TasksBinding):
         self.archi = None
         self.cpus_per_task = 0
         self.tasks = 0
+        self.overlap    = []
         self.over_cores = []
         self.__buildTasksBound = buildTasksBound
         self.__processus_reserves = ['srun', 'mpirun', 'ps', 'sshd' ]
         self.__users_reserves     = ['root' ]
+        self.__initTasksThreadsBound()
         
     # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
     # OU au user passé en paramètre OU sans sélection préalable
@@ -176,6 +183,33 @@ class RunningMode(TasksBinding):
         self.pid = sorted(processus.keys())
 
 
+    # Renvoie les couples de processes qui présentent un recouvrement, ainsi que
+    # la liste des cœurs en cause
+    def _detectOverlap(self,tasks_bound):
+        over=[]
+        over_cores=[]
+        for i in range(len(tasks_bound)):
+            for j in range(i+1,len(tasks_bound)):
+                overlap = list(set(tasks_bound[i])&set(tasks_bound[j]))
+                if len(overlap)!=0:
+                    over.append((i,j))
+                    over_cores.extend(overlap)
+
+        # Remplace les numéros par des lettres
+        # TODO - Si un numéro est plus gros que 62, plantage !
+        over_l = []
+        for c in over:
+            over_l.append( (numTaskToLetter(c[0]),numTaskToLetter(c[1])) )
+
+        # Supprime les doublons dans self.over_core
+        over_cores = set(over_cores)
+        over_cores = list(over_cores)
+        over_cores.sort()
+        self.over_cores = over_cores
+        self.overlap    = over_l
+
+        return (over_l,over_cores)
+
     # A partir du pid, renvoie le nom de la commande
     # Si possible on utilise self.processus, sinon on appelle la commande ps
     def __pid2cmdu(self,pid):
@@ -237,6 +271,9 @@ class RunningMode(TasksBinding):
         if len(self.tasks_bound)==0:
             msg = "OUPS Aucune tâche trouvée !"
             raise PlacementException(msg)
+
+        # Détermine s'il y a des recouvrements (plusieurs processes sur un même cœur)
+        self._detectOverlap(self.tasks_bound)
 
         # Détermine l'architecture à partir des infos de hardware et des infos de processes ou de threads
         self.__buildArchi(self.tasks_bound)
