@@ -20,4 +20,5 @@ nytprof.out
 *~
 *.pyc
 .emacs.desktop*
+.coverage
 

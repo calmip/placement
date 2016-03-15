@@ -45,6 +45,9 @@ class TasksBinding(object):
             self.tasks         = self.archi.tasks
         else:
             self.tasks         = tasks
+        self.tasks_bound   = None
+        self.threads_bound = None
+        self.over_cores    = None
 
     def checkParameters(self):
         raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
@@ -67,6 +70,6 @@ class TasksBinding(object):
             raise PlacementException(msg)
 
     # Tri INPLACE des threads dans chaque process
-    def threadsSort(self,tasks_bound):
-        for p in tasks_bound:
+    def threadsSort(self):
+        for p in self.tasks_bound:
             p.sort()

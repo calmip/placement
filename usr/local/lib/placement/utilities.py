@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os
+import copy
 from matrix import *
 from exception import *
 from itertools import chain,product
+
 
 #############################################################################################################
 # retire tous les blancs de la list passée en paramètres
@@ -14,132 +16,6 @@ def removeBlanks(L):
             L.remove('')
     except:
         pass
-
-#
-# Réécrit le placement pour une tâche (appelé par getCpuBindingSrun)
-# Réécriture sous forme hexadécimale pour srun
-#
-# Params: archi (l'architecture processeurs)
-#         cores (un tableau d'entiers représentant les cœurs)
-# Return: Le tableau de tableaux réécrit en hexa
-#
-def getCpuTaskSrunBinding(archi,cores):
-    i = 1
-    rvl = 0
-    for j in range(archi.cores_per_node*archi.threads_per_core):
-        if (j in cores):
-            rvl += i
-        i = 2 * i
-    rvl = str(hex(rvl))
-    
-    # Supprime le 'L' final, dans le cas où il y a un grand nombre de threads
-    return rvl.rstrip('L')
-
-#
-# Réécrit le placement pour une tâche (appelé par getCpuBinding)
-# Réécriture de manière "humainement lisible"
-#
-# Params: archi (l'architecture processeurs), non utilisé
-#         cores (un tableau d'entiers représentant les cœurs)
-# Return: Le tableau de tableaux réécrit en chaine de caractères
-#
-#
-def getCpuTaskHumanBinding(archi,cores):
-    rvl="[ "
-    sorted_cores = cores
-    sorted_cores.sort()
-    for c in sorted_cores:
-        rvl+=str(c)
-        rvl += ' '
-    rvl+="]\n"
-    return rvl
-
-#
-# Réécrit le placement pour une tâche (appelé par getCpuBinding)
-# Réécriture en "art ascii" représentant l'architecture processeur
-#
-# Params: archi (l'architecture processeurs)
-#         cores (un tableau d'entiers représentant les cœurs)
-# Return: Une ou deux lignes, deux fois 10 colonnes séparées par un espace (pour 2 sockets_per_node de 10 cœurs)
-#
-# NOTE - PAS UTILISE ACTUELLEMENT, on utilise getCpuBindingAscii à la place
-#        On le garde pour cat getCpuBindingAscii est limité à 62 tâches
-#
-
-def getCpuTaskAsciiBinding(archi,cores):
-    rvl = ""
-    for l in range(archi.threads_per_core):
-        if (archi.threads_per_core>1):
-            if l==0:
-                rvl += '/'
-            else:
-                rvl += '\\'
-
-        for j in archi.l_sockets:
-            for k in range(archi.cores_per_socket):
-                if (l*archi.cores_per_node+j*archi.cores_per_socket+k in cores):
-                    rvl += 'X'
-                else:
-                    rvl += '.'
-            rvl += " "
-        rvl += "\n"
-    return rvl
-
-
-def getCpuTaskNumactlBinding(archi,cores):
-    return list2CompactString(cores)
-
-#
-# Réécrit le placement pour des ensembles de threads et de tâches
-# Réécriture matricielle, une colonne par cœur et une ligne par thread
-#
-# Params: archi (l'architecture processeurs)
-#         threads_bound (le tableau self.processus de la classe RunningMode, cf running.py)
-# Return: la chaine de caracteres pour affichage
-#
-
-def getCpuThreadsMatrixBinding(archi,threads_bound):
-    #print str(threads_bound)
-    psr_min = 9999
-    psr_max = 0
-    for pid in threads_bound.keys():
-        threads = threads_bound[pid]['threads']
-        for tid in threads:
-            psr = threads[tid]['psr']
-            if psr_min>psr:
-                psr_min=psr
-            if psr_max<psr:
-                psr_max=psr
-
-    m = Matrix(archi,psr_min,psr_max)
-    #m = Matrix(archi)
-    rvl = ''
-    rvl += m.getHeader()
-
-    nt=0
-    for pid in sorted(threads_bound.keys()):
-        l = numTaskToLetter(nt)
-        threads = threads_bound[pid]['threads']
-        for tid in sorted(threads):
-            if threads[tid]['state'] == 'R':
-                S = l
-            elif threads[tid]['state'] == 'S':
-                S = '.'
-            else:
-                S = '?'
-            if threads[tid].has_key('mem'):
-                rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'],threads[tid]['mem'])
-            else:
-                rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'])
-        nt += 1
-    return rvl
-
-#    nb_cols = psr_max-psr_min+1
- #   print psr_min
- #   print psr_max
- #   print nb_cols
- #   return getMatrixHeader(14*' ',psr_min,psr_max) + 'coucou'
-
 
 #
 # Conversion de  numéro de tâche (0..66) vers lettre(A-Za-z0-9)
@@ -152,18 +28,19 @@ def numTaskToLetter(n):
         return chr(71+n)   # a..z  (71=97-26)
     return chr(n-4)        # 0..>  (-4=53-48)
 
-# Conversion d'une liste d'entiers triée vers une chaine compacte:
-# ATTENTION - On fait un tri Inplace de A, qui est donc a priori modifié
-#             [0,1,2,5,6,7,9] ==> 0-2,5-7,9
+# Conversion d'une liste d'entiers vers une chaine compacte:
+# [0,1,2,5,6,7,9] ==> 0-2,5-7,9
 # 
-# params: A, liste d'entiers (peut être modifiée)
+# params: A, liste d'entiers (éventuellement dans le désordre)
 #
 # return: Chaine de caractères
 def list2CompactString(A):
 
-    #A.sort()
-    # On tansforme A en set, qui sera aussitôt trié
-    s = set(A)
+    # On passe par un set pour supprimer les doublons, puis par une nouvelle liste
+    # On la trie
+    s0 = set(A)
+    s  = list(s0)
+    s.sort()
 
     # réécrire tout ça avec la syntaxe: 1,2,3,5 => 1-3,5
     # cl_cpus = Compact List of A
@@ -173,7 +50,7 @@ def list2CompactString(A):
     end=-1
 
     # Ajoute '0-2' ou '0' à tmp
-    def compact(tmp,start,end):
+    def __compact(tmp,start,end):
         if start==end:
             tmp += [str(start)]
         else:
@@ -188,12 +65,12 @@ def list2CompactString(A):
             if c-last_c==1:
                 last_c=c
             else:
-                compact(tmp,start,last_c)
+                __compact(tmp,start,last_c)
                 start=c
                 last_c=c
                 
     if last_c>-1:
-        compact(tmp,start,last_c)
+        __compact(tmp,start,last_c)
     return ','.join(tmp)
 
 # Conversion d'une chaine compacte vers une listre triée:
@@ -221,145 +98,6 @@ def compactString2List(S):
 
         rvl = list(chain(*rvl))
     return rvl
-
-#
-# Réécriture de tasks_binding sous forme 'ascii art'
-#
-# Params = archi (passé à getCpuTasksMachineBinding)
-#          tasks_binding
-#          over_cores (un tableau d'entiers représentant les cores qui doivent exécuter plusieurs tâches, defaut=None)
-
-# Return = La chaine de caractères à afficher
-#    
-def getCpuBindingAscii(archi,tasks_binding,over_cores=None):
-    char=ord('A')
-
-    # cores = tableau de cores, prérempli avec '.'
-    cores=[]
-    for s in range(archi.sockets_per_node):
-        if s in archi.l_sockets:
-            to_app = '.'
-        else:
-            to_app = ' '
-        for t in range(archi.threads_per_core):
-            for c in range(archi.cores_per_socket):
-                cores.append(to_app)
-
-    # remplir le tableau cores avec une lettre correspondant au process
-    nt=0
-    for t in tasks_binding:
-        for c in t:
-            if over_cores!=None and c in over_cores:
-                cores[c] = '#'
-            else:
-                cores[c] = numTaskToLetter(nt)
-        nt += 1
-
-    # Pour une machine SMP plein de sockets type uvprod, on affiche les sockets par groupes de 8
-    rvl = ""
-    for gs in range(0,archi.sockets_per_node,8):
-        rvl += "  "
-        # Ecrire l'affectation des cœurs à partir des cores
-        for s in range(gs,min(gs+8,archi.sockets_per_node)):
-            rvl += 'S'
-            rvl += str(s)
-            cmin = 2
-            if s>=10:
-                cmin=3
-            for c in range(archi.cores_per_socket):
-                if c<cmin:
-                    continue
-                else:
-                    rvl += '-'
-            rvl += ' '
-        rvl += '\n'
-
-        for l in range(archi.threads_per_core):
-            if l==0:
-                rvl += "P "
-            else:
-                rvl += "L "
-
-            for s in range(gs,min(gs+8,archi.sockets_per_node)):
-                for c in range(archi.cores_per_socket):
-                    rvl += cores[l*archi.cores_per_node+s*archi.cores_per_socket+c]
-                rvl += ' '
-            rvl += '\n'
-    
-    return rvl
-
-#
-# Appel de fct pour chaque élément de tasks_binding
-# concatène et renvoie les retours de fct
-#
-def getCpuBinding(archi,tasks_binding,fct):
-    rvl = ""
-    for t in tasks_binding:
-        rvl += fct(archi.threads_per_core,t)
-    return rvl
-
-#
-# Réécriture de tasks_binding sous forme de paramètres hexadécimaux pour srun
-#
-# Params = archi, tasks_binding
-# Return = La chaine de caractères à afficher
-#    
-def getCpuBindingSrun(archi,tasks_binding):
-    mask_cpus=[]
-    for t in tasks_binding:
-        mask_cpus += [getCpuTaskSrunBinding(archi,t)]
-
-    return "--cpu_bind=mask_cpu:" + ",".join(mask_cpus)
-
-#
-# Réécriture de tasks_binding sous frome de switch numactl
-#
-def getCpuBindingNumactl(archi,tasks_binding):
-    cpus=[]
-
-    # remettre à plat tasks_binding
-#    for tasks in tasks_binding:
-#        for t in tasks:
-#            cpus.append(int(t))
-
-    # compactifie dans une chaine de caractères
-
-    sorted_tasks_binding=list(tasks_binding)
-    sorted_tasks_binding.sort()
-
-    for t in sorted_tasks_binding:
-        cpus += [getCpuTaskNumactlBinding(archi,t)]
-
-    return "--physcpubind=" + ",".join(cpus)
-    
-    s_cpus = list2CompactString(cpus)
-    return "--physcpubind=" + s_cpus
-    
-
-
-# Renvoie les couples de processes qui présentent un recouvrement, ainsi que
-# la liste des cœurs en cause
-def detectOverlap(tasks_bound):
-    over=[]
-    over_cores=[]
-    for i in range(len(tasks_bound)):
-        for j in range(i+1,len(tasks_bound)):
-            overlap = list(set(tasks_bound[i])&set(tasks_bound[j]))
-            if len(overlap)!=0:
-                over.append((i,j))
-                over_cores.extend(overlap)
-
-    # Remplace les numéros par des lettres
-    # TODO - Si un numéro est plus gros que 62, plantage !
-    over_l = []
-    for c in over:
-        over_l.append( (numTaskToLetter(c[0]),numTaskToLetter(c[1])) )
-
-    # Supprime les doublons dans self.over_core
-    over_cores = set(over_cores)
-    over_cores = list(over_cores)
-    over_cores.sort()
-    return (over_l,over_cores)
 
             
 # Calcule à partir de l'environnement ou des options les valeurs de tasks et cpus_per_task
