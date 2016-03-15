@@ -52,11 +52,11 @@ class ScatterMode(ScatterGenMode):
         
     def distribTasks(self,check=True):
         '''Init et renvoie self.tasks_bound, ie une liste de listes'''
-        if check:
-            self.checkParameters()
-
         if self.tasks_bound != None:
             return self.tasks_bound
+
+        if check:
+            self.checkParameters()
 
         tasks_bound = []
 
@@ -151,11 +151,11 @@ class ScatterBlockMode(ScatterGenMode):
         
     def distribTasks(self,check=True):
         '''Init et renvoie self.tasks_bound, ie une liste de listes'''
-        if check:
-            self.checkParameters()
-
         if self.tasks_bound != None:
             return self.tasks_bound
+
+        if check:
+            self.checkParameters()
 
         # cpus_per_task plus petit que cores_per_socket
         # placement -A   --mode=scatter 4 4

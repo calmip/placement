@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
-<svg width="81cm" height="53cm" viewBox="19 -485 1614 1048" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="81cm" height="50cm" viewBox="19 -423 1614 986" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <g>
     <rect style="fill: #ffffff" x="335" y="-148" width="241" height="70"/>
     <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="335" y="-148" width="241" height="70"/>
@@ -124,41 +124,29 @@
     <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="863.812" y="344.127">#_checkParameters()</text>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="537.99" y="-287.33" width="164" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="537.99" y="-287.33" width="164" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="619.99" y="-268.33">ScatterMode</text>
-    <rect style="fill: #ffffff" x="537.99" y="-259.33" width="164" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="537.99" y="-259.33" width="164" height="8"/>
-    <rect style="fill: #ffffff" x="537.99" y="-251.33" width="164" height="36"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="537.99" y="-251.33" width="164" height="36"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="540.99" y="-237.33">+checkParameters()()</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="540.99" y="-221.33">+distribTasks()</text>
+    <rect style="fill: #ffffff" x="535.99" y="-258.33" width="164" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.99" y="-258.33" width="164" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="617.99" y="-239.33">ScatterGenMode</text>
+    <rect style="fill: #ffffff" x="535.99" y="-230.33" width="164" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.99" y="-230.33" width="164" height="8"/>
+    <rect style="fill: #ffffff" x="535.99" y="-222.33" width="164" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.99" y="-222.33" width="164" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="538.99" y="-208.33">+checkParameters()()</text>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="860.812,216.127 694.368,216.127 694.368,28 576,28 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="860.812,216.128 694.368,216.128 694.368,28 576,28 "/>
     <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="696.368" y="118.064"/>
     <polygon style="fill: #000000" points="698.368,118.064 698.368,110.064 706.368,114.064 "/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:end;font-family:monospace;font-style:normal;font-weight:normal" x="856.812" y="212.127"/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:end;font-family:monospace;font-style:normal;font-weight:normal" x="856.812" y="212.128"/>
     <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="580" y="24"/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,142.127 716.66,142.127 716.66,-241.33 701.99,-241.33 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,142.127 716.66,142.127 716.66,-212.33 699.99,-212.33 "/>
     <polygon style="fill: #ffffff" points="842.576,150.127 858.576,142.127 842.576,134.127 "/>
     <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,150.127 858.576,142.127 842.576,134.127 "/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="538.016" y="-383.196" width="164" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="538.016" y="-383.196" width="164" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="620.016" y="-364.196">CompactMode</text>
-    <rect style="fill: #ffffff" x="538.016" y="-355.196" width="164" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="538.016" y="-355.196" width="164" height="8"/>
-    <rect style="fill: #ffffff" x="538.016" y="-347.196" width="164" height="36"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="538.016" y="-347.196" width="164" height="36"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="541.016" y="-333.196">+checkParameters()()</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="541.016" y="-317.196">+distribTasks()</text>
-  </g>
-  <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,77.1272 773.917,77.1272 773.917,-347.196 703.021,-347.196 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,77.1272 776.738,77.1272 776.738,-285.856 708.665,-285.856 "/>
     <polygon style="fill: #ffffff" points="842.576,85.1272 858.576,77.1272 842.576,69.1272 "/>
     <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,85.1272 858.576,77.1272 842.576,69.1272 "/>
   </g>
@@ -198,26 +186,26 @@
     <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="810.806" y="-292.138" width="219.9" height="8"/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="586.206" y="-483.838" width="229.25" height="56"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="586.206" y="-483.838" width="229.25" height="56"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="700.831" y="-464.838">BuildTasksBoundFromPs</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="700.831" y="-449.338">Objet-fonction, construit le</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="700.831" y="-435.338">tasks_bound en utilisant ps</text>
-    <rect style="fill: #ffffff" x="586.206" y="-427.838" width="229.25" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="586.206" y="-427.838" width="229.25" height="8"/>
-    <rect style="fill: #ffffff" x="586.206" y="-419.838" width="229.25" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="586.206" y="-419.838" width="229.25" height="8"/>
+    <rect style="fill: #ffffff" x="1163.2" y="-421.838" width="229.25" height="56"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1163.2" y="-421.838" width="229.25" height="56"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1277.83" y="-402.838">BuildTasksBoundFromPs</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1277.83" y="-387.338">Objet-fonction, construit le</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1277.83" y="-373.338">tasks_bound en utilisant ps</text>
+    <rect style="fill: #ffffff" x="1163.2" y="-365.838" width="229.25" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1163.2" y="-365.838" width="229.25" height="8"/>
+    <rect style="fill: #ffffff" x="1163.2" y="-357.838" width="229.25" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1163.2" y="-357.838" width="229.25" height="8"/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="961.606" y="-481.538" width="278.1" height="56"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="961.606" y="-481.538" width="278.1" height="56"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1100.66" y="-462.538">BuildTasksBoundFromTaskSet</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1100.66" y="-447.038">Objet-fonction servant à construire le</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1100.66" y="-433.038">tasks_bound</text>
-    <rect style="fill: #ffffff" x="961.606" y="-425.538" width="278.1" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="961.606" y="-425.538" width="278.1" height="8"/>
-    <rect style="fill: #ffffff" x="961.606" y="-417.538" width="278.1" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="961.606" y="-417.538" width="278.1" height="8"/>
+    <rect style="fill: #ffffff" x="1161.61" y="-313.539" width="278.1" height="56"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1161.61" y="-313.539" width="278.1" height="56"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1300.66" y="-294.539">BuildTasksBoundFromTaskSet</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1300.66" y="-279.039">Objet-fonction servant à construire le</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1300.66" y="-265.039">tasks_bound</text>
+    <rect style="fill: #ffffff" x="1161.61" y="-257.539" width="278.1" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1161.61" y="-257.539" width="278.1" height="8"/>
+    <rect style="fill: #ffffff" x="1161.61" y="-249.539" width="278.1" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1161.61" y="-249.539" width="278.1" height="8"/>
   </g>
   <g>
     <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="920.756,-283.129 920.756,-253.143 930.852,-253.143 930.852,-223.156 "/>
@@ -227,14 +215,14 @@
     <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="934.852" y="-227.156"/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="920.756,-375.383 920.756,-391.988 700.831,-391.988 700.831,-410.829 "/>
-    <polygon style="fill: #ffffff" points="912.756,-375.383 920.756,-359.383 928.756,-375.383 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="912.756,-375.383 920.756,-359.383 928.756,-375.383 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1049.95,-320.138 1104.95,-320.138 1104.95,-385.838 1162.2,-385.838 "/>
+    <polygon style="fill: #ffffff" points="1049.95,-328.138 1033.95,-320.138 1049.95,-312.138 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1049.95,-328.138 1033.95,-320.138 1049.95,-312.138 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="920.756,-375.383 920.756,-390.838 1100.66,-390.838 1100.66,-408.529 "/>
-    <polygon style="fill: #ffffff" points="912.756,-375.383 920.756,-359.383 928.756,-375.383 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="912.756,-375.383 920.756,-359.383 928.756,-375.383 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1049.95,-320.138 1104.15,-320.138 1104.15,-277.539 1160.6,-277.539 "/>
+    <polygon style="fill: #ffffff" points="1049.95,-328.138 1033.95,-320.138 1049.95,-312.138 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1049.95,-328.138 1033.95,-320.138 1049.95,-312.138 "/>
   </g>
   <g>
     <rect style="fill: #ffffff" x="1232.07" y="160.748" width="225.6" height="28"/>
@@ -323,5 +311,75 @@
     <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1344.87,141.503 1344.87,109.096 1343.89,109.096 1343.89,74.4532 "/>
     <polygon style="fill: #ffffff" points="1336.87,141.503 1344.87,157.503 1352.87,141.503 "/>
     <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1336.87,141.503 1344.87,157.503 1352.87,141.503 "/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="334.318" y="-290.417" width="125.5" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="334.318" y="-290.417" width="125.5" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="397.068" y="-271.417">ScatterMode</text>
+    <rect style="fill: #ffffff" x="334.318" y="-262.417" width="125.5" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="334.318" y="-262.417" width="125.5" height="8"/>
+    <rect style="fill: #ffffff" x="334.318" y="-254.417" width="125.5" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="334.318" y="-254.417" width="125.5" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="337.318" y="-240.417">+distribTasks()</text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="331.821" y="-219.91" width="150.6" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="331.821" y="-219.91" width="150.6" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="407.121" y="-200.91">ScatterAltMode</text>
+    <rect style="fill: #ffffff" x="331.821" y="-191.91" width="150.6" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="331.821" y="-191.91" width="150.6" height="8"/>
+    <rect style="fill: #ffffff" x="331.821" y="-183.91" width="150.6" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="331.821" y="-183.91" width="150.6" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="334.821" y="-169.91">+distribTasks()</text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.752,-230.33 506.018,-230.33 506.018,-262.417 460.813,-262.417 "/>
+    <polygon style="fill: #ffffff" points="516.752,-222.33 532.752,-230.33 516.752,-238.33 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.752,-222.33 532.752,-230.33 516.752,-238.33 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.858,-230.33 505.856,-230.33 505.856,-191.91 483.414,-191.91 "/>
+    <polygon style="fill: #ffffff" points="516.858,-222.33 532.858,-230.33 516.858,-238.33 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.858,-222.33 532.858,-230.33 516.858,-238.33 "/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="535.265" y="-331.856" width="173.4" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.265" y="-331.856" width="173.4" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="621.965" y="-312.856">CompactGenMode</text>
+    <rect style="fill: #ffffff" x="535.265" y="-303.856" width="173.4" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.265" y="-303.856" width="173.4" height="8"/>
+    <rect style="fill: #ffffff" x="535.265" y="-295.856" width="173.4" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.265" y="-295.856" width="173.4" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="538.265" y="-281.856">+checkParameters()()</text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="577.469" y="-420.973" width="212.4" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="577.469" y="-420.973" width="212.4" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="683.669" y="-401.973">CompactPhysicalMode</text>
+    <rect style="fill: #ffffff" x="577.469" y="-392.973" width="212.4" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="577.469" y="-392.973" width="212.4" height="8"/>
+    <rect style="fill: #ffffff" x="577.469" y="-384.973" width="212.4" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="577.469" y="-384.973" width="212.4" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="580.469" y="-370.973">+distribTasks()</text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="425.691" y="-419.17" width="138" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="425.691" y="-419.17" width="138" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="494.691" y="-400.17">CompactMode</text>
+    <rect style="fill: #ffffff" x="425.691" y="-391.17" width="138" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="425.691" y="-391.17" width="138" height="8"/>
+    <rect style="fill: #ffffff" x="425.691" y="-383.17" width="138" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="425.691" y="-383.17" width="138" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="428.691" y="-369.17">+distribTasks()</text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="727.906,-303.856 789.869,-303.856 789.869,-364.973 "/>
+    <polygon style="fill: #ffffff" points="727.906,-311.856 711.906,-303.856 727.906,-295.856 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="727.906,-311.856 711.906,-303.856 727.906,-295.856 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.024,-303.856 425.691,-303.856 425.691,-363.17 "/>
+    <polygon style="fill: #ffffff" points="516.024,-295.856 532.024,-303.856 516.024,-311.856 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.024,-295.856 532.024,-303.856 516.024,-311.856 "/>
   </g>
 </svg>

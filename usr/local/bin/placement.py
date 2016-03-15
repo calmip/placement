@@ -89,7 +89,8 @@ def main():
     parser.add_option("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
 #    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
-    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of hard.HYPERTHREADING (%default)")
+    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of hyperthreading (%default)")
+    parser.add_option("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (%default)")
     parser.add_option("-M","--mode",type="choice",choices=["compact","scatter","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter, scatter_cyclic (same as scatter),scatter_block, compact (%default)")
     parser.add_option("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
     parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
@@ -281,14 +282,11 @@ def compute_data_from_running(options,args,hard):
 def compute_data_from_parameters(options,args,hard):
     over_cores = None
     [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
+    hyper = options.hyper or options.hyper_phys
     if hard.IS_SHARED:
-        # Suppression du switch -S permettant de "choisir" le nombre de sockets !
-        #archi = Shared(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
-        archi = Shared(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, options.hyper)
+        archi = Shared(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, hyper)
     else:
-        # Suppression du switch -S permettant de "choisir" le nombre de sockets !
-        #archi = Exclusive(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
-        archi = Exclusive(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, options.hyper)
+        archi = Exclusive(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, hyper)
             
     task_distrib = ""
     if options.mode == "scatter":
@@ -298,7 +296,10 @@ def compute_data_from_parameters(options,args,hard):
     elif options.mode == "scatter_block":
         task_distrib = ScatterBlockMode(archi)
     else:
-        task_distrib = CompactMode(archi)
+        if options.hyper_phys == True:
+            task_distrib = CompactPhysicalMode(archi)
+        else:
+            task_distrib = CompactMode(archi)
             
     #tasks_bound = task_distrib.distribTasks()
 
