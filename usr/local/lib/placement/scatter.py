@@ -77,9 +77,6 @@ class ScatterMode(ScatterGenMode):
             # Recopier le template au bon endroit
             for t in range(self.tasks):
                 ca = s * self.archi.cores_per_socket + c
-                #s = self.__task2socket(t)
-                #c = self.__task2core(t)
-                #c_start = s * self.archi.cores_per_socket + c
                 t_bound = []
                 for h in range(self.cpus_per_task):
                     t_bound.append(ca + tmpl[h])
@@ -111,37 +108,6 @@ class ScatterMode(ScatterGenMode):
         self.tasks_bound = tasks_bound
         return self.tasks_bound
 
-    # Calcule le numéro de socket sur lequel tourne la tâche t
-    # s = t / (nb_de_taches/nb_de_sockets)
-    def __task2socket(self,t):
-        q = self.tasks / self.archi.sockets_reserved
-        if q==0:
-            return t
-        r = self.tasks % self.archi.sockets_reserved
-        s = t / q
-        if s<r:
-            s -= t
-        else:
-            s -= r
-
-        # on retourne un numéro de socket physique (dépend des réservations)
-        return self.archi.l_sockets[s]
-
-    # Calcule le premier numéro de cœur dédié à la tâche t
-    def __task2core(self,t):
-        q = self.tasks / self.archi.sockets_reserved
-        if q==0:
-            return 0
-        s = t / q
-        # s = numéro de socket logique
-        s = t * self.archi.sockets_reserved / self.tasks
-        # h = nombre de cœurs PHYSIQUES utilisés par chaque tâche
-        h = self.cpus_per_task / self.archi.threads_per_core
-        # r = reste de la division nb_de_taches/nb_de_sockets
-        r = self.tasks % self.archi.sockets_reserved
-        
-        return (t - s*self.tasks/self.archi.sockets_reserved - min(s,r)) * h
-
     def __compute_task_template(self,explode=False):
         '''Calcule les coœurs occupés par la tâche qui commence au cœur 0
            Si explode vaut true, la tâche sera explosée entre tous les sockets disponibles'''
@@ -170,7 +136,7 @@ class ScatterMode(ScatterGenMode):
 # class ScatterMode, dérive de TaskBinding, implémente les algos utilisés en mode scatter
 #
 
-class ScatterAltMode(ScatterGenMode):
+class ScatterBlockMode(ScatterGenMode):
     def __init__(self,archi,cpus_per_task=0,tasks=0):
         ScatterGenMode.__init__(self,archi,cpus_per_task,tasks)
         self.distribTasks()
@@ -234,9 +200,9 @@ class ScatterAltMode(ScatterGenMode):
         else:
             # TODO - testé seulement pour au max 2 threads par core !!!
             # On multiplie le nb de tâches et divise le nb de threads, on distribue, on coalesce les tableaux de tâches
-            tmp_task_distrib = ScatterAltMode(self.archi,
-                                              self.cpus_per_task/2,
-                                              self.tasks*2)
+            tmp_task_distrib = ScatterBlockMode(self.archi,
+                                                self.cpus_per_task/2,
+                                                self.tasks*2)
             tmp_tasks_bound= tmp_task_distrib.distribTasks(check=False)
             # On a passé un nombre *2, donc on est sûr que ce nombre est bien pair
             imax = len(tmp_tasks_bound)
