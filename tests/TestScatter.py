@@ -52,12 +52,8 @@ class TestScatterExclusive(unittest.TestCase):
         # cf. scatter.py L 30-32
         self.exclu_ok12 = Exclusive(self.hardware,2,12,1,False)
         self.scatter_ok12 = ScatterMode(self.exclu_ok12)
-        #self.exclu_ok13 = Exclusive(self.hardware,2,22,1,True)
-        #self.scatter_ok13 = ScatterMode(self.exclu_ok13)
-        #self.scatter_ko14 = ScatterMode(self.exclu_ko14)
-
-        # Si plusieurs tâches non, elles ne peuvent pas
-        #self.exclu_ko14 = Exclusive(self.hardware,2,12,2,True)
+        self.exclu_ok13 = Exclusive(self.hardware,2,24,1,True)
+        self.scatter_ok13 = ScatterMode(self.exclu_ok13)
 
         # Si plusieurs tâches elles ne doivent pas être à cheval sur deux sockets
         self.exclu_ko15 = Exclusive(self.hardware,2,4,5,False)
@@ -70,6 +66,7 @@ class TestScatterExclusive(unittest.TestCase):
         self.assertEqual(self.scatter_ok6.test__compute_task_template(),[0,20])
         self.assertEqual(self.scatter_ok11.test__compute_task_template(),[0,20])
         self.assertEqual(self.scatter_ok12.test__compute_task_template(True),[0,1,2,3,4,5])
+        self.assertEqual(self.scatter_ok13.test__compute_task_template(True),[0,1,2,3,4,5,20,21,22,23,24,25])
 
 
     def test_exclusive_check(self):
@@ -99,6 +96,7 @@ class TestScatterExclusive(unittest.TestCase):
         self.assertEqual(self.scatter_ok9.distribTasks(),[[0,1],[2,3],[4,5],[10,11],[12,13]])
         self.assertEqual(self.scatter_ok11.distribTasks(),[[0,20],[1,21],[2,22],[10,30],[11,31]])
         self.assertEqual(self.scatter_ok12.distribTasks(),[[0,1,2,3,4,5,10,11,12,13,14,15]])
+        self.assertEqual(self.scatter_ok13.distribTasks(),[[0,1,2,3,4,5,20,21,22,23,24,25,10,11,12,13,14,15,30,31,32,33,34,35]])
 
 # bien qu'on teste ici une architecture Shared, on considère qu'elle est Exclusive
 class TestScatterSharedMesca(unittest.TestCase):

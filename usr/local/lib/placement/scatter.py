@@ -25,6 +25,13 @@ class ScatterGenMode(TasksBinding):
             msg += ")"
             raise PlacementException(msg)
 
+        # max_cpus = S'il y a plusieurs tâches chacune doit avoir moins de threads que de cores logiques par socket
+        if self.tasks > 1:
+            if self.cpus_per_task > self.archi.threads_per_core*self.archi.cores_per_socket:
+                msg  = "OUPS - Diminuez le nombre de threads (le maximum est " + str(self.archi.threads_per_core*self.archi.cores_per_socket) +")\n"
+                msg += "       Ou alors ne mettez qu'une seule tâche par nœud et passez en mode scatter_cyclic !"
+                raise PlacementException(msg)
+                
         # max_tasks calculé ainsi permet d'être sûr de ne pas avoir une tâche entre deux sockets_per_node, 
         max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
         if self.cpus_per_task>1:
@@ -118,7 +125,8 @@ class ScatterMode(ScatterGenMode):
             nb_cores = self.cpus_per_task / self.archi.sockets_reserved
         else:
             nb_cores = self.cpus_per_task
-        nb_phys_core = self.cpus_per_task / self.archi.threads_per_core
+
+        nb_phys_core = nb_cores / self.archi.threads_per_core
             
         for t in range(0,nb_cores):
             tmpl.append(c)
