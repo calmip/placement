@@ -90,7 +90,7 @@ def main():
     parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
 #    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
     parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of hard.HYPERTHREADING (%default)")
-    parser.add_option("-M","--mode",type="choice",choices=["compact","scatter"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, compact (%default)")
+    parser.add_option("-M","--mode",type="choice",choices=["compact","scatter","scatter_alt"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, scatter_alt, compact (%default)")
     parser.add_option("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
     parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
 
@@ -293,6 +293,8 @@ def compute_data_from_parameters(options,args,hard):
     task_distrib = ""
     if options.mode == "scatter":
         task_distrib = ScatterMode(archi)
+    elif options.mode == "scatter_alt":
+        task_distrib = ScatterAltMode(archi)
     else:
         task_distrib = CompactMode(archi)
             
