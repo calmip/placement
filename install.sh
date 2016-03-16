@@ -43,10 +43,30 @@ echo DST=$DST
 BIN="$DST/bin"
 LIB="$DST/lib/placement"
 
+SRC=usr/local
+
+if [ "$HOST" = 'LOCAL' ]
+then
+
+echo "OK pour une installation en local..."
+[ ! -d $BIN ] && echo Pas de répertoire $BIN sur $HOST && exit 1
+[ ! -d $LIB ] && echo Pas de répertoire $LIB sur $HOST && exit 1
+
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py
+do
+  cp $SRC/lib/placement/$f $LIB
+done
+
+cp $SRC/bin/placement.py $SRC/bin/placement $BIN
+chmod a=r,u+w $LIB/*
+chmod a=rx,u+w $BIN/placement.py $BIN/placement
+
+else
+
+echo "OK pour une installation sur $HOST, user $USER ..."
+
 ssh -p $PORT $USER@$HOST "[ ! -d $BIN ] && echo Pas de répertoire $BIN sur $HOST" && exit 1
 ssh -p $PORT $USER@$HOST "[ ! -d $LIB ] && echo Pas de répertoire $LIB sur $HOST" && exit 1
-
-SRC=usr/local
 
 for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py
 do
@@ -57,4 +77,7 @@ scp -P $PORT $SRC/bin/placement.py $SRC/bin/placement "$USER@$HOST:$BIN"
 ssh -p $PORT $USER@$HOST "chmod a=r,u+w $LIB/*"
 ssh -p $PORT $USER@$HOST "chmod a=rx,u+w $BIN/placement.py $BIN/placement"
 
+fi
+
 echo "C'est fait, man !"
+
