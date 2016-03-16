@@ -121,20 +121,20 @@ class RunningMode(TasksBinding):
 
         for l in ps_res:
 
+            # S'il y a dans processus_courant au moins un thread actif, on le sauve !
+            if processus_courant.has_key('R'):
+                processus[processus_courant['pid']] = processus_courant
+                
             # Détection des lignes représentant un processus
-            mp=re.match('([a-z0-9]+) +(\d+) +- +- +([^ ]+).+([0-9.]+$)',l)
+            mp=re.match('([a-z0-9]+) +(\d+) +- +- +([^ ]+) +- +[0-9.]+ +([0-9.]+)$',l)
             if mp != None:
 
-                # S'il y a dans processus_courant au moins un thread actif, on le sauve !
-                if processus_courant.has_key('R'):
-                    processus[processus_courant['pid']] = processus_courant
-                
                 # On vide le processus courant, si processus ou user réservé on passe à la ligne suivante
                 processus_courant={}
                 user= mp.group(1)
                 pid = int(mp.group(2))
                 cmd = mp.group(3)
-                mem = int(mp.group(4))
+                mem = float(mp.group(4))
                 if cmd in self.__processus_reserves:
                     continue
                 if user in self.__users_reserves:
@@ -146,12 +146,7 @@ class RunningMode(TasksBinding):
                 processus_courant['mem']=mem
                 continue
 
-            # S'il y a dans processus_courant au moins un thread actif quand on sort de la boucle, on le sauve
-            if processus_courant.has_key('R'):
-                processus[processus_courant['pid']] = processus_courant
-                
             # Détection des lignes représentant un thread
-            #mt = re.match('[a-z0-9]+ +- +(\d+) +(\d+) +- +([A-Z])',l)
             mt = re.match('[a-z0-9]+ +- +(\d+) +(\d+) +- +([A-Z]) +([0-9.]+)',l)
             if mt != None:
                 # Si pas de processus courant (en principe pas possible) ou processus courant non conservé, on passe
@@ -179,6 +174,10 @@ class RunningMode(TasksBinding):
 
                 processus_courant['threads'][tid] = thread_courant
 
+        # S'il y a dans processus_courant au moins un thread actif quand on sort de la boucle, on le sauve
+        if processus_courant.has_key('R'):
+            processus[processus_courant['pid']] = processus_courant
+                
         self.processus = processus
         self.pid = sorted(processus.keys())
 
