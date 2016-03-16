@@ -68,7 +68,7 @@ echo "OK pour une installation sur $HOST, user $USER ..."
 ssh -p $PORT $USER@$HOST "[ ! -d $BIN ] && echo Pas de répertoire $BIN sur $HOST" && exit 1
 ssh -p $PORT $USER@$HOST "[ ! -d $LIB ] && echo Pas de répertoire $LIB sur $HOST" && exit 1
 
-for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py printing.py utilities.py matrix.py
 do
   scp -P $PORT $SRC/lib/placement/$f "$USER@$HOST:$LIB"
 done

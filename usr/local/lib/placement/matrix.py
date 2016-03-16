@@ -12,7 +12,7 @@ from exception import *
 # Réécriture matricielle, une colonne par cœur et une ligne par thread
 #
 # Params: archi (l'architecture processeurs)
-#         threads_bound (le tableau self.processus de la classe RunningMode, cf running.py)
+#         psr_min, psr_max = Les cœurs limites 
 # Return: la chaine de caracteres pour affichage
 #
 

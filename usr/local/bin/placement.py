@@ -99,6 +99,9 @@ def main():
     parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
     parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
     parser.add_option("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
+    parser.add_option("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
+    parser.add_option("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
+    parser.add_option("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
     parser.add_option("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
     parser.add_option("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
     parser.set_defaults(output_mode="srun")
@@ -131,11 +134,24 @@ def main():
             #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
             tasks_binding = compute_data_from_parameters(options,args,hard)
 
+        # Imprime les infos d'overlap si pertinetnes et si elles existent
+        try:
+            overlap = tasks_binding.overlap
+            if len(overlap)>0:
+                print "ATTENTION LES TACHES SUIVANTES ONT DES RECOUVREMENTS:"
+                print "====================================================="
+                print overlap
+                print
+        except AttributeError:
+            pass
+
         # Seconde étape = Impression des résultats sous plusieurs formats
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
             print "OUPS, Aucune sortie demandée !"
         else:
+            if options.check != None:
+                print gethostname()
             for o in outputs:
                 print o
             
@@ -163,6 +179,10 @@ def buildOutputs(options,tasks_binding):
             outputs.append(PrintingForNumactl(tasks_binding))
             return outputs
 
+    # Imprime en mode verbose
+    if options.verbose:
+        outputs.append(PrintingForVerbose(tasks_binding))
+
     # Imprime le binding de manière compréhensible pour les humains
     if options.human==True:
         outputs.append(PrintingForHuman(tasks_binding))
@@ -170,10 +190,17 @@ def buildOutputs(options,tasks_binding):
     # Imprime le binding en ascii art
     if options.asciiart==True:
         outputs.append(PrintingForAsciiArt(tasks_binding))
-    
+
     # Imprime l'affinite des threads et des cpus
     if options.check!=None and options.threads==True:
-        outputs.append(PrintingForMatrixThreads(tasks_binding))
+        o = PrintingForMatrixThreads(tasks_binding)
+        if options.only_running == True:
+            o.PrintOnlyRunningThreads()
+        if options.sorted_threads_cores == True:
+            o.SortedThreadsCores()
+        if options.sorted_processes_cores == True:
+            o.SortedProcessesCores()
+        outputs.append(o)
 
     # Imprime le binding de manière compréhensible pour srun ou numactl
     # (PAS si --check)
@@ -253,18 +280,6 @@ def compute_data_from_running(options,args,hard):
         buildTasksBound = BuildTasksBoundFromPs()
 
     task_distrib = RunningMode(path,hard,buildTasksBound)
-
-    print gethostname()
-    if options.verbose != False:
-        print task_distrib.getTask2Pid()
-        print
-
-    overlap = task_distrib.overlap
-    if len(overlap)>0:
-        print "ATTENTION LES TACHES SUIVANTES ONT DES RECOUVREMENTS:"
-        print "====================================================="
-        print overlap
-        print
 
     return task_distrib
 
