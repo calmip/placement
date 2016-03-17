@@ -168,6 +168,7 @@ class RunningMode(TasksBinding):
                 thread_courant        = {}
                 thread_courant['tid'] = tid
                 thread_courant['psr'] = psr
+                thread_courant['ppsr']= self.hardware.getCore2PhysCore(psr)
                 thread_courant['cpu'] = cpu
                 thread_courant['state'] = state
                 thread_courant['mem'] = processus_courant['mem']
@@ -184,31 +185,6 @@ class RunningMode(TasksBinding):
                 
         self.processus = processus
         self.pid = sorted(processus.keys())
-
-    # A partir du pid, renvoie le nom de la commande
-    # Si possible on utilise self.processus, sinon on appelle la commande ps
-    # def __pid2cmdu(self,pid):
-    #     if len(self.processus)==0:
-    #         return self.__pid2cmduPs(pid)
-    #     else:
-    #         return self.processus[pid]['cmd']+','+ self.processus[pid]['user']
-
-    # def __pid2cmduPs(self,pid):
-    #     cmd = "ps --no-headers -o %c,%u -p " + str(pid)
-    #     try:
-    #         cu = subprocess.check_output(cmd.split(' ')).rstrip('\n')
-
-    #     except subprocess.CalledProcessError,e:
-    #         # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-    #         msg = "OUPS "
-    #         msg += "AUCUNE TACHE TROUVEE: peut-etre le pid vient-il de mourir ?"
-    #         raise PlacementException(msg)
-
-    #     #print 'hoho'+cu
-    #     [c,space,u] = cu.split(' ',2)
-    #     u = u.strip()
-    #     cu = c+','+u
-    #     return cu
 
     # A partir de tasks_bound, détermine l'architecture
     def __buildArchi(self,tasks_bound):

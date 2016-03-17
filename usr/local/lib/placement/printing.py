@@ -231,42 +231,42 @@ class PrintingForMatrixThreads(PrintingFor):
     def __getCpuBinding(self,archi,threads_bound):
         #print str(threads_bound)
 
-        # calcul des psr_min, psr_max, globaux et liés à chaque pid
-        psr_min = 9999
-        psr_max = 0
+        # calcul des ppsr_min, ppsr_max, (ppsr = Physical Processor, ie numero de cœur physique) globaux et liés à chaque pid
+        ppsr_min = 9999
+        ppsr_max = 0
         for pid in threads_bound.keys():
-            p_psr_min = 9999
+            p_ppsr_min = 9999
             #p_psr_max = 0
             threads = threads_bound[pid]['threads']
 
             for tid in threads:
-                psr = threads[tid]['psr']
-                if psr_min>psr:
-                    psr_min=psr
-                if p_psr_min>psr:
-                    p_psr_min=psr
-                if psr_max<psr:
-                    psr_max=psr
-                #if p_psr_max<psr:
-                #    p_psr_max=psr
+                ppsr = threads[tid]['ppsr']
+                if ppsr_min>ppsr:
+                    ppsr_min=ppsr
+                if p_ppsr_min>ppsr:
+                    p_ppsr_min=ppsr
+                if ppsr_max<ppsr:
+                    ppsr_max=ppsr
+                #if p_ppsr_max<ppsr:
+                #    p_ppsr_max=ppsr
                     
-            threads_bound[pid]['psr_min'] = p_psr_min
+            threads_bound[pid]['ppsr_min'] = p_ppsr_min
 
         # Impression du header de la matrice
-        m = Matrix(archi,psr_min,psr_max)
+        m = Matrix(archi,ppsr_min,ppsr_max)
         rvl = ''
         rvl += m.getHeader()
 
         # Impression du corps de la matrice
         if self.__sorted_processes_cores:
-            sorted_processes = sorted(threads_bound.iteritems(),key=lambda(k,v):(v['psr_min'],k))
+            sorted_processes = sorted(threads_bound.iteritems(),key=lambda(k,v):(v['ppsr_min'],k))
         else:
             sorted_processes = sorted(threads_bound.iteritems())
         for (pid,thr) in sorted_processes:
             l = threads_bound[pid]['tag']
             threads = threads_bound[pid]['threads']
             if self.__sorted_threads_cores:
-                sorted_threads = sorted(threads.iteritems(),key=lambda(k,v):(v['psr'],k))
+                sorted_threads = sorted(threads.iteritems(),key=lambda(k,v):(v['ppsr'],k))
             else:
                 sorted_threads = sorted(threads.iteritems())
 
@@ -280,9 +280,9 @@ class PrintingForMatrixThreads(PrintingFor):
                 else:
                     S = '?'
                 if thr.has_key('mem'):
-                    rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'],threads[tid]['mem'])
+                    rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['mem'])
                 else:
-                    rvl += m.getLine(pid,tid,threads[tid]['psr'],S,l,threads[tid]['cpu'])
+                    rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'])
 
         return rvl
 

@@ -60,7 +60,7 @@ class Architecture(object):
     #
     # Active l'hyperthreading si nécessaire:
     #         si hyper == Si True, on active sinon on active seulement si nécessaire
-    #         Si la variable globale hardware.HYPERTHREADING est à False et que l'hyperthreading doit être
+    #         Si la variable hardware.HYPERTHREADING est à False et que l'hyperthreading doit être
     #         activé, on lève une exception
     #
     #         Retourne threads_per_core (1 ou 2)
@@ -74,24 +74,6 @@ class Architecture(object):
                 msg = "OUPS - l'hyperthreading n'est pas actif sur cette machine"
                 raise PlacementException(msg)
         return threads_per_core
-
-    # Renvoie le numéro de socket à prtir du numéro de cœur
-    # Utilisé par certains affichages
-    # TODO - Pour le moment IGNORE L'HYPERTHREADING OULALA
-    def getCore2Socket(self,core):
-        return core / self.cores_per_socket
-
-    # Renvoie le numéro de cœur sur le socket courant
-    # Utilisé par certains affichages
-    # TODO - Pour le moment IGNORE L'HYPERTHREADING OULALA
-    def getCore2Core(self,core):
-        return core % self.cores_per_socket
-
-    def getSocket2CoreMax(self,s):
-        return (s+1) * self.cores_per_socket - 1
-
-    def getSocket2CoreMin(self,s):
-        return s * self.cores_per_socket
 
 #
 # class Exclusive:
