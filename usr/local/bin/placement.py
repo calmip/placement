@@ -299,9 +299,9 @@ def compute_data_from_parameters(options,args,hard):
     [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
     hyper = options.hyper or options.hyper_phys
     if hard.IS_SHARED:
-        archi = Shared(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, hyper)
+        archi = Shared(hard, cpus_per_task, tasks, hyper)
     else:
-        archi = Exclusive(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, hyper)
+        archi = Exclusive(hard, cpus_per_task, tasks, hyper)
             
     task_distrib = ""
     if options.mode == "scatter":

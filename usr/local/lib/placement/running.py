@@ -194,8 +194,8 @@ class RunningMode(TasksBinding):
         self.tasks         = len(tasks_bound)
         self.sockets_per_node = self.hardware.SOCKETS_PER_NODE
         
-        # Même si on est sur une machine partagée, on est exclusif sur ce qu'on nous a attribué
-        self.archi = Exclusive(self.hardware,self.sockets_per_node, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
+        # On considère la machine comme exclusive, même si elle est partagée
+        self.archi = Exclusive(self.hardware, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
 
     def distribTasks(self,check=False):
         if self.tasks_bound==None:
