@@ -137,3 +137,20 @@ def computeCpusTasksFromEnv(options,args):
 
     # retourne les valeurs calculées
     return [cpus_per_task,tasks]
+
+# Passe en bold
+def bold():
+    return '\033[1m'
+
+def underline():
+    return '\033[41m'
+
+def boldunderline():
+    return '\033[1;4m'
+
+def red():
+    return '\033[1;31m'
+# Redevient normal
+def normal():
+    return '\033[0m'
+
