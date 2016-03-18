@@ -130,9 +130,9 @@ def computeCpusTasksFromEnv(options,args):
         cpus_per_task = int(os.environ['SLURM_CPUS_PER_TASK'])
     
     # Les valeurs spécifiées dans la ligne de commande ont la priorité !
-    if len(args) >= 2:
+    if args[1] > 0:
         cpus_per_task = int(args[1])
-    if len(args) >= 1:
+    if args[0] > 0:
         tasks         = int(args[0])
 
     # retourne les valeurs calculées
