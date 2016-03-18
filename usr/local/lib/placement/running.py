@@ -118,23 +118,26 @@ class RunningMode(TasksBinding):
         # 
         processus         = {}
         processus_courant = {}
-
+        process_nb = 0
         for l in ps_res:
-
+               
             # Détection des lignes représentant un processus
-            mp=re.match('([a-z0-9]+) +(\d+) +- +- +([^ ]+).+([0-9.]+$)',l)
+            mp=re.match('([a-z0-9]+) +(\d+) +- +- +([^ ]+) +- +[0-9.]+ +([0-9.]+)$',l)
             if mp != None:
 
-                # S'il y a dans processus_courant au moins un thread actif, on le sauve !
+                # S'il y a dans processus_courant au moins un thread actif, on le tag et on le sauve
                 if processus_courant.has_key('R'):
+                    processus_courant['tag'] = numTaskToLetter(process_nb)
+                    process_nb += 1
                     processus[processus_courant['pid']] = processus_courant
-                
+                    
                 # On vide le processus courant, si processus ou user réservé on passe à la ligne suivante
+                # On labellise les processus qui sont conservés
                 processus_courant={}
                 user= mp.group(1)
                 pid = int(mp.group(2))
                 cmd = mp.group(3)
-                mem = int(mp.group(4))
+                mem = float(mp.group(4))
                 if cmd in self.__processus_reserves:
                     continue
                 if user in self.__users_reserves:
@@ -146,12 +149,7 @@ class RunningMode(TasksBinding):
                 processus_courant['mem']=mem
                 continue
 
-            # S'il y a dans processus_courant au moins un thread actif quand on sort de la boucle, on le sauve
-            if processus_courant.has_key('R'):
-                processus[processus_courant['pid']] = processus_courant
-                
             # Détection des lignes représentant un thread
-            #mt = re.match('[a-z0-9]+ +- +(\d+) +(\d+) +- +([A-Z])',l)
             mt = re.match('[a-z0-9]+ +- +(\d+) +(\d+) +- +([A-Z]) +([0-9.]+)',l)
             if mt != None:
                 # Si pas de processus courant (en principe pas possible) ou processus courant non conservé, on passe
@@ -170,6 +168,7 @@ class RunningMode(TasksBinding):
                 thread_courant        = {}
                 thread_courant['tid'] = tid
                 thread_courant['psr'] = psr
+                thread_courant['ppsr']= self.hardware.getCore2PhysCore(psr)
                 thread_courant['cpu'] = cpu
                 thread_courant['state'] = state
                 thread_courant['mem'] = processus_courant['mem']
@@ -179,33 +178,13 @@ class RunningMode(TasksBinding):
 
                 processus_courant['threads'][tid] = thread_courant
 
+        # S'il y a dans processus_courant au moins un thread actif quand on sort de la boucle, on le sauve
+        if processus_courant.has_key('R'):
+            processus_courant['tag'] = numTaskToLetter(process_nb)
+            processus[processus_courant['pid']] = processus_courant
+                
         self.processus = processus
         self.pid = sorted(processus.keys())
-
-    # A partir du pid, renvoie le nom de la commande
-    # Si possible on utilise self.processus, sinon on appelle la commande ps
-    def __pid2cmdu(self,pid):
-        if len(self.processus)==0:
-            return self.__pid2cmduPs(pid)
-        else:
-            return self.processus[pid]['cmd']+','+ self.processus[pid]['user']
-
-    def __pid2cmduPs(self,pid):
-        cmd = "ps --no-headers -o %c,%u -p " + str(pid)
-        try:
-            cu = subprocess.check_output(cmd.split(' ')).rstrip('\n')
-
-        except subprocess.CalledProcessError,e:
-            # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-            msg = "OUPS "
-            msg += "AUCUNE TACHE TROUVEE: peut-etre le pid vient-il de mourir ?"
-            raise PlacementException(msg)
-
-        #print 'hoho'+cu
-        [c,space,u] = cu.split(' ',2)
-        u = u.strip()
-        cu = c+','+u
-        return cu
 
     # A partir de tasks_bound, détermine l'architecture
     def __buildArchi(self,tasks_bound):
@@ -215,8 +194,8 @@ class RunningMode(TasksBinding):
         self.tasks         = len(tasks_bound)
         self.sockets_per_node = self.hardware.SOCKETS_PER_NODE
         
-        # Même si on est sur une machine partagée, on est exclusif sur ce qu'on nous a attribué
-        self.archi = Exclusive(self.hardware,self.sockets_per_node, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
+        # On considère la machine comme exclusive, même si elle est partagée
+        self.archi = Exclusive(self.hardware, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
 
     def distribTasks(self,check=False):
         if self.tasks_bound==None:
@@ -249,23 +228,6 @@ class RunningMode(TasksBinding):
 
         # Détermine l'architecture à partir des infos de hardware et des infos de processes ou de threads
         self.__buildArchi(self.tasks_bound)
-
-    # Renvoie (pour impression) la correspondance Tâche => pid
-    def getTask2Pid(self):
-        rvl  = "TACHE ==> PID (CMD) ==> AFFINITE\n"
-        rvl += "==========================\n"
-        for i in range(len(self.pid)):
-            rvl += numTaskToLetter(i)
-            rvl += " ==> "
-            rvl += str(self.pid[i])
-            rvl += ' ('
-            rvl += self.__pid2cmdu(self.pid[i])
-            rvl += ") ==> "
-            rvl += list2CompactString(self.tasks_bound[i])
-            rvl += "\n"
-            i += 1
-        return rvl
-
 
 # Classe abstraite de base
 class BuildTasksBound:
@@ -305,14 +267,16 @@ class BuildTasksBoundFromTaskSet(BuildTasksBound):
 
 # Fonction-objet pour construire la structure de données tasksBinding
 # Construit tasks_bound à partir de la structure de données tasksBinding.processus
+# tasks_bound est construit dans l'ordre donné par les labels des processes (cf. __identProcesses)
 # Ne considère QUE les threads en état 'R' !
 # Renvoie tasks_bound
 class BuildTasksBoundFromPs(BuildTasksBound):
     def __call__(self,tasksBinding):
         tasks_bound=[]
-        for pid in sorted(tasksBinding.processus.keys()):
+        #for pid in sorted(tasksBinding.processus.keys()):
+        for (pid,proc) in sorted(tasksBinding.processus.iteritems(),key=lambda(k,v):(v['tag'],k)):
             cores=[]
-            threads=tasksBinding.processus[pid]['threads']
+            threads=proc['threads']
             for tid in threads.keys():
                 if threads[tid]['state']=='R':
                     cores.append(threads[tid]['psr'])

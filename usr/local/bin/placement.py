@@ -57,7 +57,7 @@
 ################################################################
 
 import os
-from optparse import OptionParser
+import argparse
 import subprocess
 from itertools import chain,product
 import hardware
@@ -85,25 +85,39 @@ def main():
         Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
     epilog = "Environment: PLACEMENT_ARCHI " + str(hardware.Hardware.catalogue()) + " SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
-    parser = OptionParser(version="%prog 1.0.2",epilog=epilog)
-    parser.add_option("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
-    parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
-#    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
-    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of hyperthreading (%default)")
-    parser.add_option("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (%default)")
-    parser.add_option("-M","--mode",type="choice",choices=["compact","scatter","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter, scatter_cyclic (same as scatter),scatter_block, compact (%default)")
-    parser.add_option("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
-    parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
+    parser = argparse.ArgumentParser(description='placement 1.1.0',epilog=epilog)
 
-    parser.add_option("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
-    parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
-    parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
-    parser.add_option("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
-    parser.add_option("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
-    parser.add_option("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
+    # Les arguments de ce groupe sont reconnus par le wrapper bash SEULEMENT, ils sont là pour la cohérence et pour afficher le help
+    group = parser.add_argument_group('checking jobs running on compute nodes (THOSE SWITCHES MUST BE SPECIFIED FIRST)')
+    group.add_argument("--checkme",dest='checkme',action="store_true",help="Check my running job")
+    group.add_argument("--jobid",dest='jobid',action="store_true",help="Check this running job (must be mine, except for sysadmins)")
+    group.add_argument("--host",dest='host',action="store_true",help="Check this host (must execute my jobs, except for sysadmins)")
+
+    group = parser.add_argument_group('Displaying some information')
+    group.add_argument("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware and leave")
+    group.add_argument("-E","--examples",action="store_true",dest="example",help="Print some examples and leave")
+    group.add_argument("--environment",action="store_true",dest="show_env",help="Show some useful environment variables and leave")
+
+    
+    parser.add_argument('tasks', metavar='tasks',nargs='?',default=-1 ) 
+    parser.add_argument('nbthreads', metavar='cpus_per_tasks',nargs='?',default=-1 ) 
+    parser.add_argument("-T","--hyper",action="store_true",default=False,dest="hyper",help='Force use of hyperthreading (False)')
+    parser.add_argument("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (False)")
+    parser.add_argument("-M","--mode",choices=["compact","scatter","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter, scatter_cyclic (same as scatter),scatter_block, compact (scatter_cyclic)")
+    parser.add_argument("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable")
+    parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
+    parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
+    parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
+    parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
+    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
+    parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
+    parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
+    parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
+    parser.add_argument("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
+    parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
     parser.set_defaults(output_mode="srun")
-    (options, args) = parser.parse_args()
-
+    options=parser.parse_args()
+    args=(options.tasks,options.nbthreads)
 
     # Recherche le hardware, actuellement à partir de variables d'environnement
     hard = '';
@@ -121,6 +135,9 @@ def main():
         if options.show_hard==True:
             show_hard(hard)
             exit(0)
+        if options.show_env==True:
+            show_env()
+            exit(0)
 
         # Première étape = Collecte des données résultat dans tasks_binding
         # Option --check -> Collecte à partir des jobs, sinon collecte à partir des paramètres
@@ -131,11 +148,24 @@ def main():
             #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
             tasks_binding = compute_data_from_parameters(options,args,hard)
 
+        # Imprime les infos d'overlap si pertinetnes et si elles existent
+        try:
+            overlap = tasks_binding.overlap
+            if len(overlap)>0:
+                print "ATTENTION LES TACHES SUIVANTES ONT DES RECOUVREMENTS:"
+                print "====================================================="
+                print overlap
+                print
+        except AttributeError:
+            pass
+
         # Seconde étape = Impression des résultats sous plusieurs formats
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
             print "OUPS, Aucune sortie demandée !"
         else:
+            if options.check != None:
+                print gethostname()
             for o in outputs:
                 print o
             
@@ -163,6 +193,10 @@ def buildOutputs(options,tasks_binding):
             outputs.append(PrintingForNumactl(tasks_binding))
             return outputs
 
+    # Imprime en mode verbose
+    if options.verbose:
+        outputs.append(PrintingForVerbose(tasks_binding))
+
     # Imprime le binding de manière compréhensible pour les humains
     if options.human==True:
         outputs.append(PrintingForHuman(tasks_binding))
@@ -170,10 +204,17 @@ def buildOutputs(options,tasks_binding):
     # Imprime le binding en ascii art
     if options.asciiart==True:
         outputs.append(PrintingForAsciiArt(tasks_binding))
-    
+
     # Imprime l'affinite des threads et des cpus
     if options.check!=None and options.threads==True:
-        outputs.append(PrintingForMatrixThreads(tasks_binding))
+        o = PrintingForMatrixThreads(tasks_binding)
+        if options.only_running == True:
+            o.PrintOnlyRunningThreads()
+        if options.sorted_threads_cores == True:
+            o.SortedThreadsCores()
+        if options.sorted_processes_cores == True:
+            o.SortedProcessesCores()
+        outputs.append(o)
 
     # Imprime le binding de manière compréhensible pour srun ou numactl
     # (PAS si --check)
@@ -192,21 +233,36 @@ def buildOutputs(options,tasks_binding):
 #
 ####################
 def examples():
-    ex = """USING placement IN AN SBATCH SCRIPT
+    ex = """===================================
+USING placement IN AN SBATCH SCRIPT
 ===================================
 
 1/ Insert the following lines in your script:
 
-placement -A
+placement --ascii
 if [[ $? != 0 ]]
 then
  echo "ERREUR DANS LE NOMBRE DE PROCESSES OU DE TACHES" 2>&1
  exit $?
 fi
 
-2/ Modify your srun call as followes:
+2/ Modify your srun call as follows:
 
 srun $(placement) ./my_application
+
+=======================================
+USING placement TO CHECK A RUNNING JOB:
+=======================================
+From the frontale execute:
+
+placement --checkme
+
+===========================================================
+For a sysadmin: USING placement TO CHECK USER RUNNING JOBS:
+===========================================================
+From the frontale execute:
+
+placement --host eoscomp666 --check=ALL --threads
 """
     print ex
 
@@ -229,6 +285,23 @@ def show_hard(hard):
             msg += 'EXCLUSIVE'
         msg += ')'
         print(msg)
+
+###########################################################
+# @brief imprime les variables d'nevironnement utiles
+#
+###########################################################
+def show_env():
+    msg = "Current important environment variables...\n"
+    for v in ['PLACEMENT_ARCHI','HOSTNAME','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK']:
+        try:
+            msg += v
+            msg += ' = '
+            msg += bold() + os.environ[v] + normal()
+            msg += '\n'
+        except KeyError:
+            msg += '<not specified>\n'
+    
+    print msg
 
 ##########################################################
 # @brief Calcule les structures de données en vérifiant le taskset ou le ps sur un programme en exécution
@@ -254,18 +327,6 @@ def compute_data_from_running(options,args,hard):
 
     task_distrib = RunningMode(path,hard,buildTasksBound)
 
-    print gethostname()
-    if options.verbose != False:
-        print task_distrib.getTask2Pid()
-        print
-
-    overlap = task_distrib.overlap
-    if len(overlap)>0:
-        print "ATTENTION LES TACHES SUIVANTES ONT DES RECOUVREMENTS:"
-        print "====================================================="
-        print overlap
-        print
-
     return task_distrib
 
 
@@ -284,9 +345,9 @@ def compute_data_from_parameters(options,args,hard):
     [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
     hyper = options.hyper or options.hyper_phys
     if hard.IS_SHARED:
-        archi = Shared(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, hyper)
+        archi = Shared(hard, cpus_per_task, tasks, hyper)
     else:
-        archi = Exclusive(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, hyper)
+        archi = Exclusive(hard, cpus_per_task, tasks, hyper)
             
     task_distrib = ""
     if options.mode == "scatter":

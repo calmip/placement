@@ -16,10 +16,11 @@ import subprocess
 #
 #       Paramètres du constructeur:
 #           hardware        : Un objet de classe Hardware (les limites hardware du système)
-#           sockets_per_node: Nombre de sockets par node, doit être < hardware.SOCKETS_PER_NODE 
 #           tasks           : Nombre de tâches (processes) souhaité
 #           cpus_per_task   : Nombre de cpus par process
 #           hyper           : Si False, hyperthreading interdit
+#           sockets_per_node: Nombre de sockets par node, doit être <= hardware.SOCKETS_PER_NODE 
+#                             Pas très utilisé actuellement, mais peut être utile un jour...
 #
 #           - tasks, threads_per_task, et la constante ARCHI.HYPERTHREADING permet de calculer le nombre
 #           de threads par cœur
@@ -27,7 +28,7 @@ import subprocess
 #           - Le nombre de cores par nœud dérive de sockets_per_node et cores_per_socket
 #       Il est interdit (et impossible) de changer les attributs par la suite
 class Architecture(object):
-    def __init__(self, hardware, sockets_per_node, cpus_per_task, tasks, hyper):
+    def __init__(self, hardware, cpus_per_task, tasks, hyper, sockets_per_node=-1):
         if sockets_per_node > hardware.SOCKETS_PER_NODE:
             msg = "ERREUR INTERNE "
             msg += str(sockets_per_node)
@@ -35,18 +36,21 @@ class Architecture(object):
             msg += str(hardware.SOCKETS_PER_NODE)
             print msg
             raise PlacementException(msg)
-
+        if sockets_per_node < 0:
+            self.sockets_per_node = hardware.SOCKETS_PER_NODE
+        else:
+            self.sockets_per_node = sockets_per_node
+        
         self.hardware         = hardware
-        self.sockets_per_node = sockets_per_node+0
         self.sockets_reserved = self.sockets_per_node
         self.l_sockets        = None
         self.cores_per_socket = self.hardware.CORES_PER_SOCKET
         self.cores_per_node   = self.sockets_per_node * self.cores_per_socket
         self.cores_reserved   = self.cores_per_node
         self.m_cores          = None
-        self.threads_per_core = self.__activeHyper(cpus_per_task,tasks,hyper)
-        self.cpus_per_task    = cpus_per_task
         self.tasks            = tasks
+        self.cpus_per_task    = cpus_per_task
+        self.threads_per_core = self.__activateHyper(hyper)
         #print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
 
     # Accepte d'initialiser un attribut seulement s'il n'existe pas
@@ -60,14 +64,14 @@ class Architecture(object):
     #
     # Active l'hyperthreading si nécessaire:
     #         si hyper == Si True, on active sinon on active seulement si nécessaire
-    #         Si la variable globale hardware.HYPERTHREADING est à False et que l'hyperthreading doit être
+    #         Si la variable hardware.HYPERTHREADING est à False et que l'hyperthreading doit être
     #         activé, on lève une exception
     #
     #         Retourne threads_per_core (1 ou 2)
     #
-    def __activeHyper(self,cpus_per_task,tasks,hyper):
+    def __activateHyper(self,hyper):
         threads_per_core=1
-        if hyper==True or (cpus_per_task*tasks>self.cores_reserved and cpus_per_task*tasks<=self.hardware.THREADS_PER_CORE*self.cores_reserved):
+        if hyper==True or (self.cpus_per_task*self.tasks>self.cores_reserved and self.cpus_per_task*self.tasks<=self.hardware.THREADS_PER_CORE*self.cores_reserved):
             if self.hardware.HYPERTHREADING:
                 threads_per_core = self.hardware.THREADS_PER_CORE
             else:
@@ -75,43 +79,24 @@ class Architecture(object):
                 raise PlacementException(msg)
         return threads_per_core
 
-    # Renvoie le numéro de socket à prtir du numéro de cœur
-    # Utilisé par certains affichages
-    # TODO - Pour le moment IGNORE L'HYPERTHREADING OULALA
-    def getCore2Socket(self,core):
-        return core / self.cores_per_socket
-
-    # Renvoie le numéro de cœur sur le socket courant
-    # Utilisé par certains affichages
-    # TODO - Pour le moment IGNORE L'HYPERTHREADING OULALA
-    def getCore2Core(self,core):
-        return core % self.cores_per_socket
-
-    def getSocket2CoreMax(self,s):
-        return (s+1) * self.cores_per_socket - 1
-
-    def getSocket2CoreMin(self,s):
-        return s * self.cores_per_socket
-
 #
 # class Exclusive:
 #       Description de l'architecture dans le cas où le nœud est dédié (partition exclusive)
 #
 #       Paramètres du constructeur:
 #           hardware        : Un objet de classe Hardware (les limites hardware du système)
-#           sockets_per_node: Nombre de sockets par node, doit être < hardware.SOCKETS_PER_NODE 
-#           TODO            : Idiot de passer 2 sockets per node puisque c'est exclusif !
-
 #           tasks           : Nombre de tâches (processes) souhaité
 #           cpus_per_task   : Nombre de cpus par process
 #           hyper           : Si False, hyperthreading interdit
+#           sockets_per_node: Nombre de sockets par node, doit être <= hardware.SOCKETS_PER_NODE 
+#           TODO            : Idiot de passer 2 sockets per node puisque c'est exclusif !
 #
 #       Construit le tableau l_sockets, qui sera utilisé pour les différents itérations
 
 class Exclusive(Architecture):
-    def __init__(self, hardware, sockets_per_node, cpus_per_task, tasks, hyper):
-        Architecture.__init__(self, hardware, sockets_per_node, cpus_per_task, tasks, hyper)
-        self.l_sockets = range(sockets_per_node)
+    def __init__(self, hardware, cpus_per_task, tasks, hyper, sockets_per_node=-1):
+        Architecture.__init__(self, hardware, cpus_per_task, tasks, hyper, sockets_per_node)
+        self.l_sockets = range(self.sockets_per_node)
         self.m_cores = None
 
 #
@@ -120,10 +105,10 @@ class Exclusive(Architecture):
 #
 #       Paramètres du constructeur:
 #           hardware        : Un objet de classe Hardware (les limites hardware du système)
-#           sockets_per_node: Nombre de sockets par node, doit être <= hard.SOCKETS_PER_NODE 
 #           tasks           : Nombre de tâches (processes) souhaité
 #           cpus_per_task   : Nombre de cpus par process
 #           hyper           : Si False, hyperthreading interdit
+#           sockets_per_node: Nombre de sockets par node, doit être <= hard.SOCKETS_PER_NODE 
 #
 #       Construit le tableau l_sockets, qui sera utilisé pour les différentes itérations:
 #           1/ Si la variable SLURM_NODELIST est définie, DONC si on tourne dans l'environnement SLURM, le tableau 
@@ -133,8 +118,10 @@ class Exclusive(Architecture):
 #       
 
 class Shared(Architecture):
-    def __init__(self, hardware, sockets_per_node, cpus_per_task, tasks, hyper):
-        Architecture.__init__(self, hardware, sockets_per_node, cpus_per_task, tasks, hyper)
+    def __init__(self, hardware, cpus_per_task, tasks, hyper, sockets_per_node=-1 ):
+        if sockets_per_node < 0:
+            sockets_per_node = hardware.SOCKETS_PER_NODE
+        Architecture.__init__(self, hardware, cpus_per_task, tasks, hyper, sockets_per_node )
         if 'SLURM_NODELIST' in os.environ:
             (self.l_sockets,self.m_cores) = self.__detectSockets()
             #if len(self.l_sockets)<self.sockets_per_node:
