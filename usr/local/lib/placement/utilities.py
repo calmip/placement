@@ -3,7 +3,7 @@
 
 import os
 import copy
-from matrix import *
+#from matrix import *
 from exception import *
 from itertools import chain,product
 
@@ -148,8 +148,12 @@ def underline():
 def boldunderline():
     return '\033[1;4m'
 
-def red():
+def white_background():
+    return '\033[47m'
+
+def red_foreground():
     return '\033[1;31m'
+
 # Redevient normal
 def normal():
     return '\033[0m'

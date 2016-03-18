@@ -102,10 +102,10 @@ then
 	fi
 	if [[ $verb == 1 ]]
 	then
-		echo "$host: APPEL DE $0 $* --check=ALL"
+		echo "$host: APPEL DE $0 $*"
 	fi
 
-	ssh $host export PLACEMENT_ARCHI=\"$P\" \;  $0 $* --check=ALL
+	ssh $host export PLACEMENT_ARCHI=\"$P\" \;  $0 $*
 
 # Pas de $job_id: on passe les switches à placement.py
 else

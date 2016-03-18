@@ -253,9 +253,16 @@ srun $(placement) ./my_application
 =======================================
 USING placement TO CHECK A RUNNING JOB:
 =======================================
-
 From the frontale execute:
+
 placement --checkme
+
+===========================================================
+For a sysadmin: USING placement TO CHECK USER RUNNING JOBS:
+===========================================================
+From the frontale execute:
+
+placement --host eoscomp666 --check=ALL --threads
 """
     print ex
 

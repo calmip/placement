@@ -3,6 +3,7 @@
 
 #import os
 from exception import *
+from utilities import *
 #from itertools import chain,product
 
 
@@ -77,10 +78,11 @@ class Matrix(object):
     def getLine(self,pid,tid,ppsr,S,H,cpu=100,mem='-'):
         '''Renvoie une ligne pleine de blancs avec H en colonne 0 et S sur la colonne ppsr, et cpu sur la colonne adhoc'''
         # if ppsr > self.__ppsr_max and self.__archi.threads_per_core == 2:
-        #     ppsr -= self.__archi.cores_per_node
+        #    ppsr -= self.__archi.cores_per_node
         if (ppsr<self.__ppsr_min or ppsr>self.__ppsr_max):
             raise PlacementException("ERREUR INTERNE - psr ("+str(ppsr)+") devrait appartenir à ["+str(self.__ppsr_min)+','+str(self.__ppsr_max)+"]")
 
+        space = "'"
         fmt1  = '{:6d}'
         fmt2  = '{:5.1f}'
         pre = H[0] + ' '
@@ -91,14 +93,31 @@ class Matrix(object):
             pre += 7 * ' ' + fmt1.format(tid)
 
         socket= self.__hard.getCore2Socket(ppsr)
-        tekcos= self.__socket_max - socket
-        socket= socket - self.__socket_min
-        debut = (ppsr-self.__ppsr_min) * ' ' + socket * ' '
-        if mem=='-':
-            mem = '    -'
-        else:
-            mem = fmt2.format(mem)
+        core  = self.__hard.getCore2Core(ppsr)
 
-        fin   = (self.__ppsr_max-ppsr) * ' ' + tekcos * ' ' + ' ' + fmt2.format(cpu) + mem
-        return pre + ' ' + debut + S[0] + fin + '\n'
+        # Les colonnes vides avant le cœur concerné
+        debut = ''
+        for s in range(self.__socket_min,socket):
+            debut += self.__hard.CORES_PER_SOCKET * space
+            debut += ' '
+        for c in range(0,core):
+            debut += space
+        
+        # Les colonnes vides après le cœur concerné
+        fin = ''
+        for c in range(core+1,self.__hard.CORES_PER_SOCKET):
+            fin += space
+        fin += ' '
+        for s in range(socket+1,self.__socket_max+1):
+            fin += self.__hard.CORES_PER_SOCKET * space
+            fin += ' '
+
+        # Les infos de %cpu et %mem
+        cpumem = fmt2.format(cpu)
+        if mem=='-':
+            cpumem += '    -'
+        else:
+            cpumem += fmt2.format(mem)
+
+        return pre + ' ' + debut + red_foreground() + S[0] + normal() + fin + cpumem + '\n'
 
