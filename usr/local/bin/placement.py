@@ -57,7 +57,7 @@
 ################################################################
 
 import os
-from optparse import OptionParser
+import argparse
 import subprocess
 from itertools import chain,product
 import hardware
@@ -85,25 +85,32 @@ def main():
         Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
     epilog = "Environment: PLACEMENT_ARCHI " + str(hardware.Hardware.catalogue()) + " SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
-    parser = OptionParser(version="%prog 1.1.0",epilog=epilog)
-    parser.add_option("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
-    parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
-#    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
-    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of hyperthreading (%default)")
-    parser.add_option("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (%default)")
-    parser.add_option("-M","--mode",type="choice",choices=["compact","scatter","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter, scatter_cyclic (same as scatter),scatter_block, compact (%default)")
-    parser.add_option("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
-    parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
+    parser = argparse.ArgumentParser(description='placement 1.1.0',epilog=epilog)
 
-    parser.add_option("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
-    parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
-    parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
-    parser.add_option("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
-    parser.add_option("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
-    parser.add_option("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
+    # Les arguments de ce groupe sont reconnus par le wrapper bash SEULEMENT, ils sont là pour la cohérence et pour afficher le help
+    group = parser.add_argument_group('checking jobs running on compute nodes (THOSE SWITCHES MUST BE SPECIFIED FIRST)')
+    group.add_argument("--checkme",dest='checkme',action="store_true",help="Check my running job")
+    group.add_argument("--jobid",dest='jobid',action="store_true",help="Check this running job (must be mine, except for sysadmins)")
+    group.add_argument("--host",dest='host',action="store_true",help="Check this host (must execute my jobs, except for sysadmins)")
+
+    parser.add_argument('tasks', metavar='tasks',nargs='?',default=-1 ) 
+    parser.add_argument('nbthreads', metavar='cpus_per_tasks',nargs='?',default=-1 ) 
+    parser.add_argument("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
+    parser.add_argument("-E","--examples",action="store_true",dest="example",help="Print some examples")
+    parser.add_argument("-T","--hyper",action="store_true",default=False,dest="hyper",help='Force use of hyperthreading (False)')
+    parser.add_argument("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (False)")
+    parser.add_argument("-M","--mode",choices=["compact","scatter","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter, scatter_cyclic (same as scatter),scatter_block, compact (scatter_cyclic)")
+    parser.add_argument("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable")
+    parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
+    parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
+    parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
+    parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
+    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
+    parser.add_argument("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
+    parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
     parser.set_defaults(output_mode="srun")
-    (options, args) = parser.parse_args()
-
+    options=parser.parse_args()
+    args=(options.tasks,options.nbthreads)
 
     # Recherche le hardware, actuellement à partir de variables d'environnement
     hard = '';
@@ -192,21 +199,29 @@ def buildOutputs(options,tasks_binding):
 #
 ####################
 def examples():
-    ex = """USING placement IN AN SBATCH SCRIPT
+    ex = """===================================
+USING placement IN AN SBATCH SCRIPT
 ===================================
 
 1/ Insert the following lines in your script:
 
-placement -A
+placement --ascii
 if [[ $? != 0 ]]
 then
  echo "ERREUR DANS LE NOMBRE DE PROCESSES OU DE TACHES" 2>&1
  exit $?
 fi
 
-2/ Modify your srun call as followes:
+2/ Modify your srun call as follows:
 
 srun $(placement) ./my_application
+
+=======================================
+USING placement TO CHECK A RUNNING JOB:
+=======================================
+
+From the frontale execute:
+placement --checkme
 """
     print ex
 
