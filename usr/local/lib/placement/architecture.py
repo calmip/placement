@@ -86,6 +86,7 @@ class Exclusive(Architecture):
         Architecture.__init__(self, hardware, sockets_per_node, cpus_per_task, tasks, hyper)
         self.l_sockets = range(sockets_per_node)
         self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
+        self.m_cores = None
 
 #
 # class Shared:
@@ -119,7 +120,7 @@ class Shared(Architecture):
                # raise PlacementException(msg)
         else:
             self.l_sockets = range(sockets_per_node)
-            m_cores = None
+            self.m_cores = None
         
         self.sockets_reserved = len(self.l_sockets)
         if self.m_cores != None:
