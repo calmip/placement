@@ -85,7 +85,8 @@ def main():
         Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
     epilog = "Environment: PLACEMENT_ARCHI " + str(hardware.Hardware.catalogue()) + " SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
-    parser = argparse.ArgumentParser(description='placement 1.1.0',epilog=epilog)
+    ver="1.1.0"
+    parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
     # Les arguments de ce groupe sont reconnus par le wrapper bash SEULEMENT, ils sont là pour la cohérence et pour afficher le help
     group = parser.add_argument_group('checking jobs running on compute nodes (THOSE SWITCHES MUST BE SPECIFIED FIRST)')
