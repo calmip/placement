@@ -40,7 +40,14 @@ class Hardware(object):
         for i in range(604,612):
             partition_shared.append('eoscomp'+str(i))
 
-        # Si SLURM_NODELIST est défini, on est dans un sbatch
+        # Si SLURM_NODELIST est défini, on est dans un sbatch ou un salloc
+        # On utilise SLURM_NODELIST en priorité seulement s'il y a qu'un seul node !
+        if 'SLURM_NNODES' in os.environ and os.environ['SLURM_NNODES']=='1':
+            node = os.environ['SLURM_NODELIST']
+            if node in partition_shared:
+                return Bullx_dlc_shared
+            if node == 'eosmesca1':
+                return Mesca2()
         if 'HOSTNAME' in os.environ:
             # Machines particulières
             if os.environ['HOSTNAME'] == 'uvprod':

@@ -292,7 +292,7 @@ def show_hard(hard):
 ###########################################################
 def show_env():
     msg = "Current important environment variables...\n"
-    for v in ['PLACEMENT_ARCHI','HOSTNAME','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK']:
+    for v in ['PLACEMENT_ARCHI','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK']:
         try:
             msg += v
             msg += ' = '
