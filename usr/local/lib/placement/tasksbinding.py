@@ -25,16 +25,29 @@ from exception import *
 #      Construit le tableau de tableaux tasks_binding à partir des paramètres
 # 
 #      Params: check, si True (defaut), check les valeurs de tasks etc avant d'accepter
+#              archi, une architecture déjà initialisée (peut etre None)
+#              cpus_per_task, par défaut prend la valeur de architecture
+#              tasks, par défaut prend la valeur de architectrue si possible
 #
 #      Return: tasks_bound, un tableau de tableaux:
 #              Le tableau des processes, chaque process est représenté par un tableau de cœurs.
+#              [[psr1,...],[psr3,...],...]
 #
     
 class TasksBinding(object):
-    def __init__(self,archi,cpus_per_task,tasks):
+    def __init__(self,archi,cpus_per_task=0,tasks=0):
         self.archi = archi
-        self.cpus_per_task = cpus_per_task
-        self.tasks = tasks
+        if archi != None and cpus_per_task == 0:
+            self.cpus_per_task = self.archi.cpus_per_task
+        else:
+            self.cpus_per_task = cpus_per_task
+        if archi != None and tasks == 0:
+            self.tasks         = self.archi.tasks
+        else:
+            self.tasks         = tasks
+        self.tasks_bound   = None
+        self.threads_bound = None
+        self.over_cores    = None
 
     def checkParameters(self):
         raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
@@ -57,6 +70,6 @@ class TasksBinding(object):
             raise PlacementException(msg)
 
     # Tri INPLACE des threads dans chaque process
-    def threadsSort(self,tasks_bound):
-        for p in tasks_bound:
+    def threadsSort(self):
+        for p in self.tasks_bound:
             p.sort()

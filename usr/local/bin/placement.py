@@ -57,7 +57,7 @@
 ################################################################
 
 import os
-from optparse import OptionParser
+import argparse
 import subprocess
 from itertools import chain,product
 import hardware
@@ -68,6 +68,7 @@ from scatter import *
 from compact import *
 from running import *
 from utilities import *
+from printing import *
 
 # Si execute via ssh, on ne peut pas utiliser la variable d'environnement
 from socket import gethostname
@@ -84,23 +85,33 @@ def main():
         Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
     epilog = "Environment: PLACEMENT_ARCHI " + str(hardware.Hardware.catalogue()) + " SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
-    parser = OptionParser(version="%prog 1.0.2",epilog=epilog)
-    parser.add_option("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
-    parser.add_option("-E","--examples",action="store_true",dest="example",help="Print some examples")
-#    parser.add_option("-S","--sockets_per_node",type="choice",choices=map(str,range(1,hard.SOCKETS_PER_NODE+1)),default=hard.SOCKETS_PER_NODE,dest="sockets",action="store",help="Nb of available sockets(1-%default, default %default)")
-    parser.add_option("-T","--hyper",action="store_true",default=False,dest="hyper",help="Force use of hard.HYPERTHREADING (%default)")
-    parser.add_option("-M","--mode",type="choice",choices=["compact","scatter"],default="scatter",dest="mode",action="store",help="distribution mode: scatter, compact (%default)")
-    parser.add_option("-H","--human",action="store_true",default=False,dest="human",help="Output humanly readable (%default)")
-    parser.add_option("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable (%default)")
+    ver="1.1.0"
+    parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
-    parser.add_option("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
-    parser.add_option("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
-    parser.add_option("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name)")
-    parser.add_option("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
-    parser.add_option("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
+    # Les arguments de ce groupe sont reconnus par le wrapper bash SEULEMENT, ils sont là pour la cohérence et pour afficher le help
+    group = parser.add_argument_group('checking jobs running on compute nodes (THOSE SWITCHES MUST BE SPECIFIED FIRST)')
+    group.add_argument("--checkme",dest='checkme',action="store_true",help="Check my running job")
+    group.add_argument("--jobid",dest='jobid',action="store_true",help="Check this running job (must be mine, except for sysadmins)")
+    group.add_argument("--host",dest='host',action="store_true",help="Check this host (must execute my jobs, except for sysadmins)")
+
+    parser.add_argument('tasks', metavar='tasks',nargs='?',default=-1 ) 
+    parser.add_argument('nbthreads', metavar='cpus_per_tasks',nargs='?',default=-1 ) 
+    parser.add_argument("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware")
+    parser.add_argument("-E","--examples",action="store_true",dest="example",help="Print some examples")
+    parser.add_argument("-T","--hyper",action="store_true",default=False,dest="hyper",help='Force use of hyperthreading (False)')
+    parser.add_argument("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (False)")
+    parser.add_argument("-M","--mode",choices=["compact","scatter","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter, scatter_cyclic (same as scatter),scatter_block, compact (scatter_cyclic)")
+    parser.add_argument("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable")
+    parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
+    parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
+    parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
+    parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
+    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
+    parser.add_argument("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
+    parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
     parser.set_defaults(output_mode="srun")
-    (options, args) = parser.parse_args()
-
+    options=parser.parse_args()
+    args=(options.tasks,options.nbthreads)
 
     # Recherche le hardware, actuellement à partir de variables d'environnement
     hard = '';
@@ -112,44 +123,76 @@ def main():
         exit(1)
 
     try:
-
         if options.example==True:
             examples()
             exit(0)
         if options.show_hard==True:
             show_hard(hard)
             exit(0)
-        # Option --check
+
+        # Première étape = Collecte des données résultat dans tasks_binding
+        # Option --check -> Collecte à partir des jobs, sinon collecte à partir des paramètres
         if options.check != None:
-            [tasks,tasks_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
+            #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
+            tasks_binding = compute_data_from_running(options,args,hard)
         else:
-            [tasks,tasks_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
+            #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
+            tasks_binding = compute_data_from_parameters(options,args,hard)
 
-        # Imprime le binding de manière compréhensible pour srun ou numactl puis sort
-        # (PAS si --check, --ascii ou --human)
-        if options.check==None and options.asciiart==False and options.human==False:
-            if options.output_mode=="srun":
-                print getCpuBindingSrun(archi,tasks_bound)
-                exit(0)
-            if options.output_mode=="numactl":
-                print getCpuBindingNumactl(archi,tasks_bound)
-                exit(0)
-
-        # Imprime le binding de manière compréhensible pour les humains
-        if options.human==True:
-            print getCpuBinding(archi,tasks_bound,getCpuTaskHumanBinding)
-    
-        # Imprime le binding en ascii art
-        if options.asciiart==True:
-            if tasks<=62:
-                print getCpuBindingAscii(archi,tasks_bound,over_cores)
-            else:
-                # print getCpuBinding(archi,tasks_bound,getCpuTaskAsciiBinding)
-                raise PlacementException("OUPS - switch --ascii interdit pour plus de 62 tâches !")
-    
+        # Seconde étape = Impression des résultats sous plusieurs formats
+        outputs = buildOutputs(options,tasks_binding)
+        if len(outputs)==0:
+            print "OUPS, Aucune sortie demandée !"
+        else:
+            for o in outputs:
+                print o
+            
     except PlacementException, e:
         print e
         exit(1)
+
+
+######################################################
+#
+# construit un tableau de sorties avec différents formats d'impression, en fonction des options
+#
+######################################################
+def buildOutputs(options,tasks_binding):
+
+    outputs = []
+
+    # Imprime le binding de manière compréhensible pour srun ou numactl puis sort
+    # (PAS si --check, --ascii ou --human)
+    if options.check==None and options.asciiart==False and options.human==False:
+        if options.output_mode=="srun":
+            outputs.append(PrintingForSrun(tasks_binding))
+            return outputs
+        if options.output_mode=="numactl":
+            outputs.append(PrintingForNumactl(tasks_binding))
+            return outputs
+
+    # Imprime le binding de manière compréhensible pour les humains
+    if options.human==True:
+        outputs.append(PrintingForHuman(tasks_binding))
+    
+    # Imprime le binding en ascii art
+    if options.asciiart==True:
+        outputs.append(PrintingForAsciiArt(tasks_binding))
+    
+    # Imprime l'affinite des threads et des cpus
+    if options.check!=None and options.threads==True:
+        outputs.append(PrintingForMatrixThreads(tasks_binding))
+
+    # Imprime le binding de manière compréhensible pour srun ou numactl
+    # (PAS si --check)
+    if options.check==None and options.asciiart==False and options.human==False:
+        if options.output_mode=="srun":
+            outputs.append(PrintingForSrun(tasks_binding))
+        if options.output_mode=="numactl":
+            outputs.append(PrintingForNumactl(tasks_binding))
+
+    return outputs
+        
 
 ####################
 #
@@ -157,21 +200,29 @@ def main():
 #
 ####################
 def examples():
-    ex = """USING placement IN AN SBATCH SCRIPT
+    ex = """===================================
+USING placement IN AN SBATCH SCRIPT
 ===================================
 
 1/ Insert the following lines in your script:
 
-placement -A
+placement --ascii
 if [[ $? != 0 ]]
 then
  echo "ERREUR DANS LE NOMBRE DE PROCESSES OU DE TACHES" 2>&1
  exit $?
 fi
 
-2/ Modify your srun call as followes:
+2/ Modify your srun call as follows:
 
 srun $(placement) ./my_application
+
+=======================================
+USING placement TO CHECK A RUNNING JOB:
+=======================================
+
+From the frontale execute:
+placement --checkme
 """
     print ex
 
@@ -196,7 +247,7 @@ def show_hard(hard):
         print(msg)
 
 ##########################################################
-# @brief Calcule les structures de données en vérifiant le taskset sur un programme en exécution
+# @brief Calcule les structures de données en vérifiant le taskset ou le ps sur un programme en exécution
 #
 # @param options Les switches de la ligne de commande
 # @param args (non utilisé)
@@ -209,8 +260,8 @@ def compute_data_from_running(options,args,hard):
     path = options.check
 
     # Vérifie qu'au moins une sortie est programmée, sinon force le mode --ascii
-    if options.asciiart==False and options.verbose==False:
-        options.asciiart = True
+    #if options.asciiart==False and options.verbose==False:
+    #    options.asciiart = True
 
     if options.taskset == True:
         buildTasksBound = BuildTasksBoundFromTaskSet()
@@ -218,28 +269,20 @@ def compute_data_from_running(options,args,hard):
         buildTasksBound = BuildTasksBoundFromPs()
 
     task_distrib = RunningMode(path,hard,buildTasksBound)
-    tasks_bound  = task_distrib.distribTasks()
-    #print tasks_bound
-    #print task_distrib.pid
-    archi = task_distrib.archi
-    #cpus_per_task = task_distrib.cpus_per_task
-    tasks         = task_distrib.tasks
 
     print gethostname()
     if options.verbose != False:
         print task_distrib.getTask2Pid()
         print
 
-    (overlap,over_cores) = detectOverlap(tasks_bound)
+    overlap = task_distrib.overlap
     if len(overlap)>0:
         print "ATTENTION LES TACHES SUIVANTES ONT DES RECOUVREMENTS:"
         print "====================================================="
         print overlap
         print
-            
-    # Trie et renvoie tasks_bound
-    task_distrib.threadsSort(tasks_bound)
-    return [tasks,tasks_bound,over_cores,archi]
+
+    return task_distrib
 
 
 ##########################################################
@@ -255,27 +298,30 @@ def compute_data_from_running(options,args,hard):
 def compute_data_from_parameters(options,args,hard):
     over_cores = None
     [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
+    hyper = options.hyper or options.hyper_phys
     if hard.IS_SHARED:
-        # Suppression du switch -S permettant de "choisir" le nombre de sockets !
-        #archi = Shared(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
-        archi = Shared(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, options.hyper)
+        archi = Shared(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, hyper)
     else:
-        # Suppression du switch -S permettant de "choisir" le nombre de sockets !
-        #archi = Exclusive(hard,int(options.sockets), cpus_per_task, tasks, options.hyper)
-        archi = Exclusive(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, options.hyper)
+        archi = Exclusive(hard, hard.SOCKETS_PER_NODE, cpus_per_task, tasks, hyper)
             
     task_distrib = ""
     if options.mode == "scatter":
-        task_distrib = ScatterMode(archi,cpus_per_task,tasks)
+        task_distrib = ScatterMode(archi)
+    elif options.mode == "scatter_cyclic":
+        task_distrib = ScatterMode(archi)
+    elif options.mode == "scatter_block":
+        task_distrib = ScatterBlockMode(archi)
     else:
-        task_distrib = CompactMode(archi,cpus_per_task,tasks)
+        if options.hyper_phys == True:
+            task_distrib = CompactPhysicalMode(archi)
+        else:
+            task_distrib = CompactMode(archi)
             
-    tasks_bound = task_distrib.distribTasks()
+    #tasks_bound = task_distrib.distribTasks()
 
-    # Trie et renvoie tasks_bound
-    task_distrib.threadsSort(tasks_bound)
-    return [tasks,tasks_bound,over_cores,archi]
-
+    # Trie les threads et renvoie task_distrib
+    task_distrib.threadsSort()
+    return task_distrib
 
 if __name__ == "__main__":
     main()

@@ -6,7 +6,12 @@ from exception import *
 import subprocess
 
 # class Architecture: 
-#       Description de l'architecture dans une classe
+#       Description de l'architecture, celle-ci dépend:
+#                - du Hardware
+#                - du nombre de sockets par node (on n'utlise par obligatoirement TOUS les sockets)
+#                - du nombre de tâches demandées (processes et thread) qui peuvent déclencher l'hyperthreading
+#                - de l'hyperthreading, qui peut être interdit - ou pas
+#
 #       CLASSE ABSTRAITE - NE PAS UTILISER DIRECTEMENT
 #
 #       Paramètres du constructeur:
@@ -39,6 +44,9 @@ class Architecture(object):
         self.cores_per_node   = self.sockets_per_node * self.cores_per_socket
         self.cores_reserved   = self.cores_per_node
         self.m_cores          = None
+        self.threads_per_core = self.__activeHyper(cpus_per_task,tasks,hyper)
+        self.cpus_per_task    = cpus_per_task
+        self.tasks            = tasks
         #print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
 
     # Accepte d'initialiser un attribut seulement s'il n'existe pas
@@ -51,14 +59,13 @@ class Architecture(object):
 
     #
     # Active l'hyperthreading si nécessaire:
-    #         si hyper == True on active
-    #         sinon on active seulement si nécessaire
+    #         si hyper == Si True, on active sinon on active seulement si nécessaire
     #         Si la variable globale hardware.HYPERTHREADING est à False et que l'hyperthreading doit être
     #         activé, on lève une exception
     #
     #         Retourne threads_per_core (1 ou 2)
     #
-    def activateHyper(self,hyper,cpus_per_task,tasks):
+    def __activeHyper(self,cpus_per_task,tasks,hyper):
         threads_per_core=1
         if hyper==True or (cpus_per_task*tasks>self.cores_reserved and cpus_per_task*tasks<=self.hardware.THREADS_PER_CORE*self.cores_reserved):
             if self.hardware.HYPERTHREADING:
@@ -68,6 +75,24 @@ class Architecture(object):
                 raise PlacementException(msg)
         return threads_per_core
 
+    # Renvoie le numéro de socket à prtir du numéro de cœur
+    # Utilisé par certains affichages
+    # TODO - Pour le moment IGNORE L'HYPERTHREADING OULALA
+    def getCore2Socket(self,core):
+        return core / self.cores_per_socket
+
+    # Renvoie le numéro de cœur sur le socket courant
+    # Utilisé par certains affichages
+    # TODO - Pour le moment IGNORE L'HYPERTHREADING OULALA
+    def getCore2Core(self,core):
+        return core % self.cores_per_socket
+
+    def getSocket2CoreMax(self,s):
+        return (s+1) * self.cores_per_socket - 1
+
+    def getSocket2CoreMin(self,s):
+        return s * self.cores_per_socket
+
 #
 # class Exclusive:
 #       Description de l'architecture dans le cas où le nœud est dédié (partition exclusive)
@@ -75,6 +100,8 @@ class Architecture(object):
 #       Paramètres du constructeur:
 #           hardware        : Un objet de classe Hardware (les limites hardware du système)
 #           sockets_per_node: Nombre de sockets par node, doit être < hardware.SOCKETS_PER_NODE 
+#           TODO            : Idiot de passer 2 sockets per node puisque c'est exclusif !
+
 #           tasks           : Nombre de tâches (processes) souhaité
 #           cpus_per_task   : Nombre de cpus par process
 #           hyper           : Si False, hyperthreading interdit
@@ -85,7 +112,6 @@ class Exclusive(Architecture):
     def __init__(self, hardware, sockets_per_node, cpus_per_task, tasks, hyper):
         Architecture.__init__(self, hardware, sockets_per_node, cpus_per_task, tasks, hyper)
         self.l_sockets = range(sockets_per_node)
-        self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
         self.m_cores = None
 
 #
@@ -131,7 +157,6 @@ class Shared(Architecture):
                         self.cores_reserved += 1
         else:
             self.cores_reserved   = self.cores_per_socket * self.sockets_reserved
-        self.threads_per_core = self.activateHyper(hyper,cpus_per_task,tasks)
 
     #
     # Detecte les sockets et les cores qui nous sont alloués, en analysant la sortie de la commande numactl --show

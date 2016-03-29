@@ -3,11 +3,12 @@
 
 # Tests unitaires pour placement
 import placement
+import running
 import unittest
 
 class TestnumTaskToLetter(unittest.TestCase):
     def test_exc(self):
-        self.assertRaises(placement.PlacementException,placement.numTaskToLetter,62)
+        self.assertRaises(placement.PlacementException,placement.numTaskToLetter,67)
         self.assertRaises(placement.PlacementException,placement.numTaskToLetter,-1)
 
     def test_26(self):
@@ -38,8 +39,8 @@ class Testlist2CompactString(unittest.TestCase):
     def test_unsorted(self):
         A=[4,2,0,1,3,5,9]
         self.assertEqual(placement.list2CompactString(A),"0-5,9")
-        # A est triée à la fin
-        self.assertEqual(A,[0,1,2,3,4,5,9])
+        # A est inchangée (nouveau comportement)
+        self.assertEqual(A,[4,2,0,1,3,5,9])
 
     def test_general(self):
         self.assertEqual(placement.list2CompactString([0,1,2,3,7,10,11,12,13]),"0-3,7,10-13")
@@ -56,32 +57,32 @@ class TestcompactString2List(unittest.TestCase):
 
 class TestdetectOverlap(unittest.TestCase):
     def test_limits(self):
-        (overlap,overcores) = placement.detectOverlap([[0,1,2,3],[0,1,2,3],[0,1,2,3]])
+        (overlap,overcores) = running._detectOverlap([[0,1,2,3],[0,1,2,3],[0,1,2,3]])
         self.assertEqual(overlap,[('A','B'),('A','C'),('B','C')])
         self.assertEqual(overcores,[0,1,2,3])
 
-        (overlap,overcores) = placement.detectOverlap([[0,1,2,3],[4,5,6,7],[8,9,10,11]])
+        (overlap,overcores) = running._detectOverlap([[0,1,2,3],[4,5,6,7],[8,9,10,11]])
         self.assertEqual(overlap,[])
         self.assertEqual(overcores,[])
 
-        (overlap,overcores) = placement.detectOverlap([[],[],[]])
+        (overlap,overcores) = running._detectOverlap([[],[],[]])
         self.assertEqual(overlap,[])
         self.assertEqual(overcores,[])
 
-        (overlap,overcores) = placement.detectOverlap([])
+        (overlap,overcores) = running._detectOverlap([])
         self.assertEqual(overlap,[])
         self.assertEqual(overcores,[])
         
-        (overlap,overcores) = placement.detectOverlap([[4],[5],[6]])
+        (overlap,overcores) = running._detectOverlap([[4],[5],[6]])
         self.assertEqual(overlap,[])
         self.assertEqual(overcores,[])
 
-        (overlap,overcores) = placement.detectOverlap([[1],[1],[2]])
+        (overlap,overcores) = running._detectOverlap([[1],[1],[2]])
         self.assertEqual(overlap,[('A','B')])
         self.assertEqual(overcores,[1])
 
     def test_general(self):
-        (overlap,overcores) = placement.detectOverlap([[0,1,2,3],[0,4,5,6],[10,11,12,13],[20,21,22,4]])
+        (overlap,overcores) = running._detectOverlap([[0,1,2,3],[0,4,5,6],[10,11,12,13],[20,21,22,4]])
         self.assertEqual(overlap,[('A','B'),('B','D')])
         self.assertEqual(overcores,[0,4])
         
