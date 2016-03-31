@@ -89,7 +89,7 @@ then
 		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 --check $U $*
 	done
 
-# --host: on envoie la commande sur le hote concerné avec check=ALL
+# --host: on envoie la commande sur le hote concerné
 elif [[ $host != "" ]]
 then
 	# Détecter la partition, à condition qu'un job soit exécuté sur le host !
@@ -102,10 +102,10 @@ then
 	fi
 	if [[ $verb == 1 ]]
 	then
-		echo "$host: APPEL DE $0 $* --check=ALL"
+		echo "$host: APPEL DE $0 $*"
 	fi
 
-	ssh $host export PLACEMENT_ARCHI=\"$P\" \;  $0 $* --check=ALL
+	ssh $host export PLACEMENT_ARCHI=\"$P\" \;  $0 $*
 
 # Pas de $job_id: on passe les switches à placement.py
 else
@@ -117,4 +117,3 @@ else
 	   exec $placement $*
 	fi
 fi
-
