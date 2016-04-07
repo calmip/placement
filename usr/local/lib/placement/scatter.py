@@ -72,7 +72,9 @@ class ScatterMode(ScatterGenMode):
             hp = self.cpus_per_task / self.archi.threads_per_core
 
             # Le socket/cœur de départ
-            s = 0
+            # si est l'index dans le tableau l_sockets
+            si = 0
+            s = self.archi.l_sockets[si]
             c = 0
 
             # Le cœur en adressage absolu
@@ -93,11 +95,15 @@ class ScatterMode(ScatterGenMode):
                 if cpt_t<q:
                     cpt_t += 1
                     c     += hp
-                elif s<r and cpt_t==q:
+                elif si<r and cpt_t==q:
                     cpt_t += 1
                     c     += hp
                 else:
-                    s     += 1
+                    si    += 1
+                    if si==len(self.archi.l_sockets):
+                        break
+
+                    s     =  self.archi.l_sockets[si]
                     c     =  0
                     cpt_t = 1
 
