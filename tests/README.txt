@@ -6,6 +6,8 @@ export PYTHONPATH=$(pwd)/usr/local/lib/placement
 
 2/ Exécuter les tests:
 python tests/TestUtilities.py
+python tests/TestArchitecture.py
+python tests/TestRunning.py
 python tests/TestScatter.py
 python tests/TestCompact.py
 

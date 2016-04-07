@@ -296,38 +296,4 @@ class PrintingForVerbose(PrintingFor):
         if not isinstance(self._tasks_binding,RunningMode):
             return "ERROR - The switch --verbose can be used ONLY with --check"
         else:
-            rvl  = "TACHE ==> PID (USER,CMD) ==> AFFINITE\n"
-            rvl += "=====================================\n"
-            threads_bound = self._tasks_binding.distribThreads()
-            for (pid,proc) in sorted(threads_bound.iteritems(),key=lambda(k,v):(v['tag'],k)):
-                rvl += proc['tag'] + '     '
-                rvl += ' ==> '
-                rvl += str(pid)
-                rvl += ' ('
-                rvl += proc['user']
-                rvl += ','
-                rvl += proc['cmd']
-                rvl += ') ==> '
-
-                # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
-                cores=[]
-                threads=proc['threads']
-                for tid in threads.keys():
-                    if threads[tid]['state']=='R':
-                        cores.append(threads[tid]['psr'])
-
-                rvl += list2CompactString(cores)
-                rvl += "\n"
-
-            # i = 0
-            # for proc in tasks_bound
-            #     rvl += numTaskToLetter(i)
-            #     rvl += " ==> "
-            #     rvl += str(self.pid[i])
-            #     rvl += ' ('
-            #     rvl += self.__pid2cmdu(self.pid[i])
-            #     rvl += ") ==> "
-            #     rvl += list2CompactString(self.tasks_bound[i])
-            #     rvl += "\n"
-            #     i += 1
-            return rvl
+            return self._tasks_binding.PrintingForVerbose()

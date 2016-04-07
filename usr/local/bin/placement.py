@@ -78,11 +78,11 @@ def main():
     # Si la variable PLACEMENT_DEBUG existe, on simule un environnement shared avec des réservations
     # Exemple: export PLACEMENT_DEBUG='9,10,11,12,13' pour simuler un environnement shared, 5 sockets réservées
     # NB - Ne pas oublier non plus de positionner SLURM_NODELIST ! (PAS PLACEMENT_ARCHI ça n'activera pas Shared)
-    if 'PLACEMENT_DEBUG' in os.environ:
-        import mock
-        placement_debug=os.environ['PLACEMENT_DEBUG']
-        rvl=map(int,placement_debug.split(','))
-        Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
+    #if 'PLACEMENT_DEBUG' in os.environ:
+    #    import mock
+    #    placement_debug=os.environ['PLACEMENT_DEBUG']
+    #    rvl=map(int,placement_debug.split(','))
+    #    Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
     epilog = "Environment: PLACEMENT_ARCHI " + str(hardware.Hardware.catalogue()) + " SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
     ver="1.1.1"
@@ -109,6 +109,8 @@ def main():
     parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
     parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
+    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
+    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
     parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
@@ -120,6 +122,26 @@ def main():
     options=parser.parse_args()
     args=(options.tasks,options.nbthreads)
 
+    if options.example==True:
+        examples()
+        exit(0)
+
+    if options.show_env==True:
+        show_env()
+        exit(0)
+
+    if options.makempiaware==True:
+        make_mpi_aware()
+        exit(0)
+
+    # En mode mpi_aware, vérifie que toutes les variables d'environnement sont bien là
+    if options.mpiaware==True:
+        try:
+            check_mpi_aware()
+        except PlacementException, e:
+            print e
+            exit(1)
+
     # Recherche le hardware, actuellement à partir de variables d'environnement
     hard = '';
     try:
@@ -130,14 +152,8 @@ def main():
         exit(1)
 
     try:
-        if options.example==True:
-            examples()
-            exit(0)
         if options.show_hard==True:
             show_hard(hard)
-            exit(0)
-        if options.show_env==True:
-            show_env()
             exit(0)
 
         # Première étape = Collecte des données résultat dans tasks_binding
@@ -149,7 +165,7 @@ def main():
             #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
             tasks_binding = compute_data_from_parameters(options,args,hard)
 
-        # Imprime les infos d'overlap si pertinetnes et si elles existent
+        # Imprime les infos d'overlap si pertinentes et si elles existent
         try:
             overlap = tasks_binding.overlap
             if len(overlap)>0:
@@ -167,8 +183,8 @@ def main():
         else:
             if options.check != None:
                 print gethostname()
-            for o in outputs:
-                print o
+        for o in outputs:
+            print o
             
     except PlacementException, e:
         print e
@@ -184,6 +200,16 @@ def buildOutputs(options,tasks_binding):
 
     outputs = []
 
+    # Imprime en mode verbose
+    if options.verbose:
+        outputs.append(PrintingForVerbose(tasks_binding))
+
+    # Si on est en mpi_aware on imprime SEULEMENT en numactl !
+    # @todo Pas très bon, il vaudrait mieux valider les options pour forcer le mode numactl dans options
+    if options.mpiaware==True:
+        outputs.append(PrintingForNumactl(tasks_binding))
+        return outputs
+
     # Imprime le binding de manière compréhensible pour srun ou numactl puis sort
     # (PAS si --check, --ascii ou --human)
     if options.check==None and options.asciiart==False and options.human==False:
@@ -193,10 +219,6 @@ def buildOutputs(options,tasks_binding):
         if options.output_mode=="numactl":
             outputs.append(PrintingForNumactl(tasks_binding))
             return outputs
-
-    # Imprime en mode verbose
-    if options.verbose:
-        outputs.append(PrintingForVerbose(tasks_binding))
 
     # Imprime le binding de manière compréhensible pour les humains
     if options.human==True:
@@ -228,11 +250,11 @@ def buildOutputs(options,tasks_binding):
     return outputs
         
 
-####################
+################################################
 #
-# affiche quelques exemple d'utilisation
+# affiche quelques exemples d'utilisation
 #
-####################
+################################################
 def examples():
     ex = """===================================
 USING placement IN AN SBATCH SCRIPT
@@ -251,6 +273,19 @@ fi
 
 srun $(placement) ./my_application
 
+===================================================================
+USING placement WITH hybrid codes (mpi/openMP) IN AN SBATCH SCRIPT:
+===================================================================
+
+Put the following inside your slurm script:
+
+# Creating environment variables usefull for placement
+eval $(~/bin/placement --make_mpi_aware)
+
+# Calling my application with mpirun
+mpirun -binding "pin=no" -n ${SLURM_TASKS_PER_NODE} /bin/bash -c 'numactl $(~/bin/placement Tasks Threads --mpi_aware) my_application'
+$(placement --mpi_aware) mpirun -np $SLURM_TASKS_PER_NODE ./my_application
+
 =======================================
 USING placement TO CHECK A RUNNING JOB:
 =======================================
@@ -266,6 +301,48 @@ From the frontale execute:
 placement --host eoscomp666 --check=ALL --threads
 """
     print ex
+
+###########################################################
+# @brief imprime export=PLACEMENT_PHYSCPU=0,1,2
+#
+###########################################################
+def make_mpi_aware():
+    numa_res = subprocess.check_output(["numactl", "--show"]).split("\n")
+
+    # Chercher la ligne physcpubind: 0 1 ...
+    cores=''
+    sockets=''
+    for l in numa_res:
+        (h,s,t) = l.partition(':')
+        if h=='physcpubind':
+            cores=t
+        if h=='nodebind':
+            sockets=t
+    
+    cores=cores.strip().replace(' ',',')
+    sockets=sockets.strip().replace(' ',',')
+
+    # Recopier les variables d'environnement SLURM_TASKS_PER_NODE et SLURM_CPUS_PER_TASK
+    msg  = 'export PLACEMENT_PHYSCPU="'+cores+'"; '
+    msg += 'export PLACEMENT_NODE="'+sockets+'"; ';
+    msg += 'export PLACEMENT_SLURM_TASKS_PER_NODE="'+os.environ['SLURM_TASKS_PER_NODE']+'"; '
+    msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
+
+    print msg
+    
+    return
+
+###########################################################
+# @brief Vérifie que les quatre variables d'environnement réglementaires sont bien activées
+#
+###########################################################
+def check_mpi_aware():
+    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
+        return
+
+    msg =  'OUPS - Je ne suis pas vraiment mpi_aware, il me manque quelques variables d\'environnement\n'
+    msg += '       Avez-vous mis la commande $(placement --make_mpi_aware) AVANT l\'appel mpi ?'
+    raise PlacementException(msg)
 
 ###########################################################
 # @brief imprime quelques informations sur le hardware
@@ -292,8 +369,9 @@ def show_hard(hard):
 #
 ###########################################################
 def show_env():
-    msg = "Current important environment variables...\n"
-    for v in ['PLACEMENT_ARCHI','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK']:
+    msg = "Current important environment variables...\n\n"
+    for v in ['PLACEMENT_ARCHI','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
+              'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK']:
         try:
             msg += v
             msg += ' = '
@@ -367,6 +445,11 @@ def compute_data_from_parameters(options,args,hard):
 
     # Trie les threads et renvoie task_distrib
     task_distrib.threadsSort()
+
+    # En mpi_aware, on ne garde que la tache correspondant au rang mpi
+    if options.mpiaware == True:
+        task_distrib.keepOnlyMpiRank()
+
     return task_distrib
 
 if __name__ == "__main__":
