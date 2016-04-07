@@ -61,9 +61,7 @@ class TasksBinding(object):
     def _checkParameters(self):
         if (self.cpus_per_task<0 or self.tasks<0 ):
             raise PlacementException("OUPS - Tous les paramètres doivent être entiers positifs")
-        ############# A RETIRER ASAP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #############if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_reserved:
-        if self.cpus_per_task>self.archi.threads_per_core*self.archi.cores_reserved:
+        if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_reserved:
             msg = "OUPS - Pas assez de cores ! Diminuez cpus_per_task (";
             msg += str(self.cpus_per_task)
             msg += ") ou tasks ("
