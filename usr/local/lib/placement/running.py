@@ -229,6 +229,35 @@ class RunningMode(TasksBinding):
         # Détermine l'architecture à partir des infos de hardware et des infos de processes ou de threads
         self.__buildArchi(self.tasks_bound)
 
+    # PrintForVerbose
+    # Renvoie pour impression des informations utiles en mode verbose
+    def PrintingForVerbose(self):
+        rvl  = "TACHE ==> PID (USER,CMD) ==> AFFINITE\n"
+        rvl += "=====================================\n"
+        threads_bound = self.threads_bound
+        for (pid,proc) in sorted(threads_bound.iteritems(),key=lambda(k,v):(v['tag'],k)):
+            rvl += proc['tag'] + '     '
+            rvl += ' ==> '
+            rvl += str(pid)
+            rvl += ' ('
+            rvl += proc['user']
+            rvl += ','
+            rvl += proc['cmd']
+            rvl += ') ==> '
+
+            # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
+            cores=[]
+            threads=proc['threads']
+            for tid in threads.keys():
+                if threads[tid]['state']=='R':
+                    cores.append(threads[tid]['psr'])
+
+            rvl += list2CompactString(cores)
+            rvl += "\n"
+
+        return rvl
+
+
 # Classe abstraite de base
 class BuildTasksBound:
     def __call__(self):

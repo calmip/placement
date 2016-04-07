@@ -155,47 +155,57 @@ class Shared(Architecture):
     def __detectSockets(self):
         l_sockets = []
         m_cores   = {}
-        cmd = "numactl --show"
-	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	p.wait()
-        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-	if p.returncode !=0:
-            msg = "OUPS "
-            msg += "Erreur numactl - peut-être n'êtes-vous pas sur la bonne machine ?"
-            raise PlacementException(msg)
+
+        # On a appelé auparavant placement --make_mpi_aware
+        if 'PLACEMENT_NODE' in os.environ:
+            l_sockets = map(int,os.environ['PLACEMENT_NODE'].split(','))
+            if 'PLACEMENT_PHYSCPU' not in os.environ:
+                msg = "OUPS "
+                msg += "Erreur - PLACEMENT_NODE est défini mais PAS PLACEMENT_PHYSCPU - Avez-vous appelé auparavant placement --make_mpi_aware ?"
+                raise PlacementException(msg)
+            physcpubind = map(int,os.environ['PLACEMENT_PHYSCPU'].split(','))
+
+        # On n'est pas dans un contexte mpi, on utilise numactl --show
         else:
-            output = p.communicate()[0].split('\n')
+            cmd = "numactl --show"
+            p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            p.wait()
+            # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
+            if p.returncode !=0:
+                msg = "OUPS "
+                msg += "Erreur numactl - peut-être n'êtes-vous pas sur la bonne machine ?"
+                raise PlacementException(msg)
+            else:
+                output = p.communicate()[0].split('\n')
 
-            # l_sockets à partir de la Ligne nodebind de numactl:
-            # nodebind: 4 5 6 => [4,5,6]
-            for l in output:
-                if l.startswith('nodebind:'):
-                    l_sockets = map(int,l.rpartition(':')[2].strip().split(' '))
-                elif l.startswith('physcpubind:'):
-                    physcpubind = map(int,l.rpartition(':')[2].strip().split(' '))
+                # l_sockets à partir de la Ligne nodebind de numactl:
+                # nodebind: 4 5 6 => [4,5,6]
+                for l in output:
+                    if l.startswith('nodebind:'):
+                        l_sockets = map(int,l.rpartition(':')[2].strip().split(' '))
+                    elif l.startswith('physcpubind:'):
+                        physcpubind = map(int,l.rpartition(':')[2].strip().split(' '))
 
-            # génération de m_cores à partir de l_sockets et de physcpubind
-            for s in l_sockets:
-                cores={}
-                for c in range(self.cores_per_socket):
-                    c1 = c + s*self.cores_per_socket
-                    cores[c1] = c1 in physcpubind
-                m_cores[s] = cores
+        # génération de m_cores à partir de l_sockets et de physcpubind
+        for s in l_sockets:
+            cores={}
+            for c in range(self.cores_per_socket):
+                c1 = c + s*self.cores_per_socket
+                cores[c1] = c1 in physcpubind
+            m_cores[s] = cores
 
-            # Vérification qu'il n'y a pas d'incohérence
-            if len(l_sockets) > self.sockets_per_node:
-                msg  = "OUPS - sockets_per_node=" + str(self.sockets_per_node)
-                msg += " devrait avoir au moins la valeur " +  str(len(l_sockets))
+        # Vérification qu'il n'y a pas d'incohérence
+        if len(l_sockets) > self.sockets_per_node:
+            msg  = "OUPS - sockets_per_node=" + str(self.sockets_per_node)
+            msg += " devrait avoir au moins la valeur " +  str(len(l_sockets))
+            msg += " Vérifiez le switch -S"
+            raise PlacementException(msg)
+
+        for s in l_sockets:
+            if len(m_cores[s]) != self.cores_per_socket:
+                msg  = "OUPS - cores_per_socket=" + str(self.cores_per_socket)
+                msg += " être égal à " +  str(m_cores[s])
                 msg += " Vérifiez le switch -S"
                 raise PlacementException(msg)
 
-            for s in l_sockets:
-                if len(m_cores[s]) != self.cores_per_socket:
-                    msg  = "OUPS - cores_per_socket=" + str(self.cores_per_socket)
-                    msg += " être égal à " +  str(m_cores[s])
-                    msg += " Vérifiez le switch -S"
-                    raise PlacementException(msg)
-
-            return [l_sockets,m_cores]
-
-
+        return [l_sockets,m_cores]
