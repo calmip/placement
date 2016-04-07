@@ -110,7 +110,7 @@ def main():
     parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
     parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
-    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="todo")
+    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
     parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
@@ -133,6 +133,14 @@ def main():
     if options.makempiaware==True:
         make_mpi_aware()
         exit(0)
+
+    # En mode mpi_aware, vérifie que toutes les variables d'environnement sont bien là
+    if options.mpiaware==True:
+        try:
+            check_mpi_aware()
+        except PlacementException, e:
+            print e
+            exit(1)
 
     # Recherche le hardware, actuellement à partir de variables d'environnement
     hard = '';
@@ -242,11 +250,11 @@ def buildOutputs(options,tasks_binding):
     return outputs
         
 
-####################
+################################################
 #
-# affiche quelques exemple d'utilisation
+# affiche quelques exemples d'utilisation
 #
-####################
+################################################
 def examples():
     ex = """===================================
 USING placement IN AN SBATCH SCRIPT
@@ -269,8 +277,13 @@ srun $(placement) ./my_application
 USING placement WITH hybrid codes (mpi/openMP) IN AN SBATCH SCRIPT:
 ===================================================================
 
-Prefer mpirun to srun, and modify your call a follows:
+Put the following inside your slurm script:
 
+# Creating environment variables usefull for placement
+eval $(~/bin/placement --make_mpi_aware)
+
+# Calling my application with mpirun
+mpirun -binding "pin=no" -n ${SLURM_TASKS_PER_NODE} /bin/bash -c 'numactl $(~/bin/placement Tasks Threads --mpi_aware) my_application'
 $(placement --mpi_aware) mpirun -np $SLURM_TASKS_PER_NODE ./my_application
 
 =======================================
@@ -308,9 +321,28 @@ def make_mpi_aware():
     
     cores=cores.strip().replace(' ',',')
     sockets=sockets.strip().replace(' ',',')
-    print 'export PLACEMENT_PHYSCPU="'+cores+'" ; export PLACEMENT_NODE="'+sockets+'"'
 
+    # Recopier les variables d'environnement SLURM_TASKS_PER_NODE et SLURM_CPUS_PER_TASK
+    msg  = 'export PLACEMENT_PHYSCPU="'+cores+'"; '
+    msg += 'export PLACEMENT_NODE="'+sockets+'"; ';
+    msg += 'export PLACEMENT_SLURM_TASKS_PER_NODE="'+os.environ['SLURM_TASKS_PER_NODE']+'"; '
+    msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
+
+    print msg
+    
     return
+
+###########################################################
+# @brief Vérifie que les quatre variables d'environnement réglementaires sont bien activées
+#
+###########################################################
+def check_mpi_aware():
+    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
+        return
+
+    msg =  'OUPS - Je ne suis pas vraiment mpi_aware, il me manque quelques variables d\'environnement\n'
+    msg += '       Avez-vous mis la commande $(placement --make_mpi_aware) AVANT l\'appel mpi ?'
+    raise PlacementException(msg)
 
 ###########################################################
 # @brief imprime quelques informations sur le hardware
@@ -338,7 +370,8 @@ def show_hard(hard):
 ###########################################################
 def show_env():
     msg = "Current important environment variables...\n\n"
-    for v in ['PLACEMENT_ARCHI','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK']:
+    for v in ['PLACEMENT_ARCHI','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
+              'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK']:
         try:
             msg += v
             msg += ' = '

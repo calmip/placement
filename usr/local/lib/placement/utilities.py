@@ -108,26 +108,42 @@ def computeCpusTasksFromEnv(options,args):
     cpus_per_task = 4
     tasks         = 4
 
+    # Si on est en mpi_aware, regarder PLACEMENT_SLURM_TASKS_PER_NODE, sinon regarder SLURM_TASKS_PER_NODE
+    slurm_tasks_per_node = '0'
+    if options.mpiaware:
+        slurm_tasks_per_node = os.environ['PLACEMENT_SLURM_TASKS_PER_NODE']
+    else:
+        if 'SLURM_TASKS_PER_NODE' in os.environ:
+            slurm_tasks_per_node = os.environ['SLURM_TASKS_PER_NODE']
+
     # Valeurs par défaut: on prend les variables d'environnement de SLURM, si posible
-    if 'SLURM_TASKS_PER_NODE' in os.environ:
-        tmp = os.environ['SLURM_TASKS_PER_NODE'].partition('(')[0]         # 20(x2)   ==> 2
-        tmp = map(int,tmp.split(','))                                      # '11,10'  ==> [11,10]
+    if slurm_tasks_per_node != '0':
+        tmp = slurm_tasks_per_node.partition('(')[0]         # 20(x2)   ==> 2
+        tmp = map(int,tmp.split(','))                        # '11,10'  ==> [11,10]
         if len(tmp)==1:
             tasks = tmp[0]
         elif len(tmp)==2:
             tasks = min(tmp)
             if options.asciiart or options.human:
-                msg = "ATTENTION - SLURM_TASKS_PER_NODE = " + os.environ['SLURM_TASKS_PER_NODE'] + "\n"
+                msg = "ATTENTION - SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node + "\n"
                 msg+= "            Le paradigme utilisé est probablement client-serveur, le placement prend en compte " + str(tasks) + " tâches"
                 print msg
                 print 
         else:
             msg =  "OUPS - Placement non supporté dans cette configuration:\n"
-            msg += "       SLURM_TASKS_PER_NODE = " + os.environ['SLURM_TASKS_PER_NODE']
+            msg += "       SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node
             raise PlacementException(msg)
 
-    if 'SLURM_CPUS_PER_TASK' in os.environ:
-        cpus_per_task = int(os.environ['SLURM_CPUS_PER_TASK'])
+    # Si on est en mpi_aware, regarder PLACEMENT_SLURM_CPUS_PER_TASK, sinon regarder SLURM_CPUS_PER_TASK
+    slurm_cpus_per_task = '0'
+    if options.mpiaware:
+        slurm_cpus_per_task = os.environ['PLACEMENT_SLURM_CPUS_PER_TASK']
+    else:
+        if 'SLURM_CPUS_PER_TASK' in os.environ:
+            slurm_cpus_per_task = os.environ['SLURM_CPUS_PER_TASK']
+
+    if slurm_cpus_per_task != '0':
+        cpus_per_task = int(slurm_cpus_per_task)
     
     # Les valeurs spécifiées dans la ligne de commande ont la priorité !
     if args[1] > 0:
