@@ -82,7 +82,7 @@ class Matrix(object):
         if (ppsr<self.__ppsr_min or ppsr>self.__ppsr_max):
             raise PlacementException("ERREUR INTERNE - psr ("+str(ppsr)+") devrait appartenir à ["+str(self.__ppsr_min)+','+str(self.__ppsr_max)+"]")
 
-        space = "'"
+        space = "."
         fmt1  = '{:6d}'
         fmt2  = '{:5.1f}'
         pre = H[0] + ' '
