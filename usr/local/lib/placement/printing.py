@@ -207,12 +207,15 @@ class PrintingForMatrixThreads(PrintingFor):
     __print_only_running_threads = False
     __sorted_threads_cores       = False
     __sorted_processes_cores     = False
+    __print_numamem              = False
     def SortedThreadsCores(self):
         self.__sorted_threads_cores = True
     def SortedProcessesCores(self):
         self.__sorted_processes_cores = True
     def PrintOnlyRunningThreads(self):
         self.__print_only_running_threads = True
+    def PrintNumamem(self):
+        self.__print_numamem = True
     def __str__(self):
         if self._tasks_binding.tasks > 66:
             return "OUPS - Représentation des threads impossible pour plus de 66 tâches !"
@@ -231,6 +234,9 @@ class PrintingForMatrixThreads(PrintingFor):
     def __getCpuBinding(self,archi,threads_bound):
         #print str(threads_bound)
 
+        # pour l'instant on considere l'ensemble de la machine !
+        ppsr_min = 0
+        ppsr_max = archi.sockets_per_node * archi.cores_per_node - 1
         # calcul des ppsr_min, ppsr_max, (ppsr = Physical Processor, ie numero de cœur physique) globaux et liés à chaque pid
         ppsr_min = 9999
         ppsr_max = 0
@@ -256,6 +262,11 @@ class PrintingForMatrixThreads(PrintingFor):
         m = Matrix(archi,ppsr_min,ppsr_max)
         rvl = ''
         rvl += m.getHeader()
+
+        # Impression de la ligne numamem
+        if self.__print_numamem:
+            sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
+            rvl += m.getNumamem(sockets_mem)
 
         # Impression du corps de la matrice
         if self.__sorted_processes_cores:
@@ -285,6 +296,26 @@ class PrintingForMatrixThreads(PrintingFor):
                     rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'])
 
         return rvl
+
+    # Reorganise threads_bound et renvoie sockets_mem:
+    #            - Array, une cellule par socket
+    #            - Chaque cellule est un dict, k = process tag ('A', 'B', etc)
+    #                                          v = qtte de memoire utilisee par le process sur ce socket
+    #
+    def __compute_memory_per_socket(self,archi,threads_bound):
+        sockets = range(0,archi.hardware.SOCKETS_PER_NODE)
+        sockets_mem = []
+
+        for s in sockets:
+            sockets_mem.append({})
+
+        for pid in threads_bound:
+            tag     = threads_bound[pid]['tag']
+            numamem = threads_bound[pid]['numamem']
+            for s in sockets:
+                sockets_mem[s][tag]=numamem[s]
+        
+        return sockets_mem
 
 #########################################################################################
 #

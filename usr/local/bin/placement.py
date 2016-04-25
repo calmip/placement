@@ -116,6 +116,7 @@ def main():
     parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
+    parser.add_argument("-Y","--memory",action="store_true",default=False,help="With --threads: show memory occupation relative to the sockets")
     parser.add_argument("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
     parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
     parser.set_defaults(output_mode="srun")
@@ -233,6 +234,8 @@ def buildOutputs(options,tasks_binding):
         o = PrintingForMatrixThreads(tasks_binding)
         if options.only_running == True:
             o.PrintOnlyRunningThreads()
+        if options.memory == True:
+            o.PrintNumamem()
         if options.sorted_threads_cores == True:
             o.SortedThreadsCores()
         if options.sorted_processes_cores == True:

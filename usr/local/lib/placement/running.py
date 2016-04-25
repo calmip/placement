@@ -38,6 +38,26 @@ class RunningMode(TasksBinding):
         self.__users_reserves     = ['root' ]
         self.__initTasksThreadsBound()
         
+    # Appelle la commande numastat pour chaque pid, et garde l'info dans threads_bound
+    def __identNumaMem(self):
+                
+        for pid in self.threads_bound:
+            cmd = 'numastat ' + str(pid)
+            tmp = subprocess.check_output(cmd.split(' ')).split('\n')
+
+            # on ne garde que la dernière ligne (Total=)
+            ttl = tmp[-2].split()
+
+            # on supprime la première et la dernière colonne
+            ttl.pop()
+            ttl.pop(0)
+            ttl = map(float,ttl)
+
+            # Il doit rester autant de chiffres que de sockets !
+            if self.hardware.SOCKETS_PER_NODE != len(ttl):
+                raise PlacementException("ERREUR INTERNE - numastat renvoie " + len(ttl) + " colonnes, mais nous avons " + SOCKETS_PER_NODE + " sockets !")
+            self.threads_bound[pid]['numamem']=ttl
+
     # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
     # OU au user passé en paramètre OU sans sélection préalable
     # ne garde ensuite que les processes en état Run, et supprime les processes style ps
@@ -217,7 +237,7 @@ class RunningMode(TasksBinding):
         # Détermine l'affinité des processes et des threads
         self.tasks_bound   = self.__buildTasksBound(self)
         self.threads_bound = self.processus
-        
+
         # Si aucune tâche trouvée, pas la peine d'insister
         if len(self.tasks_bound)==0:
             msg = "OUPS Aucune tâche trouvée !"
@@ -228,6 +248,9 @@ class RunningMode(TasksBinding):
 
         # Détermine l'architecture à partir des infos de hardware et des infos de processes ou de threads
         self.__buildArchi(self.tasks_bound)
+
+        # Appelle numastat sur tous les pid pour savoir sur quels sockets se trouve la memoire
+        self.__identNumaMem()
 
     # PrintForVerbose
     # Renvoie pour impression des informations utiles en mode verbose

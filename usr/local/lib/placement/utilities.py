@@ -170,6 +170,9 @@ def white_background():
 def red_foreground():
     return '\033[1;31m'
 
+def mag_foreground():
+    return '\033[1;35m'
+
 # Redevient normal
 def normal():
     return '\033[0m'
