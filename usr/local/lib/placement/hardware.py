@@ -159,7 +159,7 @@ class Mesca2(Hardware):
     CORES_PER_SOCKET = 16
     HYPERTHREADING   = False
     THREADS_PER_CORE = 1
-    MEM_PER_NODE     = 262144
+    MEM_PER_SOCKET   = 262144
     IS_SHARED        = True
 
 # 5/ Nouvelles machines Bull MF
@@ -169,5 +169,5 @@ class Prolix(Hardware):
     CORES_PER_SOCKET = 20
     HYPERTHREADING   = True
     THREADS_PER_CORE = 2
-    MEM_PER_NODE     = 262144
+    MEM_PER_SOCKET   = 262144
     IS_SHARED        = False

@@ -164,6 +164,31 @@ class PrintingForAsciiArt(PrintingFor):
     
         return rvl
 
+#########################################################################################
+#
+# PrintingForIntelAff: Imprime pour la variable d'environnement KMP_AFFINITY
+#
+#########################################################################################
+class PrintingForIntelAff(PrintingFor):
+    def __init__(self,tasks_binding,verbose):
+        PrintingFor.__init__(self,tasks_binding)
+        self.__verbose = verbose
+
+    def __str__(self):
+        if len(self._tasks_binding.tasks_bound) > 1:
+            return "OUPS - Représentation KMP_Affinity impossible pour plus de 1 tâche !"
+        else:
+            rvl  = 'export KMP_AFFINITY="granularity=fine,explicit,proclist=';
+            rvl += self.__getCpuBinding(self._tasks_binding.tasks_bound);
+            if self.__verbose:
+                rvl += ',verbose';
+            rvl += '"';
+            return rvl
+
+    def __getCpuBinding(self,tasks_bound):
+        return str(tasks_bound[0])
+
+
 ###############################################################################################
 #
 # PrintingForNumactl: Imprime des commandes pour numactl
@@ -177,7 +202,7 @@ class PrintingForNumactl(PrintingFor):
 # Réécriture de tasks_bound sous frome de switch numactl
 #
     #
-    # Réécriture de tasks_binding sous forme de switch numctl
+    # Réécriture de tasks_binding sous forme de switch numactl
     #
     # Params = archi, tasks_binding
     # Return = La chaine de caractères à afficher
