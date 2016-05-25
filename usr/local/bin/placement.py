@@ -109,6 +109,8 @@ def main():
     parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
     parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
+    parser.add_argument("-Z","--intel_affinity",action="store_const",dest="output_mode",const="kmp",help="Output for intel openmp compiler, try also --verbose")
+
     parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
     parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
@@ -116,8 +118,9 @@ def main():
     parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
+    parser.add_argument("-Y","--memory",action="store_true",default=False,help="With --threads: show memory occupation relative to the sockets")
     parser.add_argument("-K","--taskset",action="store_true",default=False,help="With --check: compute the binding with taskset rather than ps")
-    parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output")
+    parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
     parser.set_defaults(output_mode="srun")
     options=parser.parse_args()
     args=(options.tasks,options.nbthreads)
@@ -200,15 +203,15 @@ def buildOutputs(options,tasks_binding):
 
     outputs = []
 
-    # Imprime en mode verbose
-    if options.verbose:
+    # Imprime en mode verbose (si on n'est pas en kmp)
+    if options.verbose and options.output_mode != 'kmp':
         outputs.append(PrintingForVerbose(tasks_binding))
 
     # Si on est en mpi_aware on imprime SEULEMENT en numactl !
     # @todo Pas très bon, il vaudrait mieux valider les options pour forcer le mode numactl dans options
-    if options.mpiaware==True:
-        outputs.append(PrintingForNumactl(tasks_binding))
-        return outputs
+    #if options.mpiaware==True:
+    #    outputs.append(PrintingForNumactl(tasks_binding))
+    #    return outputs
 
     # Imprime le binding de manière compréhensible pour srun ou numactl puis sort
     # (PAS si --check, --ascii ou --human)
@@ -218,6 +221,13 @@ def buildOutputs(options,tasks_binding):
             return outputs
         if options.output_mode=="numactl":
             outputs.append(PrintingForNumactl(tasks_binding))
+            return outputs
+
+    # Imprime le binding pour KMP_AFFINITY puis sort
+    # (PAS si --check, --ascii ou --human)
+    if options.check==None and options.asciiart==False and options.human==False:
+        if options.output_mode=="kmp":
+            outputs.append(PrintingForIntelAff(tasks_binding,options.verbose))
             return outputs
 
     # Imprime le binding de manière compréhensible pour les humains
@@ -233,19 +243,13 @@ def buildOutputs(options,tasks_binding):
         o = PrintingForMatrixThreads(tasks_binding)
         if options.only_running == True:
             o.PrintOnlyRunningThreads()
+        if options.memory == True:
+            o.PrintNumamem()
         if options.sorted_threads_cores == True:
             o.SortedThreadsCores()
         if options.sorted_processes_cores == True:
             o.SortedProcessesCores()
         outputs.append(o)
-
-    # Imprime le binding de manière compréhensible pour srun ou numactl
-    # (PAS si --check)
-    if options.check==None and options.asciiart==False and options.human==False:
-        if options.output_mode=="srun":
-            outputs.append(PrintingForSrun(tasks_binding))
-        if options.output_mode=="numactl":
-            outputs.append(PrintingForNumactl(tasks_binding))
 
     return outputs
         

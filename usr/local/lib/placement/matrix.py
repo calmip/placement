@@ -32,17 +32,6 @@ class Matrix(object):
             self.__ppsr_min = self.__hard.getSocket2CoreMin(self.__socket_min)
             self.__ppsr_max = self.__hard.getSocket2CoreMax(self.__socket_max)
 
-            ## En cas d'hyperthreading, corriger psr_max et psr_min
-            #if self.__archi.threads_per_core == 2:
-            #    # Si seuls les cœurs logiques sont utilisés...
-            #    if self.__psr_min >= self.__archi.cores_per_node:
-            #        self.__psr_min -= self.__archi.cores_per_node
-            #        self.__socket_min -= self.__archi.sockets_per_node
-            #    # @todo - un truc plus subtil
-            #    if self.__psr_max > self.__archi.cores_per_node:
-            #        self.__psr_max    = self.__archi.cores_per_node - 1
-            #        self.__socket_max = self.__archi.sockets_per_node - 1
-
         self.__last_pid = 0
 
     def getHeader(self,h_header=15*' '):
@@ -75,6 +64,46 @@ class Matrix(object):
         rvl += '\n'
         return rvl
 
+    # imprime une ligne pour l'occupation mémoire des sockets
+    def getNumamem(self,sockets_mem,h_header=15*' '):
+        space = "."
+        sockets_mem_rel = self.getMem2Slice(sockets_mem)
+        rvl = h_header
+        for s in range(self.__socket_min,self.__socket_max+1):
+            rvl += ' '
+            i=0
+            s_m = sockets_mem_rel[s]
+            for t in s_m.keys():
+                rvl += mag_foreground()
+                for l in range(s_m[t]):
+                    rvl += t
+                    i += 1
+                rvl += normal()
+            for l in range(i,self.__hard.CORES_PER_SOCKET):
+                rvl += space
+        rvl += '\n'
+        return rvl
+        #return str(sockets_mem_rel)+'\n'
+
+    # convertit le tableau d'occupation de la mémoire en "slices", prets pour affichage
+    def getMem2Slice(self,sockets_mem):
+        mem_slice = self.__hard.MEM_PER_SOCKET / self.__hard.CORES_PER_SOCKET
+        sockets_mem_rel = []
+
+        for s in sockets_mem:
+            s_r = {}
+            for t in s.keys():
+                m = int(s[t])
+                q = m / mem_slice
+                r = m % mem_slice
+                if r <= mem_slice / 2:
+                    s_r[t] = q
+                else:
+                    s_r[t] = q + 1
+            sockets_mem_rel.append(s_r)
+
+        return sockets_mem_rel
+
     def getLine(self,pid,tid,ppsr,S,H,cpu=100,mem='-'):
         '''Renvoie une ligne pleine de blancs avec H en colonne 0 et S sur la colonne ppsr, et cpu sur la colonne adhoc'''
         # if ppsr > self.__ppsr_max and self.__archi.threads_per_core == 2:
@@ -82,7 +111,7 @@ class Matrix(object):
         if (ppsr<self.__ppsr_min or ppsr>self.__ppsr_max):
             raise PlacementException("ERREUR INTERNE - psr ("+str(ppsr)+") devrait appartenir à ["+str(self.__ppsr_min)+','+str(self.__ppsr_max)+"]")
 
-        space = "'"
+        space = "."
         fmt1  = '{:6d}'
         fmt2  = '{:5.1f}'
         pre = H[0] + ' '
@@ -96,21 +125,10 @@ class Matrix(object):
         core  = self.__hard.getCore2Core(ppsr)
 
         # Les colonnes vides avant le cœur concerné
-        debut = ''
-        for s in range(self.__socket_min,socket):
-            debut += self.__hard.CORES_PER_SOCKET * space
-            debut += ' '
-        for c in range(0,core):
-            debut += space
+        debut = self.__blankBeforeCore(socket,core)
         
         # Les colonnes vides après le cœur concerné
-        fin = ''
-        for c in range(core+1,self.__hard.CORES_PER_SOCKET):
-            fin += space
-        fin += ' '
-        for s in range(socket+1,self.__socket_max+1):
-            fin += self.__hard.CORES_PER_SOCKET * space
-            fin += ' '
+        fin   = self.__blankAfterCore(socket,core)
 
         # Les infos de %cpu et %mem
         cpumem = fmt2.format(cpu)
@@ -121,3 +139,23 @@ class Matrix(object):
 
         return pre + ' ' + debut + red_foreground() + S[0] + normal() + fin + cpumem + '\n'
 
+    def __blankBeforeCore(self,socket,core):
+        space = '.'
+        bgn = ''
+        for s in range(self.__socket_min,socket):
+            bgn += self.__hard.CORES_PER_SOCKET * space
+            bgn += ' '
+        for c in range(0,core):
+            bgn += space
+        return bgn
+        
+    def __blankAfterCore(self,socket,core):
+        space = '.'
+        end   = ''
+        for c in range(core+1,self.__hard.CORES_PER_SOCKET):
+            end += space
+        end += ' '
+        for s in range(socket+1,self.__socket_max+1):
+            end += self.__hard.CORES_PER_SOCKET * space
+            end += ' '
+        return end

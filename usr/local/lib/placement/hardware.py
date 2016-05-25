@@ -31,10 +31,31 @@ class Hardware(object):
     def factory():
         # Construction de la partition shared
         partition_shared = [ ]
-        for i in range(604,612):
+        for i in range(606,612):
             partition_shared.append('eoscomp'+str(i))
 
-        # Si SLURM_NODELIST est défini, on est dans un sbatch
+        # Permet de forcer une architecture en reprenant les noms des partitions
+        if 'PLACEMENT_ARCHI' in os.environ:
+            placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
+            if placement_archi == 'uvprod':
+                return Uvprod()
+            elif placement_archi == 'mesca':
+                return Mesca2()
+            elif placement_archi == 'exclusive':
+                return Bullx_dlc()
+            elif placement_archi == 'shared':
+                return Bullx_dlc_shared()
+            else:
+                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture hardware inconnue")
+
+        # Si SLURM_NODELIST est défini, on est dans un sbatch ou un salloc
+        # On utilise SLURM_NODELIST en priorité seulement s'il y a qu'un seul node !
+        if 'SLURM_NNODES' in os.environ and os.environ['SLURM_NNODES']=='1':
+            node = os.environ['SLURM_NODELIST']
+            if node in partition_shared:
+                return Bullx_dlc_shared
+            if node == 'eosmesca1':
+                return Mesca2()
         if 'HOSTNAME' in os.environ:
             # Machines particulières
             if os.environ['HOSTNAME'] == 'uvprod':
@@ -52,22 +73,6 @@ class Hardware(object):
             else:
                 return Bullx_dlc()
         
-        # Permet de forcer une architecture en reprenant les noms des partitions
-        elif 'PLACEMENT_ARCHI' in os.environ:
-            placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
-            if placement_archi == 'uvprod':
-                return Uvprod()
-            elif placement_archi == 'mesca':
-                return Mesca2()
-            elif placement_archi == 'exclusive':
-                return Bullx_dlc()
-            elif placement_archi == 'shared':
-                return Bullx_dlc_shared()
-            elif placement_archi == 'prolix':
-                return Prolix()
-            else:
-                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture hardware inconnue")
-
         # Si aucune de ces variables n'est définie, on fait la même chose avec le hostname !
         #elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'uvprod':
         #    return Uvprod()
@@ -84,6 +89,7 @@ class Bullx_dlc(Hardware):
     CORES_PER_SOCKET = 10
     HYPERTHREADING   = True
     THREADS_PER_CORE = 2
+    MEM_PER_SOCKET   = 32768
     IS_SHARED        = False
 
 # 1/ BULLx DLC (eos), 2 sockets Intel Ivybridge 10 cœurs, hyperthreading activé, shared
@@ -94,6 +100,7 @@ class Bullx_dlc_shared(Hardware):
     HYPERTHREADING   = True
     THREADS_PER_CORE = 2
     IS_SHARED        = True
+    MEM_PER_SOCKET   = 32768
 
 # 2 / SGI UV, uvprod, 48 sockets, 8 cœurs par socket, pas d'hyperthreading, SHARED
 class Uvprod(Hardware):
@@ -102,6 +109,7 @@ class Uvprod(Hardware):
     CORES_PER_SOCKET = 8
     HYPERTHREADING   = False
     THREADS_PER_CORE = 1
+    MEM_PER_SOCKET   = 87381
     IS_SHARED        = True
 
 # 3/ BULL SMP-mesca, 8 sockets, 15 cœurs par socket, pas d'hyperthreading
@@ -111,7 +119,8 @@ class Mesca(Hardware):
     CORES_PER_SOCKET = 15
     HYPERTHREADING   = False
     THREADS_PER_CORE = 1
-    IS_SHARED        = False
+    MEM_PER_SOCKET   = 262144
+    IS_SHARED        = True
 
 # 4/ BULL SMP-mesca2, 8 sockets, 16 cœurs par socket, pas d'hyperthreading (pour l'instant), machine partagée
 class Mesca2(Hardware):
@@ -120,12 +129,15 @@ class Mesca2(Hardware):
     CORES_PER_SOCKET = 16
     HYPERTHREADING   = False
     THREADS_PER_CORE = 1
+    MEM_PER_SOCKET   = 262144
     IS_SHARED        = True
-# 5/ BULL SMP-mesca2, 
+
+# 5/ Nouvelles machines Bull MF
 class Prolix(Hardware):
     NAME             = 'prolix'
     SOCKETS_PER_NODE = 2
     CORES_PER_SOCKET = 20
     HYPERTHREADING   = True
     THREADS_PER_CORE = 2
+    MEM_PER_SOCKET   = 262144
     IS_SHARED        = False
