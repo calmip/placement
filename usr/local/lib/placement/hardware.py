@@ -4,6 +4,9 @@
 #############################################################################################################
 #
 #  Hardware: Permet de décrire le hardware des machines
+#            L'attribut IS_SHARED exprime le fait que la machine est "partagée", ou pas
+#            C'est de la configuration, pas vraiment du hardware, mais c'est une donnée qui ne bouge jamais
+#            pour une machine particulière, donc elle a bien sa place ici
 #
 ################################################################
 
@@ -11,6 +14,9 @@ import os
 from exception import *
 
 class Hardware(object):
+    def __init__(self):
+        self.CORES_PER_NODE = self.CORES_PER_SOCKET*self.SOCKETS_PER_NODE
+
     NAME             = ''
     SOCKETS_PER_NODE = ''
     CORES_PER_SOCKET = ''
@@ -80,6 +86,32 @@ class Hardware(object):
         #    return Mesca2()
         else:
             raise(PlacementException("OUPS - Architecture indéfinie ! - Vérifiez $SLURM_NODELIST, $PLACEMENT_ARCHI, $HOSTNAME"))
+
+    # Renvoie le numéro de socket à partir du numéro de cœur
+    # Utilisé par certains affichages
+    def getCore2Socket(self,core):
+        if core >= self.CORES_PER_NODE:
+            return self.getCore2Socket(core - self.CORES_PER_NODE)
+        else:
+            return core / self.CORES_PER_SOCKET
+
+    # Renvoie le numéro de cœur sur le socket courant
+    # Utilisé par certains affichages
+    def getCore2Core(self,core):
+        core = core % self.CORES_PER_NODE
+        return core % self.CORES_PER_SOCKET
+
+    # Renvoie le numéro de cœur physique correspondant au paramètre
+    # ex. sur eos, 25 renvoie 5, 35 renvoie 15
+    # Utilisé par certains affichages
+    def getCore2PhysCore(self,core):
+        return core % self.CORES_PER_NODE
+
+    def getSocket2CoreMax(self,s):
+        return (s+1) * self.CORES_PER_SOCKET - 1
+
+    def getSocket2CoreMin(self,s):
+        return s * self.CORES_PER_SOCKET
 
 
 # 1/ BULLx DLC (eos), 2 sockets Intel Ivybridge 10 cœurs, hyperthreading activé
