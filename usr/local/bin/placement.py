@@ -408,7 +408,7 @@ def compute_data_from_running(options,args,hard):
     else:
         buildTasksBound = BuildTasksBoundFromPs()
 
-    task_distrib = RunningMode(path,hard,buildTasksBound)
+    task_distrib = RunningMode(path,hard,buildTasksBound,options.memory)
 
     return task_distrib
 

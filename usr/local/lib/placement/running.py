@@ -18,12 +18,14 @@ import subprocess
 #     path, le binaire ou le user sur lequel on a fait le --check
 #     hardware
 #     buildTasksBound L'algorithme utilisé pour savoir qui fait quoi où
+#     withMemory: si True, on appelle numamem pour connaitre l'occupation mémoire
 #
 class RunningMode(TasksBinding):
-    def __init__(self,path,hardware,buildTasksBound):
+    def __init__(self,path,hardware,buildTasksBound,withMemory):
         TasksBinding.__init__(self,None,0,0)
         self.path = path
         self.hardware = hardware
+        self.withMemory = withMemory
         self.pid=[]
         self.processus=[]
         self.tasks_bound   = None
@@ -222,11 +224,6 @@ class RunningMode(TasksBinding):
             self.__initTasksThreadsBound()
         return self.tasks_bound 
 
-    def distribThreads(self,check=False):
-        if self.threads_bound==None:
-            self.__initTasksThreadsBound()
-        return self.threads_bound
-
     # Appelle __identProcesses pour récolter une liste de pids (self.pid)
     # puis appelle __buildTasksBound pour construire tasks_bound et threads_bound
     def __initTasksThreadsBound(self):
@@ -250,7 +247,8 @@ class RunningMode(TasksBinding):
         self.__buildArchi(self.tasks_bound)
 
         # Appelle numastat sur tous les pid pour savoir sur quels sockets se trouve la memoire
-        self.__identNumaMem()
+        if self.withMemory:
+            self.__identNumaMem()
 
     # PrintForVerbose
     # Renvoie pour impression des informations utiles en mode verbose

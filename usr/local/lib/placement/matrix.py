@@ -65,7 +65,7 @@ class Matrix(object):
         return rvl
 
     # imprime une ligne pour l'occupation mémoire des sockets
-    def getNumamem(self,sockets_mem,h_header=15*' '):
+    def getNumamem(self,sockets_mem,h_header='  SOCKET MEMORY'):
         space = "."
         sockets_mem_rel = self.getMem2Slice(sockets_mem)
         rvl = h_header
