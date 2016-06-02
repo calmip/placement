@@ -31,7 +31,8 @@ done
 USER=${USER-$(whoami)}
 PORT=${PORT-22}
 HOST=$1
-DST=${2-"/users/sysadmin/$USER"}
+#DST=${2-~}  # Install top directory defaults to home directory
+DST=${2-/users/sysadmin/manu}  # Install top directory defaults to home directory
 
 echo USER=$USER
 echo PORT=$PORT

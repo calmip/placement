@@ -77,14 +77,14 @@ class TasksBinding(object):
 
     # Pour le mode mpi_aware: Ne garde QUE la tache correspondant à mon rang mpi
     def keepOnlyMpiRank(self):
-        rank = 0;
+        rank = -1;
         try:
             # Le rank si on utilise openmpi, bullx_mpi, etc.
             rank = os.environ['OMPI_COMM_WORLD_RANK']
         except KeyError:
             pass
 
-        if rank==0:
+        if rank == -1:
             try:
                 # Le rank si on utilise intelmpi
                 rank = os.environ['PMI_RANK']

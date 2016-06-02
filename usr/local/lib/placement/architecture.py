@@ -122,8 +122,12 @@ class Shared(Architecture):
         if sockets_per_node < 0:
             sockets_per_node = hardware.SOCKETS_PER_NODE
         Architecture.__init__(self, hardware, cpus_per_task, tasks, hyper, sockets_per_node )
+
+        # We are running through an sbatch job: detect the reserved nodes and cores !
         if 'SLURM_NODELIST' in os.environ:
             (self.l_sockets,self.m_cores) = self.__detectSockets()
+            #print 'l_sockets '+str(self.l_sockets)
+            #print 'm_cores   '+str(self.m_cores)
             #if len(self.l_sockets)<self.sockets_per_node:
             #   self.sockets_per_node = len(self.l_sockets)
                # msg  = "OUPS - Vous avez demandé "
@@ -131,6 +135,8 @@ class Shared(Architecture):
                # msg += " sockets, vous en avez "
                # msg += str(len(self.l_sockets))
                # raise PlacementException(msg)
+
+        # We are just on an interactive node: considering we have exclusive use of the node !
         else:
             self.l_sockets = range(sockets_per_node)
             self.m_cores = None
@@ -157,6 +163,7 @@ class Shared(Architecture):
         m_cores   = {}
 
         # On a appelé auparavant placement --make_mpi_aware
+        # (or we are debugging placement)
         if 'PLACEMENT_NODE' in os.environ:
             l_sockets = map(int,os.environ['PLACEMENT_NODE'].split(','))
             if 'PLACEMENT_PHYSCPU' not in os.environ:
