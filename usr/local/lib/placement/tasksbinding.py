@@ -67,7 +67,7 @@ class TasksBinding(object):
             msg += ") ou tasks ("
             msg += str(self.tasks)
             msg += ")"
-            msg += ' RESERVED = ' + str(self.archi.cores_reserved)
+            msg += ' NUMBER OF CORES RESERVED FOR THIS PROCESS = ' + str(self.archi.cores_reserved)
             raise PlacementException(msg)
 
     # Tri INPLACE des threads dans chaque process
