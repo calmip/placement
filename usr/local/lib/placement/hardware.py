@@ -35,7 +35,7 @@ class Hardware(object):
 
     ####################################################################
     #
-    # @brief Build a Hardware object from several env variables: SLURM_NODELIST, PLACEMENT_ARCHI, HOSTNAME
+    # @brief Build a Hardware object from several env variables: SLURM_NODELIST, PLACEMENT_PARTITION, HOSTNAME
     #
     ####################################################################
     @staticmethod
@@ -67,12 +67,12 @@ class Hardware(object):
         archi_name = ''
 
         # Forcing an architecture from its partition name, using a special environment variable
-        if 'PLACEMENT_ARCHI' in os.environ:
-            placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
+        if 'PLACEMENT_PARTITION' in os.environ:
+            placement_archi=os.environ['PLACEMENT_PARTITION'].strip()
             if config.has_section('partitions')==False:
-                raise PlacementException("OUPS - PLACEMENT_ARCHI is set but there is no section called partitions in placement.conf")
+                raise PlacementException("OUPS - PLACEMENT_PARTITION is set but there is no section called partitions in placement.conf")
             if config.has_option('partitions',placement_archi)==None:
-                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Unknown partition, can't guess the architecture")
+                raise PlacementException("OUPS - PLACEMENT_PARTITION="+os.environ['PLACEMENT_PARTITION']+" Unknown partition, can't guess the architecture")
             else:
                 archi_name = config.get('partitions',placement_archi)
                 
@@ -89,7 +89,7 @@ class Hardware(object):
             elif 'HOSTNAME' in os.environ:
                 node = os.environ['HOSTNAME']
             else:
-                raise(PlacementException("OUPS - Unknown host, thus unknown architecture - Please check $SLURM_NODELIST, $PLACEMENT_ARCHI, $HOSTNAME"))
+                raise(PlacementException("OUPS - Unknown host, thus unknown architecture - Please check $SLURM_NODELIST, $PLACEMENT_PARTITION, $HOSTNAME"))
 
             archi_name = Hardware.__hostname2Archi(config, node)
             

@@ -9,7 +9,7 @@ import unittest
 
 class TestCompactExclusive(unittest.TestCase):
     def setUp(self):
-        os.environ['PLACEMENT_ARCHI'] = 'exclusive'
+        os.environ['PLACEMENT_PARTITION'] = 'exclusive'
         self.hardware = Hardware.factory()
         self.assertEqual(self.hardware.NAME,'Bullx_dlc')
 

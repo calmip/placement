@@ -10,7 +10,7 @@
 # ARCHI = 'BULLX-DLC'
 
 import os
-os.environ['PLACEMENT_ARCHI'] = 'eos'
+os.environ['PLACEMENT_PARTITION'] = 'eos'
 import placement
 import hardware
 import printing

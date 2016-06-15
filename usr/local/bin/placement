@@ -91,7 +91,7 @@ then
 		then
 			echo "$n: APPEL DE $0 --check $U $*"
 		fi
-		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 --check $U $*
+		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check $U $*
 	done
 
 # --host: on envoie la commande sur le hote concerné
@@ -110,7 +110,7 @@ then
 		echo "$host: APPEL DE $0 $*"
 	fi
 
-	ssh $host export PLACEMENT_ARCHI=\"$P\" \;  $0 $*
+	ssh $host export PLACEMENT_PARTITION=\"$P\" \;  $0 $*
 
 # Pas de $job_id: on passe les switches à placement.py
 else

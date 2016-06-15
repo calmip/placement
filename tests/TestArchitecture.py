@@ -13,8 +13,10 @@ import unittest
 #@unittest.skip("it works, not tested")
 class TestShared1(unittest.TestCase):
     def setUp(self):
-
-        del os.environ['PLACEMENT_ARCHI']
+        try:
+            del os.environ['PLACEMENT_PARTITION']
+        except Exception:
+            pass
         os.environ['SLURM_NNODES']      = '1'
         os.environ['SLURM_NODELIST']    = 'eosmesca1'
         os.environ['PLACEMENT_NODE']    = '0,1'

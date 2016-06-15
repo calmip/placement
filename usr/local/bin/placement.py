@@ -77,7 +77,7 @@ def main():
 
     # Si la variable PLACEMENT_DEBUG existe, on simule un environnement shared avec des réservations
     # Exemple: export PLACEMENT_DEBUG='9,10,11,12,13' pour simuler un environnement shared, 5 sockets réservées
-    # NB - Ne pas oublier non plus de positionner SLURM_NODELIST ! (PAS PLACEMENT_ARCHI ça n'activera pas Shared)
+    # NB - Ne pas oublier non plus de positionner SLURM_NODELIST ! (PAS PLACEMENT_PARTITION ça n'activera pas Shared)
     #if 'PLACEMENT_DEBUG' in os.environ:
     #    import mock
     #    placement_debug=os.environ['PLACEMENT_DEBUG']
@@ -374,7 +374,7 @@ def show_hard(hard):
 ###########################################################
 def show_env():
     msg = "Current important environment variables...\n\n"
-    for v in ['PLACEMENT_ARCHI','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
+    for v in ['PLACEMENT_PARTITION','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
               'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK']:
         try:
             msg += v
@@ -459,7 +459,7 @@ def compute_data_from_parameters(options,args,hard):
 def newEpilog():
     cat     = hardware.Hardware.catalog()
     epilog  = 'Environment:'
-    epilog += "PLACEMENT_ARCHI " + str(cat[1]) + " "
+    epilog += "PLACEMENT_PARTITION " + str(cat[1]) + " "
     epilog += "SLURM_NODELIST or HOSTNAME should match with one of " +str(cat[0])
     epilog += " Consider also SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
     return epilog
