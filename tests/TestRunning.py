@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Test PAS UTILISE - COMMENT TESTER Running.py ???
+
 from utilities import *
 from hardware import *
 from architecture import *

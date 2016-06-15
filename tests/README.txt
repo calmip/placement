@@ -3,6 +3,7 @@ Test unitaires
 
 1/ Environnement:
 export PYTHONPATH=$(pwd)/usr/local/lib/placement
+export PLACEMENTETC=$(pwd)/usr/local/etc/placement
 
 2/ Exécuter les tests:
 python tests/TestUtilities.py

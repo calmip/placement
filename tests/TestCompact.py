@@ -9,7 +9,9 @@ import unittest
 
 class TestCompactExclusive(unittest.TestCase):
     def setUp(self):
-        self.hardware = Bullx_dlc()
+        os.environ['PLACEMENT_ARCHI'] = 'exclusive'
+        self.hardware = Hardware.factory()
+        self.assertEqual(self.hardware.NAME,'Bullx_dlc')
 
         # Architecture = 4 tâches/4 threads
         self.exclu_ok1        = Exclusive(self.hardware,4,4,False)

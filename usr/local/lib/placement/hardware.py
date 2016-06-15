@@ -86,7 +86,7 @@ class Hardware(object):
                 node = os.environ['SLURM_NODELIST']
 
             # Using the environment variable HOSTNAME to guess the architecture
-            if 'HOSTNAME' in os.environ:
+            elif 'HOSTNAME' in os.environ:
                 node = os.environ['HOSTNAME']
             else:
                 raise(PlacementException("OUPS - Unknown host, thus unknown architecture - Please check $SLURM_NODELIST, $PLACEMENT_ARCHI, $HOSTNAME"))
