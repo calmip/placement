@@ -84,7 +84,7 @@ def main():
     #    rvl=map(int,placement_debug.split(','))
     #    Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
-    epilog = "Environment: PLACEMENT_ARCHI " + str(hardware.Hardware.catalogue()) + " SLURM_NODELIST, SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
+    epilog = newEpilog()
     ver="1.1.1"
     parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
@@ -455,6 +455,14 @@ def compute_data_from_parameters(options,args,hard):
         task_distrib.keepOnlyMpiRank()
 
     return task_distrib
+
+def newEpilog():
+    cat     = hardware.Hardware.catalog()
+    epilog  = 'Environment:'
+    epilog += "PLACEMENT_ARCHI " + str(cat[1]) + " "
+    epilog += "SLURM_NODELIST or HOSTNAME should match with one of " +str(cat[0])
+    epilog += " Consider also SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
+    return epilog
 
 if __name__ == "__main__":
     main()
