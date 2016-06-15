@@ -26,7 +26,7 @@ class Hardware(object):
 
     @staticmethod
     def catalog():
-        conf_file = os.environ['PYTHONETC'] + '/partitions.conf'
+        conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
         config    = ConfigParser.RawConfigParser()
         config.read(conf_file)        
         partitions = config.options('partitions')
@@ -41,7 +41,7 @@ class Hardware(object):
     @staticmethod
     def factory():
         # 1st stage: Read the configuration file
-        conf_file = os.environ['PYTHONETC'] + '/partitions.conf'
+        conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
         config    = ConfigParser.RawConfigParser()
         config.read(conf_file)        
  

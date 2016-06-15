@@ -43,8 +43,8 @@ echo DST=$DST
 
 BIN="$DST/bin"
 LIB="$DST/lib/placement"
-###ETC="$DST/etc/placement"
-ETC="$DST/lib/placement"
+ETC="$DST/etc/placement"
+#ETC="$DST/lib/placement"
 
 
 SRC=usr/local
@@ -62,7 +62,7 @@ do
   cp $SRC/lib/placement/$f $LIB
 done
 
-for f in partitions.conf
+for f in placement.conf
 do
   cp $SRC/etc/placement/$f $ETC
 done
@@ -82,6 +82,11 @@ ssh -p $PORT $USER@$HOST "[ ! -d $ETC ] && echo No directory $ETC on $HOST" && e
 for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py printing.py utilities.py matrix.py
 do
   scp -P $PORT $SRC/lib/placement/$f "$USER@$HOST:$LIB"
+done
+
+for f in placement.conf
+do
+  scp -P $PORT $SRC/etc/placement/$f "$USER@$HOST:$ETC"
 done
 
 scp -P $PORT $SRC/bin/placement.py $SRC/bin/placement "$USER@$HOST:$BIN"
