@@ -13,6 +13,11 @@ fi
 dir=$(dirname $0)
 export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P)
 
+#placementetc
+# You'll find configuration files in this directory
+###export PYTHONETC=$(cd $dir;cd ../etc/placement; pwd -P)
+export PYTHONETC=$PYTHONPATH
+
 # nom du sript python
 placement="python $0.py"
 

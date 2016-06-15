@@ -11,6 +11,9 @@
 ################################################################
 
 import os
+import re
+import ConfigParser
+
 from exception import *
 
 class Hardware(object):
@@ -30,62 +33,70 @@ class Hardware(object):
 
     ####################################################################
     #
-    # @brief Construit un objet à partir des variables d'environnement: SLURM_NODELIST, PLACEMENT_ARCHI, HOSTNAME
+    # @brief Build a Hardware object fom several env variables: SLURM_NODELIST, PLACEMENT_ARCHI, HOSTNAME
     #
     ####################################################################
     @staticmethod
     def factory():
-        # Construction de la partition shared
-        partition_shared = [ ]
-        for i in range(606,612):
-            partition_shared.append('eoscomp'+str(i))
+        # Read the configuration file
+        conf_file = os.environ['PYTHONETC'] + '/partitions.conf'
+        config    = ConfigParser.RawConfigParser()
+        config.read(conf_file)        
+ 
+        archi_name = ''
 
-        # Permet de forcer une architecture en reprenant les noms des partitions
+        # Forcing an architecture from its partition name, using a special environment variable
         if 'PLACEMENT_ARCHI' in os.environ:
             placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
-            if placement_archi == 'uvprod':
-                return Uvprod()
-            elif placement_archi == 'mesca':
-                return Mesca2()
-            elif placement_archi == 'exclusive':
-                return Bullx_dlc()
-            elif placement_archi == 'shared':
-                return Bullx_dlc_shared()
+            if config.has_section('partitions')==False:
+                raise PlacementException("OUPS - PLACEMENT_ARCHI is set but there is no section called partitions in placement.conf")
+            if config.has_option('partitions',placement_archi)==None:
+                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Unknown partition, can't guess the architecture")
             else:
-                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture hardware inconnue")
+                archi_name = config.get('partitions',placement_archi)
+                
+        # Archi not yet guessed !
+        if archi_name == '':
 
-        # Si SLURM_NODELIST est défini, on est dans un sbatch ou un salloc
-        # On utilise SLURM_NODELIST en priorité seulement s'il y a qu'un seul node !
-        if 'SLURM_NNODES' in os.environ and os.environ['SLURM_NNODES']=='1':
-            node = os.environ['SLURM_NODELIST']
-            if node in partition_shared:
-                return Bullx_dlc_shared
-            if node == 'eosmesca1':
-                return Mesca2()
-        if 'HOSTNAME' in os.environ:
-            # Machines particulières
-            if os.environ['HOSTNAME'] == 'uvprod':
-                return Uvprod()
-            elif os.environ['HOSTNAME'] == 'eosmesca1':
-                return Mesca2()
-	    elif os.environ['HOSTNAME'] == 'prolix':
-		return Prolix()
+            # Using SLURM_NODELIST, if defined (so if we live in a slurm sbatch or salloc), AND if there is only ONE node
+            # NOTE - Not sure it is really useful
+            node = ''
+            if 'SLURM_NNODES' in os.environ and os.environ['SLURM_NNODES']=='1':
+                node = os.environ['SLURM_NODELIST']
 
-            # Nœuds shared d'eos
-            elif os.environ['HOSTNAME'] in partition_shared:
-                return Bullx_dlc_shared()
-
-            # Nœuds d'eos ordinaires
+            # Using the environment variable HOSTNAME to guess the architecture
+            if 'HOSTNAME' in os.environ:
+                node = os.environ['HOSTNAME']
             else:
-                return Bullx_dlc()
-        
-        # Si aucune de ces variables n'est définie, on fait la même chose avec le hostname !
-        #elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'uvprod':
-        #    return Uvprod()
-        #elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'eosmesca1':
-        #    return Mesca2()
-        else:
-            raise(PlacementException("OUPS - Architecture indéfinie ! - Vérifiez $SLURM_NODELIST, $PLACEMENT_ARCHI, $HOSTNAME"))
+                raise(PlacementException("OUPS - Unknown host, thus unknown architecture - Please check $SLURM_NODELIST, $PLACEMENT_ARCHI, $HOSTNAME"))
+
+            archi_name = Hardware.__name2Archi(config, node)
+            
+            if archi_name == None:
+                raise(PlacementException("OUPS - Could not guess the architecture from the hostname (" + node + ") - Please check " + conf_file))
+                
+            # Create and return the object from its name
+            archi = eval(archi_name+'()')
+            return archi
+
+    ####################################################################
+    #
+    # @brief Guess the architecture name from the hostname, using the configuration file
+    #        Try a regex match between host and all the options
+    #        When a match is found return the corresponding value
+    #        If no match, return None
+    #
+    # @param config A ConfigParser object
+    # @param host   A hostname
+    #
+    ####################################################################
+    @staticmethod
+    def __name2Archi(config, host):
+        options = config.options('hosts')
+        for o in options:
+            if re.match(o,host) != None:
+                return config.get('hosts',o)
+        return None
 
     # Renvoie le numéro de socket à partir du numéro de cœur
     # Utilisé par certains affichages
@@ -165,7 +176,7 @@ class Mesca2(Hardware):
     IS_SHARED        = True
 
 # 5/ Nouvelles machines Bull MF
-class Prolix(Hardware):
+class Bullx_dlc_broadwell(Hardware):
     NAME             = 'prolix'
     SOCKETS_PER_NODE = 2
     CORES_PER_SOCKET = 20
