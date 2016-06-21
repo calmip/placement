@@ -84,7 +84,7 @@ def main():
     #    rvl=map(int,placement_debug.split(','))
     #    Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
 
-    epilog = newEpilog()
+    epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
     ver="1.1.1"
     parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
@@ -373,17 +373,23 @@ def show_hard(hard):
 #
 ###########################################################
 def show_env():
+    cat = hardware.Hardware.catalog()
     msg = "Current important environment variables...\n\n"
-    for v in ['PLACEMENT_PARTITION','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
+    for v in ['PLACEMENT_ARCHI','PLACEMENT_PARTITION','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
               'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK']:
         try:
             msg += v
             msg += ' = '
             msg += bold() + os.environ[v] + normal()
-            msg += '\n'
         except KeyError:
-            msg += '<not specified>\n'
-    
+            msg += '<not specified>'
+        if v=='PLACEMENT_ARCHI':
+            msg += ' of ' + str(cat[2])
+        if v=='PLACEMENT_PARTITION':
+            msg += ' of ' + str(cat[1])
+        if v=='HOSTNAME':
+            msg += ' should match ' + str(cat[0])
+        msg += '\n'
     print msg
 
 ##########################################################
@@ -455,14 +461,6 @@ def compute_data_from_parameters(options,args,hard):
         task_distrib.keepOnlyMpiRank()
 
     return task_distrib
-
-def newEpilog():
-    cat     = hardware.Hardware.catalog()
-    epilog  = 'Environment:'
-    epilog += "PLACEMENT_PARTITION " + str(cat[1]) + " "
-    epilog += "SLURM_NODELIST or HOSTNAME should match with one of " +str(cat[0])
-    epilog += " Consider also SLURM_TASKS_PER_NODE, SLURM_CPUS_PER_TASK"
-    return epilog
 
 if __name__ == "__main__":
     main()

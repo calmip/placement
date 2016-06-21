@@ -31,7 +31,10 @@ class Hardware(object):
         config.read(conf_file)        
         partitions = config.options('partitions')
         hosts      = config.options('hosts')
-        return [hosts,partitions]
+        archis     = config.sections();
+        archis.remove('hosts')
+        archis.remove('partitions')
+        return [hosts,partitions,archis]
 
     ####################################################################
     #
@@ -66,8 +69,16 @@ class Hardware(object):
     def __guessArchiName(conf_file,config):
         archi_name = ''
 
-        # Forcing an architecture from its partition name, using a special environment variable
-        if 'PLACEMENT_PARTITION' in os.environ:
+        # Forcing an architecture from its name, using $PLACEMENT_ARCHI
+        if 'PLACEMENT_ARCHI' in os.environ:
+            placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
+            if config.has_section(placement_archi)==False:
+                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Unknown architecture, check placement.conf")
+            else:
+                archi_name = placement_archi
+
+        # Forcing an architecture from its partition name, using $PLACEMENT_PARTITION
+        elif 'PLACEMENT_PARTITION' in os.environ:
             placement_archi=os.environ['PLACEMENT_PARTITION'].strip()
             if config.has_section('partitions')==False:
                 raise PlacementException("OUPS - PLACEMENT_PARTITION is set but there is no section called partitions in placement.conf")
