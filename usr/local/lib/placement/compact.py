@@ -7,10 +7,32 @@ from tasksbinding import *
 from scatter import *
 
 #
-# class CompactGeneMode, dérive de TasksBinding, classe mère pour plusieurs modes compact différents
-#       La méthode checkParameters, commune à toutes les classes de type compact, est implantée ici
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu-cores
 #
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
+
 class CompactGenMode(TasksBinding):
+    """ Distributing processes on core in "scatter" modes, this generic class is a base class """
+
+
     def __init__(self,archi,cpus_per_task=0,tasks=0):
         TasksBinding.__init__(self,archi,cpus_per_task,tasks)
 
@@ -20,16 +42,26 @@ class CompactGenMode(TasksBinding):
         if self.cpus_per_task % self.archi.threads_per_core!=0:
             msg = "OUPS - cpus_per_task ("
             msg += str(self.cpus_per_task)
-            msg += ") => doit être multiple de threads_per_core ("
+            msg += ") => should be a multiple of ("
             msg += str(self.archi.threads_per_core)
             msg += ")"
             raise PlacementException(msg)
 
 
-#
-# class CompactMode, dérive de TaskBinding, implémente les algos utilisés en mode compact
-#
 class CompactMode(CompactGenMode):
+    """Compact distribution mode
+
+    # placement 4 4 --ascii --mode=compact 
+      S0-------- S1-------- 
+    P AAAABBBBCC CCDDDD.... 
+
+    # placement 4 4 --ascii --mode=compact --hyper
+      S0-------- S1-------- 
+    P AABBCCDD.. .......... 
+    L AABBCCDD.. .......... 
+
+    """
+
     def __init__(self,archi):
         TasksBinding.__init__(self,archi)
         self.distribTasks()
@@ -41,12 +73,6 @@ class CompactMode(CompactGenMode):
         if check:
             self.checkParameters()
 
-        # cpus_per_task plus petit que cores_per_socket
-        # ./placement -A   --mode=compact --hyper 4 4
-        # S0-------- S1-------- 
-        # P AAAABBBBCC .......... 
-        # L CCDDDD.... ..........
-#        if self.cpus_per_task <= self.archi.cores_per_socket:
         tasks_bound=[]
         t_binding=[]
         t = 0
@@ -78,6 +104,15 @@ class CompactMode(CompactGenMode):
 #                    comme des sockets supplémentaires
 #
 class CompactPhysicalMode(CompactGenMode):
+    """ Compact special mode, used when --hyper_physical is activated
+
+    # ./placement -A 4 4 --mode=compact --hyper_as_physical
+    S0-------- S1-------- 
+    P AAAABBBBCC .......... 
+    L CCDDDD.... ..........
+    
+    """
+
     def __init__(self,archi):
         TasksBinding.__init__(self,archi)
         self.distribTasks()
@@ -89,12 +124,6 @@ class CompactPhysicalMode(CompactGenMode):
         if check:
             self.checkParameters()
 
-        # cpus_per_task plus petit que cores_per_socket
-        # ./placement -A   --mode=compact --hyper 4 4
-        # S0-------- S1-------- 
-        # P AAAABBBBCC .......... 
-        # L CCDDDD.... ..........
-#        if self.cpus_per_task <= self.archi.cores_per_socket:
         tasks_bound=[]
         t_binding=[]
         t = 0

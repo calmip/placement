@@ -10,6 +10,30 @@ from architecture import *
 import subprocess
 
 #
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu-cores
+#
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
+
+
+#
 # class RunningMode, dérive de TaskBuilding, implémente les algos utilisés en mode running, ie observe ce qui se passe
 #                    lorsque l'application est exécutée
 #                    En déduit archi, cpus_per_task,tasks !
@@ -20,8 +44,20 @@ import subprocess
 #     buildTasksBound L'algorithme utilisé pour savoir qui fait quoi où
 #     withMemory: si True, on appelle numamem pour connaitre l'occupation mémoire
 #
+
 class RunningMode(TasksBinding):
+    """ Observe the running tasks, and guess archi and threads_bound """
+
     def __init__(self,path,hardware,buildTasksBound,withMemory):
+        """ Constructor
+
+        Arguments:
+        path           : The running binary considered
+        hardware       : The hardware we run on 
+        buildTasksbound: How to build the tasks_bound data structure ? An object-function implementating the algorithm
+        withMemory     : If True, try to know memory occupation / socket using a num command
+        """
+
         TasksBinding.__init__(self,None,0,0)
         self.path = path
         self.hardware = hardware
@@ -40,35 +76,44 @@ class RunningMode(TasksBinding):
         self.__users_reserves     = ['root' ]
         self.__initTasksThreadsBound()
         
-    # Appelle la commande numastat pour chaque pid, et garde l'info dans threads_bound
     def __identNumaMem(self):
+        """ Call numastat for each pid of threads_bound, and keep the returned info inside threads_bound"""
                 
         for pid in self.threads_bound:
             cmd = 'numastat ' + str(pid)
             tmp = subprocess.check_output(cmd.split(' ')).split('\n')
 
-            # on ne garde que la dernière ligne (Total=)
+            # Keep only last line (Total=)
             ttl = tmp[-2].split()
 
-            # on supprime la première et la dernière colonne
+            # remove first and last columns
             ttl.pop()
             ttl.pop(0)
             ttl = map(float,ttl)
 
-            # Il doit rester autant de chiffres que de sockets !
+            # We must have same number of numbers / sockets !
             if self.hardware.SOCKETS_PER_NODE != len(ttl):
-                raise PlacementException("ERREUR INTERNE - numastat renvoie " + len(ttl) + " colonnes, mais nous avons " + SOCKETS_PER_NODE + " sockets !")
+                raise PlacementException("INTERNAL ERROR - numastat returns " + len(ttl) + " columns, but we have " + SOCKETS_PER_NODE + " sockets !")
             self.threads_bound[pid]['numamem']=ttl
 
-    # Appelle la commande ps et retourne la liste des pid correspondant à la commande passée en paramètres
-    # OU au user passé en paramètre OU sans sélection préalable
-    # ne garde ensuite que les processes en état Run, et supprime les processes style ps
-    # Initialise self.pid (la liste des processes_id) ET self.processes (TOUT sur les processes)
     def __identProcesses(self):
+        """Identify the interesting processes together with their threads, from a set of commands ps
+
+        We keep only processes selected by the switch --check=
+        Among them, "reserved" commands ('ps', 'top' etc) are discarded
+        And finally we keep only processes having at least ONE running thread
+        
+        The data structures processus and pid are created by this function:
+        self.processus is a dictionary of dictionaries:
+             k = pid
+             v = {'pid':pid, 'user':'utilisateur', 'cmd':'commande','threads':{'tid':{'tid':tid, 'psr';psr}}
+        self.pid is the sorted list of pids
+
+        """
 
         ps_res=''
 
-        # --check='+' ==> Recherche le fichier PROCESSES.txt dans le répertoire courant - pour déboguage
+        # --check='+' ==> Just using the file called PROCESSES.txt in the current directory, used for debugging placement
         if self.path == '+':
             fh_processes = open('PROCESSES.txt','r')
             ps_res = fh_processes.readlines()
@@ -76,48 +121,48 @@ class RunningMode(TasksBinding):
             for i,l in enumerate(ps_res):
                 ps_res[i] = l.replace('\n','')
                 
-        # On utilise une commande ps
+        # Build a complicated command ps
         else:
             cmd = 'ps --no-headers -m -o %u -o %p -o tid -o psr -o %c -o state -o %cpu -o %mem '
             
-            # --check=ALL ==> Pas de sélection de tâches !
+            # --check=ALL ==> No selection, among the processes
             if self.path == 'ALL':
-                cmd += 'ax'
+                exe = cmd + 'ax'
                 try:
-                    tmp    = subprocess.check_output(cmd.split(' '))
+                    tmp    = subprocess.check_output(exe.split(' '))
                     ps_res = tmp.split('\n')
                     for i,l in enumerate(ps_res):
                         ps_res[i] = l.replace('\n','')
 
                 except subprocess.CalledProcessError,e:
-                    msg = "OUPS " + cmd + " retourne une erreur: " + str(e.returncode)
+                    msg = "OUPS " + exe + " returned an error: " + str(e.returncode)
                     raise PlacementException(msg)
 
-            # --check='un_nom' Supposons qu'il s'agisse d'un nom d'utilisateur
+            # --check='some_name' Let's suppose it is a user name
             else:
-                cmd += "-U "
-                cmd += self.path
+                exe = cmd + "-U "
+                exe += self.path
 
                 try:
-                    tmp    = subprocess.check_output(cmd.split(' '),stderr=subprocess.STDOUT)
+                    tmp    = subprocess.check_output(exe.split(' '),stderr=subprocess.STDOUT)
                     ps_res = tmp.split('\n')
                     for i,l in enumerate(ps_res):
                         ps_res[i] = l.replace('\n','')
 
                 except subprocess.CalledProcessError,e:
                     if (e.returncode != 1):
-                        msg = "OUPS " + cmd + " retourne une erreur: " + str(e.returncode)
+                        msg = "OUPS " + exe + " returned an error: " + str(e.returncode)
                         raise PlacementException(msg)
                     else:
                         ps_res = ""
 
-                # Le -U n'a rien donné, essayons avec un nom de commande
+                # No result: let's suppose it is a command name
                 if ps_res == "":
-                    cmd += "-C "
-                    cmd += self.path
+                    exe = cmd + "-C "
+                    exe += self.path
 
                     try:
-                        tmp    = subprocess.check_output(cmd.split(' '))
+                        tmp    = subprocess.check_output(exe.split(' '))
                         ps_res = tmp.split('\n')
                         for i,l in enumerate(ps_res):
                             ps_res[i] = l.replace('\n','')
@@ -126,35 +171,31 @@ class RunningMode(TasksBinding):
                         msg = "OUPS "
 
                         if (e.returncode == 1):
-                            msg += "AUCUNE TACHE TROUVEE: peut être n'êtes-vous pas sur la bonne machine ?"
+                            msg += "No task found: Are you sure you are working on the correct host ?"
                         else:
-                            msg += cmd + " retourne une erreur: " + str(e.returncode)
+                            msg += cmd + " returned an error: " + str(e.returncode)
                         raise PlacementException(msg)
         
-        # Création des structures de données processus et pid
-        # Dictionnaire:
-        #    k = pid
-        #    v = {'pid':pid, 'user':'utilisateur', 'cmd':'commande','threads':{'tid':{'tid':tid, 'psr';psr}}
-        # On ne garde que les threads en état 'R' et on supprime les pid dont on a écarté tous les threads
-        # On écarte aussi les pid dont le nom de commande est "réservé" (ps, top etc)
-        # 
+        # Creating data structures processus and pid from the output of the ps command
+        # This output is a mixture of lines representing a processus OR a thread
+        # BUT For each process, the first line represents the process itself AND the 1st thread, 
+        # following lines represent the other threads
         processus         = {}
         processus_courant = {}
         process_nb = 0
         for l in ps_res:
                
-            # Détection des lignes représentant un processus
+            # Detecting processus
             mp=re.match('([a-z0-9]+) +(\d+) +- +- +([^ ]+) +- +[0-9.]+ +([0-9.]+)$',l)
             if mp != None:
 
-                # S'il y a dans processus_courant au moins un thread actif, on le tag et on le sauve
+                # If there is at least 1 active thread in the current process, it is tagged and saved
                 if processus_courant.has_key('R'):
                     processus_courant['tag'] = numTaskToLetter(process_nb)
                     process_nb += 1
                     processus[processus_courant['pid']] = processus_courant
                     
-                # On vide le processus courant, si processus ou user réservé on passe à la ligne suivante
-                # On labellise les processus qui sont conservés
+                # Reinit the current processus dictionary, as we start a new process
                 processus_courant={}
                 user= mp.group(1)
                 pid = int(mp.group(2))
@@ -171,19 +212,19 @@ class RunningMode(TasksBinding):
                 processus_courant['mem']=mem
                 continue
 
-            # Détection des lignes représentant un thread
+            # Detecting threads
             mt = re.match('[a-z0-9]+ +- +(\d+) +(\d+) +- +([A-Z]) +([0-9.]+)',l)
             if mt != None:
-                # Si pas de processus courant (en principe pas possible) ou processus courant non conservé, on passe
+                # If no current process, skip this line. However this should not happen
                 if len(processus_courant)==0:
                     continue
                 
-                # Si state est R, on s'en souvient
+                # If at least 1 thread is 'R', remember !
                 state = mt.group(3)
                 if state == 'R':
                     processus_courant['R']=True
 
-                # On garde la trace de ce thread dans processus_courant
+                # Keeping track of this thread
                 tid   = int(mt.group(1))
                 psr   = int(mt.group(2))
                 cpu   = float(mt.group(4))
@@ -200,7 +241,7 @@ class RunningMode(TasksBinding):
 
                 processus_courant['threads'][tid] = thread_courant
 
-        # S'il y a dans processus_courant au moins un thread actif quand on sort de la boucle, on le sauve
+        # If there is at least 1 active thread in the current process when xiting from the loop, it is tagged and saved
         if processus_courant.has_key('R'):
             processus_courant['tag'] = numTaskToLetter(process_nb)
             processus[processus_courant['pid']] = processus_courant
@@ -208,52 +249,54 @@ class RunningMode(TasksBinding):
         self.processus = processus
         self.pid = sorted(processus.keys())
 
-    # A partir de tasks_bound, détermine l'architecture
-    def __buildArchi(self,tasks_bound):
 
-        # On n'utilise pas cpus_per_task, puisque les cœurs sont déjà distribués !
+    def __buildArchi(self,tasks_bound):
+        """ Guess archi from observed tasks_bound"""
+
+        # The parameter cpus_per_task is not used here
         self.cpus_per_task = -1
         self.tasks         = len(tasks_bound)
         self.sockets_per_node = self.hardware.SOCKETS_PER_NODE
         
-        # On considère la machine comme exclusive, même si elle est partagée
+        # The machine, ie the sockets and cores reserved for me, are exclusively reserved for me !
         self.archi = Exclusive(self.hardware, self.cpus_per_task, self.tasks, self.hardware.HYPERTHREADING)
 
     def distribTasks(self,check=False):
+        """ Init and return tasks_bound  """
         if self.tasks_bound==None:
             self.__initTasksThreadsBound()
         return self.tasks_bound 
 
-    # Appelle __identProcesses pour récolter une liste de pids (self.pid)
-    # puis appelle __buildTasksBound pour construire tasks_bound et threads_bound
+
     def __initTasksThreadsBound(self):
-        
-        # Récupère la liste des processes à étudier par ps
+        """ Call __identProcesses then __buildTasksBound and other things """
+
+        # Retrieve the list of processes
         self.__identProcesses()
 
-        # Détermine l'affinité des processes et des threads
+        # Determine their affinity
         self.tasks_bound   = self.__buildTasksBound(self)
         self.threads_bound = self.processus
 
-        # Si aucune tâche trouvée, pas la peine d'insister
+        # No task found
         if len(self.tasks_bound)==0:
-            msg = "OUPS Aucune tâche trouvée !"
+            msg = "OUPS No task found !"
             raise PlacementException(msg)
 
-        # Détermine s'il y a des recouvrements (plusieurs processes sur un même cœur)
+        # Detect overlaps, if any
         [self.overlap,self.over_cores] = _detectOverlap(self.tasks_bound)
 
-        # Détermine l'architecture à partir des infos de hardware et des infos de processes ou de threads
+        # Guess the architecture
         self.__buildArchi(self.tasks_bound)
 
-        # Appelle numastat sur tous les pid pour savoir sur quels sockets se trouve la memoire
+        # Call numastat to get information about the memory
         if self.withMemory:
             self.__identNumaMem()
 
-    # PrintForVerbose
-    # Renvoie pour impression des informations utiles en mode verbose
     def PrintingForVerbose(self):
-        rvl  = "TACHE ==> PID (USER,CMD) ==> AFFINITE\n"
+        """Return some verbose information"""
+
+        rvl  = "TASK  ==> PID (USER,CMD) ==> AFFINITY\n"
         rvl += "=====================================\n"
         threads_bound = self.threads_bound
         for (pid,proc) in sorted(threads_bound.iteritems(),key=lambda(k,v):(v['tag'],k)):
@@ -281,15 +324,21 @@ class RunningMode(TasksBinding):
 
 # Classe abstraite de base
 class BuildTasksBound:
+    """ This is a functor, use to build the data structure tasksBinding from taskset or ps"""
+
     def __call__(self):
         raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
 
 # Fonction-objet pour construire la structure de données tasksBinding à partir de taskset
 class BuildTasksBoundFromTaskSet(BuildTasksBound):
+    """Calling taskset, BUT DOES NOT WORK ANYMORE, IS IT STILL USEFUL ?"""
+
     # Appelle __taskset sur le tableau tasksBinding.pid
     # Transforme les affinités retournées: 0-3 ==> [0,1,2,3]
     # Renvoie tasks_bound + tableau vide (pas d'infos sur les threads)
     def __call__(self,tasksBinding):
+        raise PlacementException("Sorry, --taskset switch is not implemented")
+
         tasks_bound=[]
         for p in tasksBinding.pid:
             aff = self.__runTaskSet(p)
@@ -321,6 +370,8 @@ class BuildTasksBoundFromTaskSet(BuildTasksBound):
 # Ne considère QUE les threads en état 'R' !
 # Renvoie tasks_bound
 class BuildTasksBoundFromPs(BuildTasksBound):
+    """ This is just a rewriting of the data structure processus !"""
+
     def __call__(self,tasksBinding):
         tasks_bound=[]
         #for pid in sorted(tasksBinding.processus.keys()):
@@ -338,6 +389,8 @@ class BuildTasksBoundFromPs(BuildTasksBound):
 # Renvoie les couples de processes qui présentent un recouvrement, ainsi que
 # la liste des cœurs en cause
 def _detectOverlap(tasks_bound):
+    """ Return couples of overlapping as a list of pairs, together with the list of impacted cores"""
+
     over=[]
     over_cores=[]
     for i in range(len(tasks_bound)):
@@ -347,17 +400,14 @@ def _detectOverlap(tasks_bound):
                 over.append((i,j))
                 over_cores.extend(overlap)
 
-    # Remplace les numéros par des lettres
-    # TODO - Si un numéro est plus gros que 62, plantage !
+    # Use 1-char tags instead of numbers, however the number should be < 66 (and we do not check, shame !)
     over_l = []
     for c in over:
         over_l.append( (numTaskToLetter(c[0]),numTaskToLetter(c[1])) )
 
-    # Supprime les doublons dans self.over_core
+    # Removing duplications
     over_cores = set(over_cores)
     over_cores = list(over_cores)
     over_cores.sort()
-    over_cores = over_cores
-    overlap    = over_l
-
+    
     return (over_l,over_cores)

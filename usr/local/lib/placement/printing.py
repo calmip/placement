@@ -8,33 +8,56 @@ from utilities import *
 from exception import *
 from itertools import chain,product
 
-###############################################################################################
 #
-# PrintingFor = Toutes les classes utilisées en impression dérivent de cette classe abstraite
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu-cores
 #
-###############################################################################################
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
+
+
 class PrintingFor(object):
+    """ Base class, all PrintingFor classes extend this class
+
+    o = PrintingForxxx(tasks_binding)
+    print o
+"""
+
     def __init__(self,tasks_binding):
         self._tasks_binding = tasks_binding
     def __str__(self):
-        return "ERREUR INTERNE - CLASSE ABSTRAITE !!!!!"
+        return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
 
-###############################################################################################
-#
-# PrintingForSrun: Imprime des commandes pour srun
-#
-###############################################################################################
+
 class PrintingForSrun(PrintingFor):
+    """ Printing for srun 
+
+    # placement 4 4 --srun
+    --cpu_bind=mask_cpu:0xf,0xf0,0x3c00,0x3c000
+    """
+
     def __str__(self):
         return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound)
 
-    #
-    # Réécriture de tasks_bound sous forme de paramètres hexadécimaux pour srun
-    #
-    # Params = archi, tasks_bound
-    # Return = La chaine de caractères à afficher
-    #    
     def __getCpuBinding(self,archi,tasks_bound):
+        """ Call __GetCpuTaskBinding for each task, concatene and return """
+
         mask_cpus=[]
         for t in tasks_bound:
             mask_cpus += [self.__getCpuTaskBinding(archi,t)]
@@ -42,14 +65,14 @@ class PrintingForSrun(PrintingFor):
         return "--cpu_bind=mask_cpu:" + ",".join(mask_cpus)
 
 
-    # Réécrit le placement pour une tâche
-    # Réécriture sous forme hexadécimale pour srun
-    #
-    # Params: archi (l'architecture processeurs)
-    #         cores (un tableau d'entiers représentant les cœurs)
-    # Return: Le tableau de tableaux réécrit en hexa
-    #
     def __getCpuTaskBinding(self,archi,cores):
+        """ Return string, representing the core positions in hexa coding for srun
+
+        Arguments:
+        archi = An object deriving from Architecture
+        cores = A list of integers, representing the cores (physical + logical)
+        """
+
         i = 1
         rvl = 0
         for j in range(archi.cores_per_node*archi.threads_per_core):
@@ -58,33 +81,35 @@ class PrintingForSrun(PrintingFor):
             i = 2 * i
         rvl = str(hex(rvl))
     
-        # Supprime le 'L' final, dans le cas où il y a un grand nombre de threads
+        # remove the final 'L', useful when there are many many cores
         return rvl.rstrip('L')
 
-#########################################################################################
-#
-# PrintingForHuman: Imprime dans un format humainement compréhensible
-#
-#########################################################################################
+
+
 class PrintingForHuman(PrintingFor):
+    """ Printing for a human being
+
+    # placement 4 4 --human
+    [ 0 1 2 3 ]
+    [ 4 5 6 7 ]
+    [ 10 11 12 13 ]
+    [ 14 15 16 17 ]
+    """
+
     def __str__(self):
         return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound)
 
     def __getCpuBinding(self,archi,tasks_bound):
+        """ Call __GetCpuTaskBinding for each task, concatene and return """
+
         rvl = ""
         for t in tasks_bound:
             rvl += self.__getCpuTaskBinding(archi,t)
         return rvl
 
-    #
-    # Réécrit le placement pour une tâche
-    #
-    # Params: archi (l'architecture processeurs), non utilisé
-    #         cores (un tableau d'entiers représentant les cœurs d'une tâche)
-    # Return: Le tableau de tableaux réécrit en chaine de caractères
-    #
-    #
     def __getCpuTaskBinding(self,archi,cores):
+        """ Return a list of cores written as a string """
+
         rvl="[ "
         sorted_cores = cores
         sorted_cores.sort()
@@ -94,23 +119,29 @@ class PrintingForHuman(PrintingFor):
         rvl+="]\n"
         return rvl
 
-#########################################################################################
-#
-# PrintingForAsciiArt: Imprime dans un format hautement artistique
-#
-#########################################################################################
+
+
 class PrintingForAsciiArt(PrintingFor):
+    """ Printing for an artist, ie a special human being
+
+    # placement 4 4 --ascii-art
+    S0-------- S1-------- 
+  P AAAABBBB.. CCCCDDDD.. 
+    """
+
     def __str__(self):
         if self._tasks_binding.tasks > 66:
-            return "OUPS - Représentation AsciiArt impossible pour plus de 66 tâches !"
+            return "OUPS - AsciiArt representation unsupported if more than 66 tasks !"
         else:
             return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
 
 
     def __getCpuBinding(self,archi,tasks_bound,over_cores=None):
+        """ Return a graphics more or less representing the sockets """
+
         char=ord('A')
 
-        # cores = tableau de cores, prérempli avec '.'
+        # A list of cores, prefilled with '.'
         cores=[]
         for s in range(archi.sockets_per_node):
             if s in archi.l_sockets:
@@ -121,7 +152,7 @@ class PrintingForAsciiArt(PrintingFor):
                 for c in range(archi.cores_per_socket):
                     cores.append(to_app)
 
-        # remplir le tableau cores avec une lettre correspondant au process
+        # Fill the cores array with a letter, 1 letter / task
         nt=0
         for t in tasks_bound:
             for c in t:
@@ -131,11 +162,10 @@ class PrintingForAsciiArt(PrintingFor):
                     cores[c] = numTaskToLetter(nt)
             nt += 1
 
-        # Pour une machine SMP plein de sockets type uvprod, on affiche les sockets par groupes de 8
+        # For an SMP machine full of sockets, like the sgi uv, we display the sockets by groups of 8
         rvl = ""
         for gs in range(0,archi.sockets_per_node,8):
             rvl += "  "
-            # Ecrire l'affectation des cœurs à partir des cores
             for s in range(gs,min(gs+8,archi.sockets_per_node)):
                 rvl += 'S'
                 rvl += str(s)
@@ -164,19 +194,22 @@ class PrintingForAsciiArt(PrintingFor):
     
         return rvl
 
-#########################################################################################
-#
-# PrintingForIntelAff: Imprime pour la variable d'environnement KMP_AFFINITY
-#
-#########################################################################################
+
 class PrintingForIntelAff(PrintingFor):
+    """ Printing for the intel environment varialbe KMP_AFFINITY (ONLY if 1 task) 
+
+    # placement 1 6 --intel_affinity
+    export KMP_AFFINITY="granularity=fine,explicit,proclist=[0, 1, 2, 10, 11, 12]"
+
+    """
+
     def __init__(self,tasks_binding,verbose):
         PrintingFor.__init__(self,tasks_binding)
         self.__verbose = verbose
 
     def __str__(self):
         if len(self._tasks_binding.tasks_bound) > 1:
-            return "OUPS - Représentation KMP_Affinity impossible pour plus de 1 tâche !"
+            return "OUPS - KMP_Affinity representation impossible if more than 1 task !"
         else:
             rvl  = 'export KMP_AFFINITY="granularity=fine,explicit,proclist=';
             rvl += self.__getCpuBinding(self._tasks_binding.tasks_bound);
@@ -195,40 +228,33 @@ class PrintingForIntelAff(PrintingFor):
 #
 ###############################################################################################
 class PrintingForNumactl(PrintingFor):
+    """ Printing for numactl command:
+
+    # placement 2 6 --numactl
+    --physcpubind=0-5,10-15
+    """
+
     def __str__(self):
         return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound)
 
-#
-# Réécriture de tasks_bound sous frome de switch numactl
-#
-    #
-    # Réécriture de tasks_binding sous forme de switch numactl
-    #
-    # Params = archi, tasks_binding
-    # Return = La chaine de caractères à afficher
-    #    
+
     def __getCpuBinding(self,archi,tasks_bound):
+        """ Call __GetCpuTaskBinding for each task, concatene and return """
+
         cpus=[]
 
-        # compactifie dans une chaine de caractères
         sorted_tasks_bound=list(tasks_bound)
         sorted_tasks_bound.sort()
 
         for t in sorted_tasks_bound:
-            cpus += [self.__getCpuTaskBinding(archi,t)]
+            cpus += list2CompactString(cores)
 
         return "--physcpubind=" + ",".join(cpus)
 
-    
-    def __getCpuTaskBinding(self,archi,cores):
-        return list2CompactString(cores)
   
-#########################################################################################
-#
-# PrintingForMatrixThreads: Imprime les threads dans un format matriciel
-#
-#########################################################################################
 class PrintingForMatrixThreads(PrintingFor):
+    """ Printing the (running) threads in a matrix """
+
     __print_only_running_threads = False
     __sorted_threads_cores       = False
     __sorted_processes_cores     = False
@@ -247,27 +273,28 @@ class PrintingForMatrixThreads(PrintingFor):
         else:
             return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.threads_bound)
 
-    #
-    # Réécrit le placement pour des ensembles de threads et de tâches
-    # Réécriture matricielle, une colonne par cœur et une ligne par thread
-    #
-    # Params: archi (l'architecture processeurs)
-    #         threads_bound (le tableau self.processus de la classe RunningMode, cf running.py)
-    # Return: la chaine de caracteres pour affichage
-    #
+
 
     def __getCpuBinding(self,archi,threads_bound):
-        #print str(threads_bound)
+        """ return a string, representing sets of threads and tasks in a matrix representation, used only for running tasks
 
-        # pour l'instant on considere l'ensemble de la machine !
+        1 column/PHYSICAL core, 1 line/process
+        Physical and logical cores are on the same column
+
+        Arguments:
+        archi         = An object deriving from Architecture
+        threads_bound = A dictionary containing a lot of data about each running task, see running.py for details
+        """
+
+        # The whole machine is considered
         ppsr_min = 0
         ppsr_max = archi.sockets_per_node * archi.cores_per_node - 1
-        # calcul des ppsr_min, ppsr_max, (ppsr = Physical Processor, ie numero de cœur physique) globaux et liés à chaque pid
-        ppsr_min = 9999
+
+        # For each task in threads_bound, compute the ppsr_min and ppsr_max, ie the min and max physical cores
+        ppsr_min = 999999
         ppsr_max = 0
         for pid in threads_bound.keys():
             p_ppsr_min = 9999
-            #p_psr_max = 0
             threads = threads_bound[pid]['threads']
 
             for tid in threads:
@@ -278,26 +305,27 @@ class PrintingForMatrixThreads(PrintingFor):
                     p_ppsr_min=ppsr
                 if ppsr_max<ppsr:
                     ppsr_max=ppsr
-                #if p_ppsr_max<ppsr:
-                #    p_ppsr_max=ppsr
                     
             threads_bound[pid]['ppsr_min'] = p_ppsr_min
 
-        # Impression du header de la matrice
+        # First, create a Matrix and print the header
         m = Matrix(archi,ppsr_min,ppsr_max)
         rvl = ''
         rvl += m.getHeader()
 
-        # Impression de la ligne numamem
+        # If wanted, print 1 line concerning memory allocation on the sockets
         if self.__print_numamem:
             sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
             rvl += m.getNumamem(sockets_mem)
 
-        # Impression du corps de la matrice
+        # Printing the body
+        # Sort threads_bound, on processes or on threads
         if self.__sorted_processes_cores:
             sorted_processes = sorted(threads_bound.iteritems(),key=lambda(k,v):(v['ppsr_min'],k))
         else:
             sorted_processes = sorted(threads_bound.iteritems())
+
+        # Print one line/thread
         for (pid,thr) in sorted_processes:
             l = threads_bound[pid]['tag']
             threads = threads_bound[pid]['threads']
@@ -328,9 +356,20 @@ class PrintingForMatrixThreads(PrintingFor):
     #                                          v = qtte de memoire utilisee par le process sur ce socket
     #
     def __compute_memory_per_socket(self,archi,threads_bound):
+        """ return a data structure representing the memory occupation of each task on each socket:
+        
+        Arguments:
+        archi         (contains the information about sockets)
+        threads_bound (contains the information about memory occupation)
+
+        Return sockets_mem: A list of dictionaries: 
+                            for each socket, a dict
+                                key   : process tag ('A','B',...)
+                                value : memory used by this task on the socket  
+                            
         sockets = range(0,archi.hardware.SOCKETS_PER_NODE)
         sockets_mem = []
-
+        """
         for s in sockets:
             sockets_mem.append({})
 
@@ -342,12 +381,10 @@ class PrintingForMatrixThreads(PrintingFor):
         
         return sockets_mem
 
-#########################################################################################
-#
-# PrintingForVerbose: Imprime un peu plus d'informations...
-#
-#########################################################################################
+
 class PrintingForVerbose(PrintingFor):
+    """ Printing more information ! """
+
     def __str__(self):
         if not isinstance(self._tasks_binding,RunningMode):
             return "ERROR - The switch --verbose can be used ONLY with --check"

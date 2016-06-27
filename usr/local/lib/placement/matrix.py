@@ -1,10 +1,32 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#import os
 from exception import *
 from utilities import *
-#from itertools import chain,product
+
+#
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu-cores
+#
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
+
 
 
 
@@ -18,6 +40,8 @@ from utilities import *
 #
 
 class Matrix(object):
+    """ Compute the placement in  matrix (1 col/core, 1 line/thread) for sets of running threads """
+
     def __init__(self,archi,ppsr_min=-1,ppsr_max=-1):
         self.__hard  = archi.hardware
         self.__archi = archi
@@ -26,7 +50,6 @@ class Matrix(object):
             self.__ppsr_max = archi.sockets_per_node * archi.cores_per_socket - 1
         else:
             # Partir toujours au premier core d'un socket jusqu'au dernier core
-            #            c = self.__hard.getCore2Core(psr_min)
             self.__socket_min = self.__hard.getCore2Socket(ppsr_min)
             self.__socket_max = self.__hard.getCore2Socket(ppsr_max)
             self.__ppsr_min = self.__hard.getSocket2CoreMin(self.__socket_min)
@@ -35,9 +58,11 @@ class Matrix(object):
         self.__last_pid = 0
 
     def getHeader(self,h_header=15*' '):
-        '''Renvoie un header avec le numéro des psr sur trois lignes (<999 !)'''
+        '''Return a header with psr nb displayed 3 lines (must be < 999 !)'''
+
         self.__last_pid = 0
         rvl = ''
+
         # Ligne 1 = les centaines
         rvl += h_header
         for p in range(self.__ppsr_min,self.__ppsr_max+1):
@@ -64,10 +89,12 @@ class Matrix(object):
         rvl += '\n'
         return rvl
 
-    # imprime une ligne pour l'occupation mémoire des sockets
+
+
     def getNumamem(self,sockets_mem,h_header='  SOCKET MEMORY'):
+        """ Return a line describing memory occupation of the sockets """
         space = "."
-        sockets_mem_rel = self.getMem2Slice(sockets_mem)
+        sockets_mem_rel = self.__getMem2Slice(sockets_mem)
         rvl = h_header
         for s in range(self.__socket_min,self.__socket_max+1):
             rvl += ' '
@@ -85,8 +112,10 @@ class Matrix(object):
         return rvl
         #return str(sockets_mem_rel)+'\n'
 
-    # convertit le tableau d'occupation de la mémoire en "slices", prets pour affichage
-    def getMem2Slice(self,sockets_mem):
+
+    def __getMem2Slice(self,sockets_mem):
+        """ Compute slices for the memory consumption, they are ready to be displayed """
+
         mem_slice = self.__hard.MEM_PER_SOCKET / self.__hard.CORES_PER_SOCKET
         sockets_mem_rel = []
 
@@ -105,11 +134,10 @@ class Matrix(object):
         return sockets_mem_rel
 
     def getLine(self,pid,tid,ppsr,S,H,cpu=100,mem='-'):
-        '''Renvoie une ligne pleine de blancs avec H en colonne 0 et S sur la colonne ppsr, et cpu sur la colonne adhoc'''
-        # if ppsr > self.__ppsr_max and self.__archi.threads_per_core == 2:
-        #    ppsr -= self.__archi.cores_per_node
+        """ Return a line fulll of '.' and a letter on the psr coloumn, plus cpu occupation at end of line"""
+
         if (ppsr<self.__ppsr_min or ppsr>self.__ppsr_max):
-            raise PlacementException("ERREUR INTERNE - psr ("+str(ppsr)+") devrait appartenir à ["+str(self.__ppsr_min)+','+str(self.__ppsr_max)+"]")
+            raise PlacementException("INTERNAL ERROR - psr ("+str(ppsr)+") should belong to ["+str(self.__ppsr_min)+','+str(self.__ppsr_max)+"]")
 
         space = "."
         fmt1  = '{:6d}'
