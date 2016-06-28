@@ -247,10 +247,9 @@ class PrintingForNumactl(PrintingFor):
         sorted_tasks_bound.sort()
 
         for t in sorted_tasks_bound:
-            cpus += list2CompactString(cores)
+            cpus += [list2CompactString(t)]
 
         return "--physcpubind=" + ",".join(cpus)
-
   
 class PrintingForMatrixThreads(PrintingFor):
     """ Printing the (running) threads in a matrix """
@@ -318,6 +317,9 @@ class PrintingForMatrixThreads(PrintingFor):
             sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
             rvl += m.getNumamem(sockets_mem)
 
+        # Prnt a second header line
+        rvl += m.getHeader1()
+
         # Printing the body
         # Sort threads_bound, on processes or on threads
         if self.__sorted_processes_cores:
@@ -350,11 +352,7 @@ class PrintingForMatrixThreads(PrintingFor):
 
         return rvl
 
-    # Reorganise threads_bound et renvoie sockets_mem:
-    #            - Array, une cellule par socket
-    #            - Chaque cellule est un dict, k = process tag ('A', 'B', etc)
-    #                                          v = qtte de memoire utilisee par le process sur ce socket
-    #
+
     def __compute_memory_per_socket(self,archi,threads_bound):
         """ return a data structure representing the memory occupation of each task on each socket:
         
@@ -367,9 +365,10 @@ class PrintingForMatrixThreads(PrintingFor):
                                 key   : process tag ('A','B',...)
                                 value : memory used by this task on the socket  
                             
+        """
+
         sockets = range(0,archi.hardware.SOCKETS_PER_NODE)
         sockets_mem = []
-        """
         for s in sockets:
             sockets_mem.append({})
 

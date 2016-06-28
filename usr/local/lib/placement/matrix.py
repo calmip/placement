@@ -58,7 +58,7 @@ class Matrix(object):
         self.__last_pid = 0
 
     def getHeader(self,h_header=15*' '):
-        '''Return a header with psr nb displayed 3 lines (must be < 999 !)'''
+        '''Return a header with psr nb displayed on 3 lines (must be < 999 !)'''
 
         self.__last_pid = 0
         rvl = ''
@@ -79,16 +79,33 @@ class Matrix(object):
             rvl += str((p%100)/10)
         rvl += '\n'
 
-        # Ligne 3 = les unités + %cpu
+        # Ligne 3 = les unités
         rvl += h_header
         for p in range(self.__ppsr_min,self.__ppsr_max+1):
             if self.__hard.getCore2Core(p)==0:
                 rvl += ' '
             rvl += str(p%10)
-        rvl += '  %CPU %MEM'
+#        rvl += '  %CPU %MEM'
         rvl += '\n'
         return rvl
 
+
+    def getHeader1(self,h_header=15*' '):
+        '''Return a header with left and right column labels'''
+
+        self.__last_pid = 0
+        rvl = '     PID    TID'
+
+        # Skip columns
+        n_cores   =  self.__ppsr_max-self.__ppsr_min+1
+        n_sockets =  self.__socket_max-self.__socket_min+1
+        n_blanks  =  n_cores + n_sockets
+        rvl       += n_blanks*' '
+
+        # Right column label
+        rvl += '  %CPU %MEM'
+        rvl += '\n'
+        return rvl
 
 
     def getNumamem(self,sockets_mem,h_header='  SOCKET MEMORY'):

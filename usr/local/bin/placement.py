@@ -335,7 +335,7 @@ placement --host eoscomp666 --check=ALL --threads
     print ex
 
 ###########################################################
-# Make the environment varialbes useful in mpi_aware mode
+# Make the environment variables useful in mpi_aware mode
 # Use with: eval $(~/bin/placement --make_mpi_aware)
 #
 # Analyze the output of umactl --show
@@ -366,8 +366,8 @@ def make_mpi_aware():
     # Copy the environment SLURM_TASKS, SLURM_CPUS_PER_TASK with a prefix, they will be available in 
     msg  = 'export PLACEMENT_PHYSCPU="'+cores+'"; '
     msg += 'export PLACEMENT_NODE="'+sockets+'"; ';
-    msg += 'export PLACEMENT_SLURM_TASKS_PER_NODE="'+os.environ['SLURM_TASKS_PER_NODE']+'"; '
-    msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
+#    msg += 'export PLACEMENT_SLURM_TASKS_PER_NODE="'+os.environ['SLURM_TASKS_PER_NODE']+'"; '
+#    msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
 
     print msg
     
@@ -375,8 +375,11 @@ def make_mpi_aware():
 
 def check_mpi_aware():
     """In mpi_aware mode, check the 4 environment variables are set and raise an exception if they are not """
-    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
-        return
+
+    return
+
+############    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
+############        return
 
     msg =  'OUPS - Je ne suis pas vraiment mpi_aware, il me manque quelques variables d\'environnement\n'
     msg += '       Avez-vous mis la commande $(placement --make_mpi_aware) AVANT l\'appel mpi ?'
