@@ -32,7 +32,7 @@ USER=${USER-$(whoami)}
 PORT=${PORT-22}
 HOST=$1
 #DST=${2-~}  # Install top directory defaults to home directory
-DST=${2-/users/sysadmin/manu}  # Install top directory defaults to home directory
+DST=${2-/users/sysadmin/${USER}}  # Install top directory defaults to home directory
 
 echo USER=$USER
 echo PORT=$PORT
@@ -62,7 +62,7 @@ do
   cp $SRC/lib/placement/$f $LIB
 done
 
-for f in placement.conf
+for f in placement.conf examples.txt
 do
   cp $SRC/etc/placement/$f $ETC
 done
@@ -84,7 +84,7 @@ do
   scp -P $PORT $SRC/lib/placement/$f "$USER@$HOST:$LIB"
 done
 
-for f in placement.conf
+for f in placement.conf examples.txt
 do
   scp -P $PORT $SRC/etc/placement/$f "$USER@$HOST:$ETC"
 done
