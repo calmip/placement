@@ -83,7 +83,7 @@ class TasksBinding(object):
             msg += ") or tasks ("
             msg += str(self.tasks)
             msg += ")"
-            msg += ' NUMBER OF CORES RESERVED FOR THIS PROCESS = ' + str(self.archi.cores_reserved)
+            msg += ' NUMBER OF LOGICAL CORES RESERVED FOR THIS PROCESS = ' + str(self.archi.cores_reserved*self.archi.threads_per_core)
             raise PlacementException(msg)
 
     def threadsSort(self):

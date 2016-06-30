@@ -33,7 +33,12 @@ PORT=${PORT-22}
 HOST=$1
 
 # Install top directory defaults to home directory
-DST=${2-$(cd; pwd -P)}
+if [ "$HOST" = 'LOCAL' ]
+then
+	DST=${2-$(cd; pwd -P)}
+else
+	DST=${2-$(ssh -p $PORT $USER@$HOST pwd -P)}
+fi
 
 echo USER=$USER
 echo PORT=$PORT
@@ -45,8 +50,6 @@ echo DST=$DST
 BIN="$DST/bin"
 LIB="$DST/lib/placement"
 ETC="$DST/etc/placement"
-#ETC="$DST/lib/placement"
-
 
 SRC=usr/local
 
@@ -54,9 +57,9 @@ if [ "$HOST" = 'LOCAL' ]
 then
 
 echo "OK pour une installation en local..."
-[ ! -d $BIN ] && echo No directory $BIN on $HOST && exit 1
-[ ! -d $LIB ] && echo No directory $LIB on $HOST && exit 1
-[ ! -d $ETC ] && echo No directory $ETC on $HOST && exit 1
+[ ! -d $BIN ] && (mkdir -p $BIN || exit 1)
+[ ! -d $LIB ] && (mkdir -p $LIB || exit 1)
+[ ! -d $ETC ] && (mkdir -p $ETC || exit 1)
 
 for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py documentation.txt
 do
@@ -76,9 +79,9 @@ else
 
 echo "OK for installing on $HOST, user $USER ..."
 
-ssh -p $PORT $USER@$HOST "[ ! -d $BIN ] && echo No directory $BIN on $HOST" && exit 1
-ssh -p $PORT $USER@$HOST "[ ! -d $LIB ] && echo Pas de répertoire $LIB on $HOST" && exit 1
-ssh -p $PORT $USER@$HOST "[ ! -d $ETC ] && echo No directory $ETC on $HOST" && exit 1
+ssh -p $PORT $USER@$HOST "[ ! -d $BIN ] && (mkdir -p $BIN || exit 1)"
+ssh -p $PORT $USER@$HOST "[ ! -d $LIB ] && (mkdir -p $LIB || exit 1)"
+ssh -p $PORT $USER@$HOST "[ ! -d $ETC ] && (mkdir -p $ETC || exit 1)"
 
 for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py printing.py utilities.py matrix.py documentation.txt
 do
