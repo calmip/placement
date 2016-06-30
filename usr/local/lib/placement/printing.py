@@ -196,7 +196,7 @@ class PrintingForAsciiArt(PrintingFor):
 
 
 class PrintingForIntelAff(PrintingFor):
-    """ Printing for the intel environment varialbe KMP_AFFINITY (ONLY if 1 task) 
+    """ Printing for the intel environment variable KMP_AFFINITY (ONLY if 1 task) 
 
     # placement 1 6 --intel_affinity
     export KMP_AFFINITY="granularity=fine,explicit,proclist=[0, 1, 2, 10, 11, 12]"
@@ -222,11 +222,32 @@ class PrintingForIntelAff(PrintingFor):
         return str(tasks_bound[0])
 
 
-###############################################################################################
-#
-# PrintingForNumactl: Imprime des commandes pour numactl
-#
-###############################################################################################
+
+class PrintingForGnuAff(PrintingFor):
+    """ Printing for the GNU environment variable GOMP_AFFINITY (ONLY if 1 task) 
+
+    # placement 1 6 --gnu_affinity
+    export GOMP_AFFINITY="0 1 2 10 11 12"
+
+    """
+
+    def __init__(self,tasks_binding,verbose):
+        PrintingFor.__init__(self,tasks_binding)
+        self.__verbose = verbose
+
+    def __str__(self):
+        if len(self._tasks_binding.tasks_bound) > 1:
+            return "OUPS - Gnu_Affinity representation impossible if more than 1 task !"
+        else:
+            rvl  = 'export GOMP_CPU_AFFINITY="';
+            rvl += self.__getCpuBinding(self._tasks_binding.tasks_bound);
+            rvl += '"';
+            return rvl
+
+    def __getCpuBinding(self,tasks_bound):
+        return ' '.join(map(str,tasks_bound[0]))
+
+
 class PrintingForNumactl(PrintingFor):
     """ Printing for numactl command:
 

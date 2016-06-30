@@ -144,7 +144,7 @@ def main():
     parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
     parser.add_argument("-Z","--intel_affinity",action="store_const",dest="output_mode",const="kmp",help="Output for intel openmp compiler, try also --verbose")
-
+    parser.add_argument("-G","--gnu_affinity",action="store_const",dest="output_mode",const="gomp",help="Output for gnu openmp compiler")
     parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
     parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
@@ -255,11 +255,16 @@ def buildOutputs(options,tasks_binding):
             outputs.append(PrintingForNumactl(tasks_binding))
             return outputs
 
-    # Print for the KMP_AFFINITY environment variable (intel compilers) are return
+    # Print for the KMP_AFFINITY environment variable (intel compilers) or GOMP_AFFINITY (gnu compilers) and return
     if options.check==None and options.asciiart==False and options.human==False:
         if options.output_mode=="kmp":
             outputs.append(PrintingForIntelAff(tasks_binding,options.verbose))
             return outputs
+
+        if options.output_mode=="gomp":
+            outputs.append(PrintingForGnuAff(tasks_binding,options.verbose))
+            return outputs
+
 
     # Print for human beings
     if options.human==True:

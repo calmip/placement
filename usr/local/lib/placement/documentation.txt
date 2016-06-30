@@ -150,6 +150,9 @@ thus 1 process/node, but you want to use only 16 cores/process, 8 cores/socket:
 If using intel compilers, you should set KMP_AFFINITY with:
 eval $(placement 1 16 --intel_affinity --verbose)
 
+If using GNU compilers, you should set GOMP_AFFINITY with:
+eval $(placement 1 16 --gnu_affinity)
+
 Then call srun with:
 srun $(placement 1 16) my_executable
 
