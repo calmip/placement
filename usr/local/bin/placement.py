@@ -131,7 +131,7 @@ def main():
 
     group = parser.add_argument_group('Displaying some information')
     group.add_argument("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware and leave")
-    group.add_argument("-E","--examples",action="store_true",dest="example",help="Print some examples and leave")
+    group.add_argument("-E","--documentation", action="store",nargs='?',type=int,default=0,dest="documentation",help="Print the complete documentation and leave")
     group.add_argument("--environment",action="store_true",dest="show_env",help="Show some useful environment variables and leave")
     
     parser.add_argument('tasks', metavar='tasks',nargs='?',default=-1 ) 
@@ -159,8 +159,8 @@ def main():
     options=parser.parse_args()
     args=(options.tasks,options.nbthreads)
 
-    if options.example==True:
-        examples()
+    if options.documentation!=0:
+        documentation(options.documentation)
         exit(0)
 
     if options.show_env==True:
@@ -285,54 +285,29 @@ def buildOutputs(options,tasks_binding):
     return outputs
         
 
-def examples():
-    """ Display a few examples """
+def documentation(section):
+    """ Display documentation, my be from a given section """
 
-    ex = """===================================
-USING placement IN AN SBATCH SCRIPT
-===================================
+    if section==None:
+        flag = 2
+        sct = ''
+    else:
+        flag = 0
+        sct  = str(section) + '.'
+    
+    #print "coucou " + str(section)
+    f_doc  = os.environ['PYTHONPATH'] + '/documentation.txt'
+    fh_doc = open(f_doc, 'r')
+    
+    for line in fh_doc:
+        if line.startswith(sct):
+            flag += 1
+        if flag >= 2:
+            print line,
 
-1/ Insert the following lines in your script:
-
-placement --ascii
-if [[ $? != 0 ]]
-then
- echo "ERREUR DANS LE NOMBRE DE PROCESSES OU DE TACHES" 2>&1
- exit $?
-fi
-
-2/ Modify your srun call as follows:
-
-srun $(placement) ./my_application
-
-===================================================================
-USING placement WITH hybrid codes (mpi/openMP) IN AN SBATCH SCRIPT:
-===================================================================
-
-Put the following inside your slurm script:
-
-# Creating environment variables usefull for placement
-eval $(~/bin/placement --make_mpi_aware)
-
-# Calling my application with mpirun
-mpirun -binding "pin=no" -n ${SLURM_TASKS_PER_NODE} /bin/bash -c 'numactl $(~/bin/placement Tasks Threads --mpi_aware) my_application'
-$(placement --mpi_aware) mpirun -np $SLURM_TASKS_PER_NODE ./my_application
-
-=======================================
-USING placement TO CHECK A RUNNING JOB:
-=======================================
-From the frontale execute:
-
-placement --checkme
-
-===========================================================
-For a sysadmin: USING placement TO CHECK USER RUNNING JOBS:
-===========================================================
-From the frontale execute:
-
-placement --host eoscomp666 --check=ALL --threads
-"""
-    print ex
+    if flag==False:
+        print "OUPS - Nothing in documentation, section " + sct + ' !'
+            
 
 ###########################################################
 # Make the environment variables useful in mpi_aware mode
@@ -397,7 +372,8 @@ def show_hard(hard):
         msg += '(' + str(hard.SOCKETS_PER_NODE) + ' sockets/node, '
         msg += str(hard.CORES_PER_SOCKET) + ' cores/socket, '
         if hard.HYPERTHREADING:
-            msg += 'Hyperthreading ON, ' + str(hard.THREADS_PER_CORE) + ' threads/core, '
+            msg += str(hard.THREADS_PER_CORE) + ' threads/core ' + '(hyperthreading on), '
+        msg += str(hard.MEM_PER_SOCKET) + ' Mb/socket, '
         if hard.IS_SHARED:
             msg += 'SHARED'
         else:

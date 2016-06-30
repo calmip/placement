@@ -31,8 +31,9 @@ done
 USER=${USER-$(whoami)}
 PORT=${PORT-22}
 HOST=$1
-#DST=${2-~}  # Install top directory defaults to home directory
-DST=${2-/users/sysadmin/${USER}}  # Install top directory defaults to home directory
+
+# Install top directory defaults to home directory
+DST=${2-$(cd; pwd -P)}
 
 echo USER=$USER
 echo PORT=$PORT
@@ -57,12 +58,12 @@ echo "OK pour une installation en local..."
 [ ! -d $LIB ] && echo No directory $LIB on $HOST && exit 1
 [ ! -d $ETC ] && echo No directory $ETC on $HOST && exit 1
 
-for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py documentation.txt
 do
   cp $SRC/lib/placement/$f $LIB
 done
 
-for f in placement.conf examples.txt
+for f in placement.conf 
 do
   cp $SRC/etc/placement/$f $ETC
 done
@@ -79,12 +80,12 @@ ssh -p $PORT $USER@$HOST "[ ! -d $BIN ] && echo No directory $BIN on $HOST" && e
 ssh -p $PORT $USER@$HOST "[ ! -d $LIB ] && echo Pas de répertoire $LIB on $HOST" && exit 1
 ssh -p $PORT $USER@$HOST "[ ! -d $ETC ] && echo No directory $ETC on $HOST" && exit 1
 
-for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py printing.py utilities.py matrix.py
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py printing.py utilities.py matrix.py documentation.txt
 do
   scp -P $PORT $SRC/lib/placement/$f "$USER@$HOST:$LIB"
 done
 
-for f in placement.conf examples.txt
+for f in placement.conf
 do
   scp -P $PORT $SRC/etc/placement/$f "$USER@$HOST:$ETC"
 done
