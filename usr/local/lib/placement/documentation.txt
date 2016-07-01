@@ -18,12 +18,12 @@ INDEX
 ======================
 
 Thanks to placement you can:
-		  1/ Easily control the placement of your processes of threads on multicores processors
+		  1/ It's wrapper which make easier for you to control the placement of your processes of threads on multicores processors
 		  2/ Control before the program execution that the wanted placement configuration is correct
 		  3/ Check  running programs in order to detect bad placement issues
 
 WARNING - placement has STRONG DEPENDENCIES with two tools: SLURM, and NUMACTL 
-          So it may be difficult using placement with another shceduler than slurm
+          So it may be difficult using placement with another scheduler than slurm
 
 2. CONFIGURING THE HARDWARE
 ===========================
@@ -65,7 +65,7 @@ placement will then:
 You may also use placement with the numactl command; for a 4 tasks, 4 threads/tasks job:
 numactl $(placement 4 4 --numactl)
 
-Or course, you have a lot of other options to control the placement as you need. See placement --help for more details.
+Of course, you have a lot of other options to control the placement as you need. See placement --help for more details.
 
 4. HOW TO ADJUST YOUR placement COMMAND
 =======================================
@@ -165,15 +165,15 @@ thus 1 process/node, but you want to use only 16 cores/process, 8 cores/socket, 
 
 eval $(placement 1 16 --intel_affinity --verbose)
 
-mpirun  -n 2 numactl $(~/bin/placement 1 16 --numactl) ./exec_50k.x
+mpirun  -n 2 numactl $(placement 1 16 --numactl) ./exec_50k.x
 
 7. CHECKING YOUR RUNNING JOBS WITH PLACEMENT
 ============================================
 
-placement can be used to check a running job. For example, to chek the last runnig job you just launched,
+placement can be used to check a running job. For example, to chek the last running job you just launched,
 you could run from the frontal node:
 
-~/bin/placement --checkme --ascii --mem --thre --sorted_th
+placement --checkme --ascii --mem --thre --sorted_th
 eoscomp102
   S0-------- S1-------- 
 P ....A.A... AAA....... 
@@ -238,7 +238,7 @@ This shows that placement is very poor in this running job, on both nodes
 Using the commands explained in Section S5, the situation can be improved,
 and you can check this:
 
- ~/bin/placement --checkme --ascii --mem --thre --sorted_th
+placement --checkme --ascii --mem --thre --sorted_th
 eoscomp8
   S0-------- S1-------- 
 P AAAAAAAA.. AAAAAAAA.. 
