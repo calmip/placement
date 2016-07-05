@@ -5,15 +5,19 @@
 version=$(python --version 2>&1)
 if [[ "$version" =~ "2.6" ]]
 then
-	module purge 2>/dev/null
-	module load python 2>/dev/null
+	module purge >/dev/null 2>&1
+	module load python >/dev/null 2>&1
 fi
 
 # pythonpath 
 dir=$(dirname $0)
 export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P)
 
-# nom du sript python
+# placementetc
+# You'll find configuration files in this directory
+export PLACEMENTETC=$(cd $dir;cd ../etc/placement; pwd -P)
+
+# Name of the python script
 placement="python $0.py"
 
 # verbose !
@@ -24,19 +28,19 @@ else
 	verb=0
 fi
 
-# --checkme => On checke le job qui est en etat "RUNNING"
+# --checkme => We check the job in state "RUNNING"
 if [[ $1 == "--checkme" ]]
 then
 	shift
 	job_id=$(squeue --noheader -u $(whoami) -t R -o %A|head -1)
 	if [[ $job_id == "" ]]
 	then
-		echo "ERREUR - Vous devez avoir des jobs en état RUNNING pour que --checkme ait un sens"
+		echo "ERROR - --checkme is a nonsense if you do not have any running job !"
 		exit 1
 	fi
 	if [[ $verb == 1 ]]
 	then
-		echo "OPTION --checkme: Check du job $job_id utilisateur $(whoami)"
+		echo "OPTION --checkme: Now checking job $job_id for user $(whoami)"
 	fi
 	set -- $* "--check=$(whoami)"
 fi
@@ -63,7 +67,7 @@ then
     PN=$( squeue -j $job_id --noheader -o "%.9P@%.16R@%.8u" )
 	if [[ $? != 0 || $PN == "" ]]
     then
-		echo "ERREUR - Mauvais jobid ! ($job_id)"
+		echo "ERROR - Bad jobid ! ($job_id)"
 		exit 1
 	fi
 
@@ -76,7 +80,7 @@ then
 
 	if [[ $N =~ \(.*\) ]] 
 	then
-       echo "ERREUR - Mauvais jobid ! ($job_id)"
+       echo "ERROR - Bad jobid ! ($job_id)"
 	   exit 1
 	fi
 
@@ -84,12 +88,12 @@ then
 	do
 		if [[ $verb == 1 ]]
 		then
-			echo "$n: APPEL DE $0 --check $U $*"
+			echo "$n: CALLING $0 --check $U $*"
 		fi
-		ssh $n export PLACEMENT_ARCHI=\"$P\" \; $0 --check $U $*
+		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check $U $*
 	done
 
-# --host: on envoie la commande sur le hote concerné
+# --host: Sending the command on the requested host
 elif [[ $host != "" ]]
 then
 	# Détecter la partition, à condition qu'un job soit exécuté sur le host !
@@ -97,15 +101,15 @@ then
 	P=$(squeue --noheader -w $host -o "%.9P"|head -1)
 	if [[ $P == "" ]]
 	then
-		echo "OUPS - Pas de job sur $host actuellement"
+		echo "OUPS - No job on $host yet"
 		exit 1
 	fi
 	if [[ $verb == 1 ]]
 	then
-		echo "$host: APPEL DE $0 $*"
+		echo "$host: CALLING $0 $*"
 	fi
 
-	ssh $host export PLACEMENT_ARCHI=\"$P\" \;  $0 $*
+	ssh $host export PLACEMENT_PARTITION=\"$P\" \;  $0 $*
 
 # Pas de $job_id: on passe les switches à placement.py
 else

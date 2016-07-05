@@ -5,36 +5,40 @@ import os
 from exception import *
 
 #
-# TaskBinding permet d'implémenter les différents algorithmes de répartition
-#              Suivant le mode demandé (scatter ou compact, cf. scatter.py et compact.py)
-#              on utilisera l'une ou l'autre des classes dérivées
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu-cores
 #
-# PRINCIPALES METHODES:
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# checkParameters()
-#      Valide les paramètres d'entrée, lève une exception avec un message clair si pas corrects
+#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-#      On vérifie que les paramètres ne sont pas trop grands ou trop petits
-#      En particulier, si le nombre tasks*cpus_per_task est < 10, on n'est pas sur la partition exclusive
-#      (TODO -> Partition exclusive ou pas, ça ne concerne qu'eos)
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
 #
-#      En scatter seulement, on refuse les tâches à cheval sur deux sockets, sauf s'il n'y a qu'une tâche 
-#      (tâche unique avec 20 threads: OK, 5 tâches de 4 threads, HTOFF: NON)
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
 #
-# distribTasks()
-#      Construit le tableau de tableaux tasks_binding à partir des paramètres
-# 
-#      Params: check, si True (defaut), check les valeurs de tasks etc avant d'accepter
-#              archi, une architecture déjà initialisée (peut etre None)
-#              cpus_per_task, par défaut prend la valeur de architecture
-#              tasks, par défaut prend la valeur de architectrue si possible
-#
-#      Return: tasks_bound, un tableau de tableaux:
-#              Le tableau des processes, chaque process est représenté par un tableau de cœurs.
-#              [[psr1,...],[psr3,...],...]
-#
+
     
 class TasksBinding(object):
+    """ TasksBinding contains the algorithms used to distribute tasks and threads on cores
+
+    This is an abstract class, the real derived class depends on the chosen algorithm
+
+    DATA STRUCTURES:
+    threads_bound = Only built in running mode: see running.py, L 135
+    tasks_bound   = A list of lists, describing the list of cores(inner lists) of the tasks (outer list)
+    over_cores    = A list of cores bound to 2 or more tasks
+    """
+
     def __init__(self,archi,cpus_per_task=0,tasks=0):
         self.archi = archi
         if archi != None and cpus_per_task == 0:
@@ -50,26 +54,72 @@ class TasksBinding(object):
         self.over_cores    = None
 
     def checkParameters(self):
-        raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
-    def distribTasks(self,check=True):
-        raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
+        """ Check the parameters, raise an exception if anything wrong"""
 
-    # Code commun à toutes les classes dérivées
-    # _checkParameters doit être appelé par toutes les fonctions checkParameters()
+        raise("ERROR - VIRTUAL PURE FONCTION !")
+    def distribTasks(self,check=True):
+        """ Return tasks_bound as a list of lists
+
+        tasks_bound is a list of lists, each list is a list of cores used by the process
+        psrN means 'Core nb n':
+        [[psr1,psr2],[psr3,psr4],...]
+        """
+        raise("ERROR - VIRTUAL PURE FUNCTION !")
+
+    def PrintingForVerbose(self):
+        raise("ERROR - VIRTUAL PURE FUNCTION !")
+
     def _checkParameters(self):
+        """ Should be called by ALL checkParameters methods in the derived classes.
+
+        Raise of exception in case of a problem
+        """
+
         if (self.cpus_per_task<0 or self.tasks<0 ):
-            raise PlacementException("OUPS - Tous les paramètres doivent être entiers positifs")
-        #if self.cpus_per_task*self.tasks <= 10:
-        #    raise PlacementException("OUPS - moins de 10 cœurs utilisés: partition shared, placement non supporté")
+            raise PlacementException("OUPS - Every parameter should be integer, >= 0")
         if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_reserved:
-            msg = "OUPS - Pas assez de cores ! Diminuez cpus_per_task (";
+            msg = "OUPS - Not enough cores ! Please lower cpus_per_task (";
             msg += str(self.cpus_per_task)
-            msg += ") ou tasks ("
+            msg += ") or tasks ("
             msg += str(self.tasks)
             msg += ")"
+            msg += ' NUMBER OF LOGICAL CORES RESERVED FOR THIS PROCESS = ' + str(self.archi.cores_reserved*self.archi.threads_per_core)
             raise PlacementException(msg)
 
-    # Tri INPLACE des threads dans chaque process
     def threadsSort(self):
+        """Sort inplace the threads inside their processes"""
+
         for p in self.tasks_bound:
             p.sort()
+
+    def keepOnlyMpiRank(self):
+        """Used when mpi_aware mode: keep only the task corresponding to the mpi rank"""
+
+        rank = -1;
+        try:
+            # Le rank si on utilise openmpi, bullx_mpi, etc.
+            rank = os.environ['OMPI_COMM_WORLD_RANK']
+        except KeyError:
+            pass
+
+        if rank == -1:
+            try:
+                # Le rank si on utilise intelmpi
+                rank = os.environ['PMI_RANK']
+            except KeyError:
+                msg = "ERREUR NINI - NI intelmpi, NI bullxmpi, NI openmpi"
+                for k in os.environ.keys():
+                    print k + ' => ' + os.environ[k]
+
+                raise PlacementException(msg)
+
+        rank = int(rank)
+        if rank>=len(self.tasks_bound):
+            msg  = "ERREUR de placement mpi_aware - rank vaut " + str(rank)
+            msg += " alors qu'il n'y a que " + str(len(self.tasks_bound)) + " tâches !"
+            raise PlacementException(msg)
+
+        rank_tasks_bound = []
+        rank_tasks_bound.append(self.tasks_bound[rank])
+        self.tasks_bound = rank_tasks_bound
+

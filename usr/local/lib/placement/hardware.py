@@ -1,119 +1,235 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#############################################################################################################
 #
-#  Hardware: Permet de décrire le hardware des machines
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu-cores
 #
-################################################################
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
 
 import os
+import re
+import ConfigParser
 from exception import *
 
 class Hardware(object):
+    """ Describing hardware configuration 
+    
+    This file uses placement.conf to guess the correct hardware configuration, using some environment variables
+    The private member IS_SHARED describes the fact that he host is SHARED between users or exclusively dedicated to the user
+    It is not strictly hardware consideration, but as it never changes during the node life, it makes sense considering it as a hardware parameter
+    """
     NAME             = ''
     SOCKETS_PER_NODE = ''
     CORES_PER_SOCKET = ''
+    CORES_PER_NODE   = ''
     HYPERTHREADING   = ''
     THREADS_PER_CORE = ''
     IS_SHARED        = ''
 
     @staticmethod
-    def catalogue():
-        return [ 'uvprod','eosmesca1','mesca','exclusive','shared' ]
+    def catalog():
+        """ Return the available hostsnames (as regex), partitions, architectures as lists of lists """
 
-    ####################################################################
-    #
-    # @brief Construit un objet à partir des variables d'environnement: SLURM_NODELIST, PLACEMENT_ARCHI, HOSTNAME
-    #
-    ####################################################################
+        conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
+        config    = ConfigParser.RawConfigParser()
+        config.read(conf_file)        
+        partitions = config.options('partitions')
+        hosts      = config.options('hosts')
+        archis     = config.sections();
+        archis.remove('hosts')
+        archis.remove('partitions')
+        return [hosts,partitions,archis]
+
     @staticmethod
     def factory():
-        # Construction de la partition shared
-        partition_shared = [ ]
-        for i in range(604,612):
-            partition_shared.append('eoscomp'+str(i))
+        """ Build a Hardware object from several env variables: SLURM_NODELIST, PLACEMENT_PARTITION, HOSTNAME"""
 
-        # Si SLURM_NODELIST est défini, on est dans un sbatch
-        if 'HOSTNAME' in os.environ:
-            # Machines particulières
-            if os.environ['HOSTNAME'] == 'uvprod':
-                return Uvprod()
-            elif os.environ['HOSTNAME'] == 'eosmesca1':
-                return Mesca2()
+        # 1st stage: Read the configuration file
+        conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
+        config    = ConfigParser.RawConfigParser()
+        config.read(conf_file)        
+ 
+        # 2nd stage: Guess the architecture name from the env variables
+        archi_name = Hardware.__guessArchiName(conf_file,config)
 
-            # Nœuds shared d'eos
-            elif os.environ['HOSTNAME'] in partition_shared:
-                return Bullx_dlc_shared()
+        # 3rd stage: Create and return the object from its name
+        archi = SpecificHardware(conf_file,config,archi_name)
 
-            # Nœuds d'eos ordinaires
-            else:
-                return Bullx_dlc()
-        
-        # Permet de forcer une architecture en reprenant les noms des partitions
-        elif 'PLACEMENT_ARCHI' in os.environ:
+        return archi
+
+    @staticmethod
+    def __guessArchiName(conf_path,config):
+        """  Guess the architecture name from the environment variables:
+
+        Arguments:
+        conf_file: The config path, used only for display
+        config:    A ConfigParser object, already created
+
+        return the architecture name, of rais an exception if impossible to check
+        """
+
+        archi_name = ''
+
+        # Forcing an architecture from its name, using $PLACEMENT_ARCHI
+        if 'PLACEMENT_ARCHI' in os.environ:
             placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
-            if placement_archi == 'uvprod':
-                return Uvprod()
-            elif placement_archi == 'mesca':
-                return Mesca2()
-            elif placement_archi == 'exclusive':
-                return Bullx_dlc()
-            elif placement_archi == 'shared':
-                return Bullx_dlc_shared()
+            if config.has_section(placement_archi)==False:
+                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Unknown architecture, check placement.conf")
             else:
-                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Architecture hardware inconnue")
+                archi_name = placement_archi
 
-        # Si aucune de ces variables n'est définie, on fait la même chose avec le hostname !
-        #elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'uvprod':
-        #    return Uvprod()
-        #elif 'HOSTNAME' in os.environ and os.environ['HOSTNAME'] == 'eosmesca1':
-        #    return Mesca2()
+        # Forcing an architecture from its partition name, using $PLACEMENT_PARTITION
+        elif 'PLACEMENT_PARTITION' in os.environ:
+            placement_archi=os.environ['PLACEMENT_PARTITION'].strip()
+            if config.has_section('partitions')==False:
+                raise PlacementException("OUPS - PLACEMENT_PARTITION is set but there is no section called partitions in placement.conf")
+            if config.has_option('partitions',placement_archi)==None:
+                raise PlacementException("OUPS - PLACEMENT_PARTITION="+os.environ['PLACEMENT_PARTITION']+" Unknown partition, can't guess the architecture")
+            else:
+                archi_name = config.get('partitions',placement_archi)
+                
+        # Archi not yet guessed !
+        if archi_name == '':
+
+            # Using SLURM_NODELIST, if defined (so if we live in a slurm sbatch or salloc), AND if there is only ONE node
+            # NOTE - Not sure it is really useful
+            node = ''
+            if 'SLURM_NNODES' in os.environ and os.environ['SLURM_NNODES']=='1':
+                node = os.environ['SLURM_NODELIST']
+
+            # Using the environment variable HOSTNAME to guess the architecture
+            elif 'HOSTNAME' in os.environ:
+                node = os.environ['HOSTNAME']
+            else:
+                raise(PlacementException("OUPS - Unknown host, thus unknown architecture - Please check $SLURM_NODELIST, $PLACEMENT_PARTITION, $HOSTNAME"))
+
+            archi_name = Hardware.__hostname2Archi(config, node)
+            
+            if archi_name == None:
+                raise(PlacementException("OUPS - Could not guess the architecture from the hostname (" + node + ") - Please check " + conf_path))
+            
+        return archi_name
+
+    @staticmethod
+    def __hostname2Archi(config, host):
+        """ return the architecture name from the hostname, using the configuration
+        Try a regex match between host and all the options
+        When a match is found return the corresponding value
+        If no match, return None
+
+        Arguments:
+        config A ConfigParser object
+        host   A hostname
+        """
+
+        options = config.options('hosts')
+        for o in options:
+            if re.match(o,host) != None:
+                return config.get('hosts',o)
+        return None
+
+    def getCore2Socket(self,core):
+        """ Return the socket number from the core number
+
+        Ex: for 2 sockets, 10 c/socket, hyper ON
+            5 => 0, 15 => 1, 25 => 0, 35 => 1
+     
+        Arguments:
+        core The core number
+        """
+
+        if core >= self.CORES_PER_NODE:
+            return self.getCore2Socket(core - self.CORES_PER_NODE)
         else:
-            raise(PlacementException("OUPS - Architecture indéfinie ! - Vérifiez $SLURM_NODELIST, $PLACEMENT_ARCHI, $HOSTNAME"))
+            return core / self.CORES_PER_SOCKET
 
+    def getCore2Core(self,core):
+        """ Return the physical socket core number from the node core number
 
-# 1/ BULLx DLC (eos), 2 sockets Intel Ivybridge 10 cœurs, hyperthreading activé
-class Bullx_dlc(Hardware):
-    NAME             = 'Bullx_dlc'
-    SOCKETS_PER_NODE = 2
-    CORES_PER_SOCKET = 10
-    HYPERTHREADING   = True
-    THREADS_PER_CORE = 2
-    IS_SHARED        = False
+        Ex: for 2 sockets, 10c/socket, hyper ON
+            5 => 5, 15 => 5, 25 => 5, 35 => 5
 
-# 1/ BULLx DLC (eos), 2 sockets Intel Ivybridge 10 cœurs, hyperthreading activé, shared
-class Bullx_dlc_shared(Hardware):
-    NAME             = 'Bullx_dlc'
-    SOCKETS_PER_NODE = 2
-    CORES_PER_SOCKET = 10
-    HYPERTHREADING   = True
-    THREADS_PER_CORE = 2
-    IS_SHARED        = True
+        Arguments:
+        core
+        """
 
-# 2 / SGI UV, uvprod, 48 sockets, 8 cœurs par socket, pas d'hyperthreading, SHARED
-class Uvprod(Hardware):
-    NAME             = 'uvprod'
-    SOCKETS_PER_NODE = 48
-    CORES_PER_SOCKET = 8
-    HYPERTHREADING   = False
-    THREADS_PER_CORE = 1
-    IS_SHARED        = True
+        core = core % self.CORES_PER_NODE
+        return core % self.CORES_PER_SOCKET
 
-# 3/ BULL SMP-mesca, 8 sockets, 15 cœurs par socket, pas d'hyperthreading
-class Mesca(Hardware):
-    NAME             = 'bull_mesca1'
-    SOCKETS_PER_NODE = 8
-    CORES_PER_SOCKET = 15
-    HYPERTHREADING   = False
-    THREADS_PER_CORE = 1
-    IS_SHARED        = False
+    def getCore2PhysCore(self,core):
+        """ Return the physical node core number from the node core number
 
-# 4/ BULL SMP-mesca2, 8 sockets, 16 cœurs par socket, pas d'hyperthreading (pour l'instant), machine partagée
-class Mesca2(Hardware):
-    NAME             = 'bull_mesca2'
-    SOCKETS_PER_NODE = 8
-    CORES_PER_SOCKET = 16
-    HYPERTHREADING   = False
-    THREADS_PER_CORE = 1
-    IS_SHARED        = True
+        Ex: for 2 sockets, 10c/socket, hyper ON
+            5 => 5, 15 => 15, 25 => 5, 35 => 15
+
+        Arguments:
+        core
+        """
+
+        return core % self.CORES_PER_NODE
+
+    def getSocket2CoreMax(self,s):
+        """ Return the max physical node core number from the socket number
+
+        Ex: 2 sockets, 10c/socket, hyper ON
+            0 => 9, 1 => 19
+
+        Arguments:
+        socket
+        """
+
+        return (s+1) * self.CORES_PER_SOCKET - 1
+
+    def getSocket2CoreMin(self,s):
+        """  Return the min physical node core number from the socket number
+
+        Ex: 2 sockets, 10 c/socket, hyper ON
+            0 => 0, 1 => 10
+
+        Arguments:
+        socket
+        """
+
+        return s * self.CORES_PER_SOCKET
+
+class SpecificHardware(Hardware):
+    """ Class deriving from Hardware, uses the configuration """
+
+    def __init__(self,conf_file, config,archi_name):
+        # archi_name should be a section in the configuration file
+        if config.has_section(archi_name)==False:
+            raise(PlacementException("OUPS - The architecture " + archi_name + " is unknown - Please check " + conf_file))
+
+        try:
+            self.NAME             = archi_name
+            self.SOCKETS_PER_NODE = config.getint(archi_name,'SOCKETS_PER_NODE')
+            self.CORES_PER_SOCKET = config.getint(archi_name,'CORES_PER_SOCKET')
+            self.HYPERTHREADING   = config.getboolean(archi_name,'HYPERTHREADING')
+            self.THREADS_PER_CORE = config.getint(archi_name,'THREADS_PER_CORE')
+            self.MEM_PER_SOCKET   = config.getint(archi_name,'MEM_PER_SOCKET')
+            self.IS_SHARED        = config.getboolean(archi_name,'IS_SHARED')
+            self.CORES_PER_NODE   = self.CORES_PER_SOCKET*self.SOCKETS_PER_NODE
+
+        except Exception, e:
+            msg = "OUPS - Something is wrong in the configuration - Please check " + conf_file
+            msg += "\n"
+            msg += "ERROR WAS = " + str(e)
+            raise(PlacementException(msg))
