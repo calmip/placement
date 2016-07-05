@@ -1,7 +1,8 @@
 ===========================
 THE PLACEMENT DOCUMENTATION
 ===========================
-NOTE - You may read from the section N with placement --documentation N
+NOTE - You may read only from the section N with the command:
+placement --documentation N
 
 INDEX
 =====
@@ -17,10 +18,10 @@ INDEX
 1. WHAT IS PLACEMENT ?
 ======================
 
-Thanks to placement you can:
-		  1/ It's wrapper which make easier for you to control the placement of your processes of threads on multicores processors
-		  2/ Control before the program execution that the wanted placement configuration is correct
-		  3/ Check  running programs in order to detect bad placement issues
+placement is a wrapper making easier for you to control the placement of your processes or threads on multicore processors
+With placement you can:
+		  1/ Control before the program execution that the wanted placement configuration is correct
+		  2/ Check  running programs in order to detect bad placement issues
 
 WARNING - placement has STRONG DEPENDENCIES with two tools: SLURM, and NUMACTL 
           So it may be difficult using placement with another scheduler than slurm
@@ -33,7 +34,7 @@ It is a simple key-value file, structured in several sections. The purpose of th
 using several environment variables, the hardware configuration of the underlying machine
 
 This file is useful to let placement guess the architecture it runs on. The architecture is guessed using the hostname,
-or special environment variables, useful namely for debugging, you could try for example:
+or special environment variables, useful namely for debugging. You could try for example:
 
 # placement --hardware
 Current architecture = Bullx_dlc (2 sockets/node, 10 cores/socket, 2 threads/core (hyperthreading on), 32768 Mb/socket, EXCLUSIVE)
@@ -170,7 +171,7 @@ mpirun  -n 2 numactl $(placement 1 16 --numactl) ./exec_50k.x
 7. CHECKING YOUR RUNNING JOBS WITH PLACEMENT
 ============================================
 
-placement can be used to check a running job. For example, to chek the last running job you just launched,
+placement can be used to check a running job. For example, to check the last running job you just launched,
 you could run from the frontal node:
 
 placement --checkme --ascii --mem --thre --sorted_th
