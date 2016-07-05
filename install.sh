@@ -6,7 +6,10 @@ HOST=""
 DST=""
 
 function Usage {
-	echo "Usage: ./install.sh [-p port] [-u user] machine [repertoire]" && echo "       repertoire par defaut = le home du user sur machine" && exit 1
+	echo "Usage: ./install.sh [-p port] [-u user] LOCAL   [repertoire]" &&
+	echo "       ./install.sh [-p port] [-u user] machine [repertoire]" &&
+	echo "       si LOCAL, install par cp, sinon intalls par scp" &&
+    echo "       repertoire par defaut = le home du user sur machine" && exit 1
 }
 
 # Note that we use `"$@"' to let each command-line parameter expand to a 
