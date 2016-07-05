@@ -301,5 +301,12 @@ A        107060 .......... ......A...  94.0 44.6
 A        107061 .......... .......A..  94.0 44.6
 
 However, the line "SOCKET MEMORY" shows that the memory used by your process is
- allocated on one socket only: you could improve the code to change this behaviour.
+allocated on one socket only: you could improve the code to change this behaviour, 
+then check again with placement.
+
+
+Have fun using placement !
+Emmanuel
+emmanuel.courcelle@inp-toulouse.fr
+https://www.calmip.univ-toulouse.fr
 
