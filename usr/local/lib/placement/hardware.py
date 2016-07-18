@@ -68,9 +68,6 @@ class Hardware(object):
         config    = ConfigParser.RawConfigParser()
         config.read(conf_file)        
 
-        # 2nd stage: Read /etc/slurm.conf
-        #Hardware.__readSlurmConf(config)
-
         # 2nd stage: Guess the architecture name from the env variables
         archi_name = Hardware.__guessArchiName(conf_file,config)
 
@@ -138,8 +135,8 @@ class Hardware(object):
     @staticmethod
     def __hostname2Archi(config, host):
         """ return the architecture name from the hostname, using the configuration
-        Try a regex match between host and all the options
-        When a match is found return the corresponding value
+        Each option is a list of hosts: try to find a list of hosts we could be a part of
+        When found return the corresponding value
         If no match, return None
 
         Arguments:
@@ -149,7 +146,7 @@ class Hardware(object):
 
         options = config.options('hosts')
         for o in options:
-            if re.match(o,host) != None:
+            if host in expandNodeList(o):
                 return config.get('hosts',o)
         return None
 
