@@ -384,7 +384,7 @@ def show_hard(hard):
             msg += str(hard.THREADS_PER_CORE) + ' threads/core ' + '(hyperthreading on), '
         msg += str(hard.MEM_PER_SOCKET) + ' Mb/socket, '
         if hard.IS_SHARED:
-            msg += 'SHARED'
+            msg += 'SHARED NODE'
         else:
             msg += 'EXCLUSIVE'
         msg += ')'

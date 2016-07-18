@@ -34,8 +34,11 @@ class Hardware(object):
     """ Describing hardware configuration 
     
     This file uses placement.conf to guess the correct hardware configuration, using some environment variables
-    The private member IS_SHARED describes the fact that he host is SHARED between users or exclusively dedicated to the user
+    The private member IS_SHARED describes the fact that the HOST is SHARED between users (if True) or exclusively dedicated (if False) to the job
     It is not strictly hardware consideration, but as it never changes during the node life, it makes sense considering it as a hardware parameter
+    WARNING FOR SLURM ADMINS - IS_SHARED means here "The NODE is shared", NOT the Resource. 
+                               So you may have Shared=No in slurm.conf and IS_SHARED set to False !
+                               IS_SHARED is set to False ONLY if you have Shared=EXCLUSIVE in slurm.conf
     """
     NAME             = ''
     SOCKETS_PER_NODE = ''
