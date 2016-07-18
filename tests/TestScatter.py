@@ -104,6 +104,7 @@ class TestScatterExclusive(unittest.TestCase):
 class TestScatterSharedMesca(unittest.TestCase):
     def setUp(self):
         os.environ['PLACEMENT_PARTITION'] = 'mesca'
+        os.environ['PLACEMENT_DEBUG']     = '0-7'
         self.hardware = Hardware.factory()
         self.assertEqual(self.hardware.NAME,'Mesca2')
 

@@ -14,6 +14,7 @@ INDEX
 5. WORKING IN DEPOPULATED MODE
 6. USING MPIRUN INSTEAD OF SRUN
 7. CHECKING YOUR RUNNING JOBS
+8. 
 
 1. WHAT IS PLACEMENT ?
 ======================
@@ -26,26 +27,35 @@ With placement you can:
 WARNING - placement has STRONG DEPENDENCIES with two tools: SLURM, and NUMACTL 
           So it may be difficult using placement with another scheduler than slurm
 
-2. CONFIGURING THE HARDWARE
-===========================
+2. CONFIGURING THE HARDWARE AND DEBUGGING THE CONFIGURATION
+===========================================================
 
-Before using placement, you should check, and probably edit, the configuration file (probably /usr/local/etc/placement/placement.conf)
+placement looks for the slurm.conf file (using the environment variable $SLURM_CONF if it exists) to know the configuration,
+so that if you use slurm you should not have anything to configure !
+
+BUT if you use some other scheduler, OR if you want to check the placement behaviour on some other machine than your supercomputer,
+you may edit the placement configuration file (probably /usr/local/etc/placement/placement.conf). This file is read BEFORE slurm.conf.
+
 It is a simple key-value file, structured in several sections. The purpose of this file is to help placement to guess,
 using several environment variables, the hardware configuration of the underlying machine
 
-This file is useful to let placement guess the architecture it runs on. The architecture is guessed using the hostname,
-or special environment variables, useful namely for debugging. You could try for example:
+This file is useful to let placement guess the architecture it should run on, using the hostname or
+or special environment variables. You could try for example:
 
 # placement --hardware
 Current architecture = Bullx_dlc (2 sockets/node, 10 cores/socket, 2 threads/core (hyperthreading on), 32768 Mb/socket, EXCLUSIVE)
 
-You can check that the correct hardware is detected using the environment variables.
 You can force an architecture with the environment variable:
-
 export PLACEMENT_ARCHI=Bullx_dlc
 
-This is useful mainly for debugging purpose
+On non-exclusive node, you can further debug the configuration:
+export PLACEMENT_DEBUG='0-1' means that only sockets 0,1 are reserved for your job
 
+You can even specify the complete cpuset: 
+export PLACEMENT_DEBUG='0-1:10-15,16-21' means that only 12 cores on 2 socekts are reserved for your job
+
+Of course, PLACEMENT_DEBUG SHOULD BE USED ONLY FOR DEBUGGING PURPOSE, AND SHOULD BE UNSET FOR PRODUCTION !
+When PLACEMENT_DEBUG is not set, placement calls numactl --show to know the current reserved cpuset
 
 3. USING placement WITH srun, cpu_bind or WITH numactl
 ======================================================
@@ -127,7 +137,7 @@ srun --cpu_bind=mask_cpu:0x300003,0xc0000c,0xc0000c00,0x300003000 my_executable
 
 Some trick:
 ===========
-It is good practise to put placement --ascii in top of your sbatch script, so that you'll know how
+It is good practice to put placement --ascii in top of your sbatch script, so that you'll know how
 the threads should be placed, and you get a clear message if something goes wrong.
 
 You could try something like the following:

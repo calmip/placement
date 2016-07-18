@@ -4,6 +4,7 @@
 import os
 import copy
 import re
+import subprocess
 from exception import *
 from itertools import chain,product
 
@@ -104,6 +105,23 @@ def expandNodeList(nodelist):
     else:
         return [ nodelist ]
 
+def getHostname():
+    """ Return the environment HOSTNAME if set, else call /bin/hostname -s"""
+    if 'HOSTNAME' in os.environ:
+        return os.environ['HOSTNAME']
+    else:
+        cmd = "/bin/hostname -s"
+        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p.wait()
+
+        # If error, it is a Fatal Error !!!
+        if p.returncode !=0:
+            msg = "OUPS "
+            msg += "/bin/hostname -s returned an error !"
+            raise PlacementException(msg)
+        else:
+            return p.communicate()[0].split('\n')[0]
+        
 def compactString2List(S):
     """ Return a list of integers [0,1,2,5,6,7,9] from a compact list 0-2,5-7,9 """
 

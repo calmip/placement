@@ -28,7 +28,7 @@ import os
 import re
 import ConfigParser
 from exception import *
-from utilities import  expandNodeList 
+from utilities import  expandNodeList, getHostname
 
 class Hardware(object):
     """ Describing hardware configuration 
@@ -64,7 +64,7 @@ class Hardware(object):
 
     @staticmethod
     def factory():
-        """ Build a Hardware object from several env variables: SLURM_NODELIST, PLACEMENT_PARTITION, HOSTNAME"""
+        """ Build a Hardware object from several env variables: PLACEMENT_ARCHI, PLACEMENT_PARTITION, HOSTNAME"""
 
         # 1st stage: Read the configuration file
         conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
@@ -110,21 +110,9 @@ class Hardware(object):
             else:
                 archi_name = config.get('partitions',placement_archi)
                 
-        # Archi not yet guessed !
+        # Archi not yet guessed, trying to guess from the hostname
         if archi_name == '':
-
-            # Using SLURM_NODELIST, if defined (so if we live in a slurm sbatch or salloc), AND if there is only ONE node
-            # NOTE - Not sure it is really useful
-            node = ''
-            if 'SLURM_NNODES' in os.environ and os.environ['SLURM_NNODES']=='1':
-                node = os.environ['SLURM_NODELIST']
-
-            # Using the environment variable HOSTNAME to guess the architecture
-            elif 'HOSTNAME' in os.environ:
-                node = os.environ['HOSTNAME']
-            else:
-                raise(PlacementException("OUPS - Unknown host, thus unknown architecture - Please check $SLURM_NODELIST, $PLACEMENT_PARTITION, $HOSTNAME"))
-
+            node = getHostname()
             archi_name = Hardware.__hostname2Archi(config, node)
             
             if archi_name == None:
