@@ -108,6 +108,27 @@ from socket import gethostname
 
 def main():
 
+    # Debugging placement in shared mode:
+    #   NOTE - This work ONLY if you have the module "mock" installed on your system !
+    #   Set and Export PLACEMENT_DEBUG to the list of sockets you could use.
+    #   For instance, on a 8 sockets node, imagine you have sockets 2 & 4 reserved.
+    #   In a real world placement should collect this infop from "numactl --show", but 
+    #   for debugging you may use something like that:
+    #          ( export PLACEMENT_DEBUG='2,4'; export PLACEMENT_ARCHI=Mesca2; placement 4 4  --ascii )
+    #   DO NOT FORGET TO UNEXPORT PLACEMENT_DEBUG WHEN USED IN PRODUCTION !
+    if 'PLACEMENT_DEBUG' in os.environ:
+        try:
+            import mock
+
+        except ImportError, e:
+            print "ERROR - You should install the python mock module to use PLACEMENT_DEBUG: ",
+            print e
+            exit(1)
+        
+        # Shared._Shared__detectSockets will return the fake list of free cores !
+        Shared._Shared__detectSockets = mock.Mock(return_value=map(int,os.environ['PLACEMENT_DEBUG'].split(',')))
+
+
     # Si la variable PLACEMENT_DEBUG existe, on simule un environnement shared avec des réservations
     # Exemple: export PLACEMENT_DEBUG='9,10,11,12,13' pour simuler un environnement shared, 5 sockets réservées
     # NB - Ne pas oublier non plus de positionner SLURM_NODELIST ! (PAS PLACEMENT_PARTITION ça n'activera pas Shared)
