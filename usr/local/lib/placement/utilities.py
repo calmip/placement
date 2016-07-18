@@ -3,7 +3,7 @@
 
 import os
 import copy
-#from matrix import *
+import re
 from exception import *
 from itertools import chain,product
 
@@ -92,6 +92,17 @@ def list2CompactString(A):
         __compact(tmp,start,last_c)
     return ','.join(tmp)
 
+def expandNodeList(nodelist):
+    """ Return a list nodes, just like ExpandNodeList
+        toto[5-6] -> return ['toto5','toto6'] 
+        toto      -> return ['toto'] """
+    
+    matches = re.match('(.+)\[(.+)\]',nodelist)
+    if matches:
+        prefix = matches.group(1)
+        return map(lambda x:prefix+str(x),compactString2List(matches.group(2)))
+    else:
+        return [ nodelist ]
 
 def compactString2List(S):
     """ Return a list of integers [0,1,2,5,6,7,9] from a compact list 0-2,5-7,9 """

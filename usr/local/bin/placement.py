@@ -119,7 +119,7 @@ def main():
 
     # Analysing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.1.1"
+    ver="1.3.0"
     parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
     # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
@@ -372,7 +372,11 @@ def show_hard(hard):
     hardware
     """
 
-    msg = "Current architecture = " + hard.NAME + " "
+    if hard.NAME == 'Slurm':
+        arch = 'Guessed from slurm.conf'
+    else:
+        arch = hard.NAME
+    msg = "Current architecture = " + arch + " "
     if hard.NAME != 'unknown':
         msg += '(' + str(hard.SOCKETS_PER_NODE) + ' sockets/node, '
         msg += str(hard.CORES_PER_SOCKET) + ' cores/socket, '

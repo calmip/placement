@@ -59,5 +59,15 @@ class TestCompactString2List(unittest.TestCase):
         self.assertEqual(compactString2List('3-1'),[1,2,3])
         self.assertRaises(ValueError,compactString2List,'a-c')
 
+class TextExpandNodeList(unittest.TestCase):
+    def test_normal(self):
+        self.assertEqual(expandNodeList('eoscomp[1-3]'),['eoscomp1','eoscomp2','eoscomp3'])
+        self.assertEqual(expandNodeList('eoscomp[1]'),['eoscomp1'])
+        self.assertEqual(expandNodeList('eoscomp[1-2,4]'),['eoscomp1','eoscomp2','eoscomp4'])
+        self.assertEqual(expandNodeList('eoscomp[1,2]'),['eoscomp1','eoscomp2'])
+
+    def test_limits(self):
+        self.assertEqual(expandNodeList('eosmesca1'),['eosmesca1'])
+
 if __name__ == '__main__':
     unittest.main()
