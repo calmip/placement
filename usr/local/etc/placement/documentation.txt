@@ -52,7 +52,7 @@ On non-exclusive node, you can further debug the configuration:
 export PLACEMENT_DEBUG='0-1' means that only sockets 0,1 are reserved for your job
 
 You can even specify the complete cpuset: 
-export PLACEMENT_DEBUG='0-1:10-15,16-21' means that only 12 cores on 2 socekts are reserved for your job
+export PLACEMENT_DEBUG='0-1:10-15,16-21' means that only 12 cores on 2 sockets are reserved for your job
 
 Of course, PLACEMENT_DEBUG SHOULD BE USED ONLY FOR DEBUGGING PURPOSE, AND SHOULD BE UNSET FOR PRODUCTION !
 When PLACEMENT_DEBUG is not set, placement calls numactl --show to know the current reserved cpuset

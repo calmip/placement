@@ -61,19 +61,19 @@ echo "OK pour une installation en local..."
 [ ! -d $LIB ] && (mkdir -p $LIB || exit 1)
 [ ! -d $ETC ] && (mkdir -p $ETC || exit 1)
 
-for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py documentation.txt
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py
 do
   cp $SRC/lib/placement/$f $LIB
 done
 
-for f in placement.conf 
+for f in placement.conf documentation.txt
 do
   cp $SRC/etc/placement/$f $ETC
 done
 
 cp $SRC/bin/placement.py $SRC/bin/placement $BIN
-chmod a=r,u+w $LIB/*
-chmod a=rx,u+w $BIN/placement.py $BIN/placement
+chmod -R a=rX,u+w $LIB
+chmod  a=rx,u+w $BIN/placement.py $BIN/placement
 
 else
 
@@ -83,18 +83,18 @@ ssh -p $PORT $USER@$HOST "[ ! -d $BIN ] && (mkdir -p $BIN || exit 1)"
 ssh -p $PORT $USER@$HOST "[ ! -d $LIB ] && (mkdir -p $LIB || exit 1)"
 ssh -p $PORT $USER@$HOST "[ ! -d $ETC ] && (mkdir -p $ETC || exit 1)"
 
-for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py printing.py utilities.py matrix.py documentation.txt
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py printing.py utilities.py matrix.py 
 do
   scp -P $PORT $SRC/lib/placement/$f "$USER@$HOST:$LIB"
 done
 
-for f in placement.conf
+for f in placement.conf documentation.txt
 do
   scp -P $PORT $SRC/etc/placement/$f "$USER@$HOST:$ETC"
 done
 
 scp -P $PORT $SRC/bin/placement.py $SRC/bin/placement "$USER@$HOST:$BIN"
-ssh -p $PORT $USER@$HOST "chmod a=r,u+w $LIB/* $ETC/*"
+ssh -p $PORT $USER@$HOST "chmod -R a=rX,u+w $LIB $ETC"
 ssh -p $PORT $USER@$HOST "chmod a=rx,u+w $BIN/placement.py $BIN/placement"
 
 fi
