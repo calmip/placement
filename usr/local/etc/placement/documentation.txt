@@ -34,7 +34,7 @@ placement looks for the slurm.conf file (using the environment variable $SLURM_C
 so that if you use slurm you should not have anything to configure !
 
 BUT if you use some other scheduler, OR if you want to check the placement behaviour on some other machine than your supercomputer,
-you may edit the placement configuration file (probably /usr/local/etc/placement/placement.conf). This file is read BEFORE slurm.conf.
+you may edit the placement configuration file (${PLACEMENTETC}/placement.conf). This file is read BEFORE slurm.conf.
 
 It is a simple key-value file, structured in several sections. The purpose of this file is to help placement to guess,
 using several environment variables, the hardware configuration of the underlying machine
@@ -48,7 +48,10 @@ Current architecture = Bullx_dlc (2 sockets/node, 10 cores/socket, 2 threads/cor
 You can force an architecture with the environment variable:
 export PLACEMENT_ARCHI=Bullx_dlc
 
-On non-exclusive node, you can further debug the configuration:
+-----------------------------------------
+Then environment variable PLACEMENT_DEBUG
+-----------------------------------------
+On a non-exclusive node, you can further debug the configuration:
 export PLACEMENT_DEBUG='0-1' means that only sockets 0,1 are reserved for your job
 
 You can even specify the complete cpuset: 
@@ -56,6 +59,18 @@ export PLACEMENT_DEBUG='0-1:10-15,16-21' means that only 12 cores on 2 sockets a
 
 Of course, PLACEMENT_DEBUG SHOULD BE USED ONLY FOR DEBUGGING PURPOSE, AND SHOULD BE UNSET FOR PRODUCTION !
 When PLACEMENT_DEBUG is not set, placement calls numactl --show to know the current reserved cpuset
+
+You can thus simulate how placement will behave on your supercomputer:
+# ( export PLACEMENT_ARCHI=Mesca2; export PLACEMENT_DEBUG=1-2,4; ~/bin/placement 3 6   --mode=scatter --ascii )
+  S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
+P                  AAAAAA.......... BBBBBB..........                  CCCCCC..........                  
+
+If you specify some cores (ie you do not have whole sockets reserved, but only several cores), using scatter mode is a nonsense.
+However, you still can use the compact mode:
+( export PLACEMENT_ARCHI=Mesca2; export PLACEMENT_DEBUG='1-2,4:20-23,40-45,64-71'; ~/bin/placement 3 6   --mode=compact --ascii ) 
+  S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
+P                  ....AAAA........ ........AABBBB..                  BBCCCCCC........
+
 
 3. USING placement WITH srun, cpu_bind or WITH numactl
 ======================================================
