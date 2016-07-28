@@ -52,11 +52,14 @@ class TestCompactString2List(unittest.TestCase):
     def test_normal(self):
         self.assertEqual(compactString2List('0-3,5'),[0,1,2,3,5])
         self.assertEqual(compactString2List('5,2,0,1'),[5,2,0,1])
+        self.assertEqual(compactString2List('8-12'),[8,9,10,11,12])
+        self.assertEqual(compactString2List('8-12,98-102'),[8,9,10,11,12,98,99,100,101,102])
 
     def test_limits(self):
         self.assertEqual(compactString2List(''),[])
         self.assertEqual(compactString2List('1'),[1])
         self.assertEqual(compactString2List('3-1'),[1,2,3])
+        self.assertEqual(compactString2List('12-8'),[8,9,10,11,12])
         self.assertRaises(ValueError,compactString2List,'a-c')
 
 class TextExpandNodeList(unittest.TestCase):

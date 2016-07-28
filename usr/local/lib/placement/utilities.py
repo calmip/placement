@@ -134,12 +134,14 @@ def compactString2List(S):
                 rvl.append([int(c[0])])
             else:
                 # [0-3] ==> 0,1,2 + 3
-                if c[0] < c[1]:
-                    rvl.append(range(int(c[0]),int(c[1])))
-                    rvl.append([int(c[1])])
+                l0 = int(c[0])
+                l1 = int(c[1])
+                if l0 < l1:
+                    rvl.append(range(l0,l1))
+                    rvl.append([l1])
                 else:
-                    rvl.append(range(int(c[1]),int(c[0])))
-                    rvl.append([int(c[0])])
+                    rvl.append(range(l1,l0))
+                    rvl.append([l0])
 
         rvl = list(chain(*rvl))
     return rvl
