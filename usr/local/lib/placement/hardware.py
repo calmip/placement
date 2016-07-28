@@ -33,7 +33,7 @@ from utilities import  expandNodeList, getHostname
 class Hardware(object):
     """ Describing hardware configuration 
     
-    This file uses placement.conf to guess the correct hardware configuration, using some environment variables
+    This file uses slurm.conf if possible, or placement.conf, to guess the correct hardware configuration, using some environment variables
     The private member IS_SHARED describes the fact that the HOST is SHARED between users (if True) or exclusively dedicated (if False) to the job
     It is not strictly hardware consideration, but as it never changes during the node life, it makes sense considering it as a hardware parameter
     WARNING FOR SLURM ADMINS - IS_SHARED means here "The NODE is shared", NOT the Resource. 
@@ -239,9 +239,7 @@ class Hardware(object):
         for f in fields:
             p = f.partition('=')
             n = p[0].upper()
-            if n == 'PROCS':
-                cores = int(p[2])
-            elif n == 'SOCKETS':
+            if n == 'SOCKETS':
                 sockets = int(p[2])
             elif n == 'CORESPERSOCKET':
                 corespersocket = int(p[2])
@@ -252,7 +250,7 @@ class Hardware(object):
 
         config.add_section('Slurm')
         config.set('Slurm','SOCKETS_PER_NODE',sockets)
-        config.set('Slurm','CORES_PER_SOCKET',cores / sockets)
+        config.set('Slurm','CORES_PER_SOCKET',corespersocket)
         config.set('Slurm','THREADS_PER_CORE',threadspercore)
         if threadspercore>1:
             config.set('Slurm','HYPERTHREADING','1')
