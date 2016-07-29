@@ -3,7 +3,8 @@
 
 import os
 import copy
-#from matrix import *
+import re
+import subprocess
 from exception import *
 from itertools import chain,product
 
@@ -92,7 +93,35 @@ def list2CompactString(A):
         __compact(tmp,start,last_c)
     return ','.join(tmp)
 
+def expandNodeList(nodelist):
+    """ Return a list nodes, just like ExpandNodeList
+        toto[5-6] -> return ['toto5','toto6'] 
+        toto      -> return ['toto'] """
+    
+    matches = re.match('(.+)\[(.+)\]',nodelist)
+    if matches:
+        prefix = matches.group(1)
+        return map(lambda x:prefix+str(x),compactString2List(matches.group(2)))
+    else:
+        return [ nodelist ]
 
+def getHostname():
+    """ Return the environment HOSTNAME if set, else call /bin/hostname -s"""
+    if 'HOSTNAME' in os.environ:
+        return os.environ['HOSTNAME']
+    else:
+        cmd = "/bin/hostname -s"
+        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p.wait()
+
+        # If error, it is a Fatal Error !!!
+        if p.returncode !=0:
+            msg = "OUPS "
+            msg += "/bin/hostname -s returned an error !"
+            raise PlacementException(msg)
+        else:
+            return p.communicate()[0].split('\n')[0]
+        
 def compactString2List(S):
     """ Return a list of integers [0,1,2,5,6,7,9] from a compact list 0-2,5-7,9 """
 
@@ -105,12 +134,14 @@ def compactString2List(S):
                 rvl.append([int(c[0])])
             else:
                 # [0-3] ==> 0,1,2 + 3
-                if c[0] < c[1]:
-                    rvl.append(range(int(c[0]),int(c[1])))
-                    rvl.append([int(c[1])])
+                l0 = int(c[0])
+                l1 = int(c[1])
+                if l0 < l1:
+                    rvl.append(range(l0,l1))
+                    rvl.append([l1])
                 else:
-                    rvl.append(range(int(c[1]),int(c[0])))
-                    rvl.append([int(c[0])])
+                    rvl.append(range(l1,l0))
+                    rvl.append([l0])
 
         rvl = list(chain(*rvl))
     return rvl

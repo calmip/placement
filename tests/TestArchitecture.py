@@ -17,8 +17,7 @@ class TestShared1(unittest.TestCase):
             del os.environ['PLACEMENT_PARTITION']
         except Exception:
             pass
-        os.environ['SLURM_NNODES']      = '1'
-        os.environ['SLURM_NODELIST']    = 'eosmesca1'
+        os.environ['HOSTNAME']          = 'bigmemory1'
         os.environ['PLACEMENT_NODE']    = '0,1'
         os.environ['PLACEMENT_PHYSCPU'] = '0,1,2,3,4,5,6,7,16,17,18,19,20,21,22,23'
         self.hardware = Hardware.factory()
@@ -57,8 +56,8 @@ class TestShared1(unittest.TestCase):
 #@unittest.skip("it works, not tested")
 class TestShared2(unittest.TestCase):
     def setUp(self):
-        os.environ['SLURM_NODELIST']    = 'eosmesca1'
-        os.environ['PLACEMENT_NODE']    = '0,1'
+        os.environ['HOSTNAME   ']    = 'bigmemory1'
+        os.environ['PLACEMENT_NODE'] = '0,1'
         del os.environ['PLACEMENT_PHYSCPU']
         self.hardware = Hardware.factory()
 
@@ -75,7 +74,7 @@ class TestShared2(unittest.TestCase):
 #@unittest.skip("it works, not tested")
 class TestShared3(unittest.TestCase):
     def setUp(self):
-        os.environ['SLURM_NODELIST']    = 'eosmesca1'
+        os.environ['HOSTNAME']          = 'bigmemory1'
         os.environ['PLACEMENT_NODE']    = '2,3'
         os.environ['PLACEMENT_PHYSCPU'] = '32,33,34,35,36,37,38,39,48,49,50,51,52,53,54,55'
         self.hardware = Hardware.factory()

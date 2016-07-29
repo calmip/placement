@@ -108,18 +108,9 @@ from socket import gethostname
 
 def main():
 
-    # Si la variable PLACEMENT_DEBUG existe, on simule un environnement shared avec des réservations
-    # Exemple: export PLACEMENT_DEBUG='9,10,11,12,13' pour simuler un environnement shared, 5 sockets réservées
-    # NB - Ne pas oublier non plus de positionner SLURM_NODELIST ! (PAS PLACEMENT_PARTITION ça n'activera pas Shared)
-    #if 'PLACEMENT_DEBUG' in os.environ:
-    #    import mock
-    #    placement_debug=os.environ['PLACEMENT_DEBUG']
-    #    rvl=map(int,placement_debug.split(','))
-    #    Shared._Shared__detectSockets = mock.Mock(return_value=rvl)
-
     # Analysing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.2.0"
+    ver="1.3.0"
     parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
     # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
@@ -301,7 +292,7 @@ def documentation(section):
         sct  = str(section) + '.'
     
     #print "coucou " + str(section)
-    f_doc  = os.environ['PYTHONPATH'] + '/documentation.txt'
+    f_doc  = os.environ['PLACEMENTETC'] + '/documentation.txt'
     fh_doc = open(f_doc, 'r')
     
     for line in fh_doc:
@@ -372,7 +363,11 @@ def show_hard(hard):
     hardware
     """
 
-    msg = "Current architecture = " + hard.NAME + " "
+    if hard.NAME == 'Slurm':
+        arch = 'Guessed from slurm.conf'
+    else:
+        arch = hard.NAME
+    msg = "Current architecture = " + arch + " "
     if hard.NAME != 'unknown':
         msg += '(' + str(hard.SOCKETS_PER_NODE) + ' sockets/node, '
         msg += str(hard.CORES_PER_SOCKET) + ' cores/socket, '
@@ -380,7 +375,7 @@ def show_hard(hard):
             msg += str(hard.THREADS_PER_CORE) + ' threads/core ' + '(hyperthreading on), '
         msg += str(hard.MEM_PER_SOCKET) + ' Mb/socket, '
         if hard.IS_SHARED:
-            msg += 'SHARED'
+            msg += 'SHARED NODE'
         else:
             msg += 'EXCLUSIVE'
         msg += ')'
@@ -390,21 +385,23 @@ def show_env():
     """ Prints the useful environment variables"""
 
     cat = hardware.Hardware.catalog()
-    msg = "Current important environment variables...\n\n"
-    for v in ['PLACEMENT_ARCHI','PLACEMENT_PARTITION','HOSTNAME','SLURM_NNODES','SLURM_NODELIST','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
-              'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK']:
+    msg = "Current environment...\n"
+    msg += "WORKING ON HOST " + getHostname() + ', should match one of ' + str(cat[0]) + '\n'
+    
+    for v in ['PYTHONPATH','PLACEMENTETC','PLACEMENT_ARCHI','PLACEMENT_PARTITION','SLURM_CONF','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
+              'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK','PLACEMENT_DEBUG']:
         try:
             msg += v
             msg += ' = '
             msg += bold() + os.environ[v] + normal()
+            if v=='PLACEMENT_DEBUG':
+                msg += red_foreground() + bold() + ' - SHOULD NOT BE SET IN PRODUCTION !' + normal()
         except KeyError:
             msg += '<not specified>'
         if v=='PLACEMENT_ARCHI':
             msg += ' of ' + str(cat[2])
         if v=='PLACEMENT_PARTITION':
             msg += ' of ' + str(cat[1])
-        if v=='HOSTNAME':
-            msg += ' should match ' + str(cat[0])
         msg += '\n'
     print msg
 

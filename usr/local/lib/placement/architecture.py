@@ -3,6 +3,7 @@
 
 import os
 from exception import *
+from utilities import compactString2List
 import subprocess
 
 #
@@ -136,33 +137,14 @@ class Shared(Architecture):
             hyper           : If False, no hyperthreading !
             sockets_per_node: Number of sockets per node, should be <= hardware.SOCKETS_PER_NODE 
 
-        Builds the l_sockets list from two possible sources:
-               - If SLURM_NODELIST is defined, which means we run from the SLURM environment, we call numactl --show
-               - Else, the list is built from sockets_per_node (as with the Exlusive class)
-
+        Builds the l_sockets list from __detectSockets,which calls numactl --show
         """
         if sockets_per_node < 0:
             sockets_per_node = hardware.SOCKETS_PER_NODE
         Architecture.__init__(self, hardware, cpus_per_task, tasks, hyper, sockets_per_node )
 
-        # We are running through an sbatch job: detect the reserved nodes and cores !
-        if 'SLURM_NODELIST' in os.environ:
-            (self.l_sockets,self.m_cores) = self.__detectSockets()
-            #print 'l_sockets '+str(self.l_sockets)
-            #print 'm_cores   '+str(self.m_cores)
-            #if len(self.l_sockets)<self.sockets_per_node:
-            #   self.sockets_per_node = len(self.l_sockets)
-               # msg  = "OUPS - Vous avez demandé "
-               # msg += str(self.sockets_per_node) 
-               # msg += " sockets, vous en avez "
-               # msg += str(len(self.l_sockets))
-               # raise PlacementException(msg)
+        (self.l_sockets,self.m_cores) = self.__detectSockets()
 
-        # We are just on an interactive node: considering we have exclusive use of the node !
-        else:
-            self.l_sockets = range(sockets_per_node)
-            self.m_cores = None
-        
         self.sockets_reserved = len(self.l_sockets)
         if self.m_cores != None:
             self.cores_reserved = 0
@@ -174,9 +156,8 @@ class Shared(Architecture):
             self.cores_reserved   = self.cores_per_socket * self.sockets_reserved
 
 
-
     def __detectSockets(self):
-        """ Detect and return as a list available sockets and cores 
+        """ Detect and return as a list of available sockets and cores 
 
         l_sockets is a list of integers
         m_cores is a dictionary: key is the core number, value is a boolean
@@ -195,26 +176,13 @@ class Shared(Architecture):
                 raise PlacementException(msg)
             physcpubind = map(int,os.environ['PLACEMENT_PHYSCPU'].split(','))
 
-        # Not in an mpi_aware context, we call numactl --show now
-        else:
-            cmd = "numactl --show"
-            p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            p.wait()
-            # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-            if p.returncode !=0:
-                msg = "OUPS "
-                msg += "Erreur numactl - peut-être n'êtes-vous pas sur la bonne machine ?"
-                raise PlacementException(msg)
-            else:
-                output = p.communicate()[0].split('\n')
+        # debug mode: do not call numactl, read pseudo-reserved sockets and cores from an environment variable
+        elif 'PLACEMENT_DEBUG' in os.environ:
+            [l_sockets,physcpubind] = self.__callDebug()
 
-                # l_sockets is generated from line nodebind of numactl
-                # nodebind: 4 5 6 => [4,5,6]
-                for l in output:
-                    if l.startswith('nodebind:'):
-                        l_sockets = map(int,l.rpartition(':')[2].strip().split(' '))
-                    elif l.startswith('physcpubind:'):
-                        physcpubind = map(int,l.rpartition(':')[2].strip().split(' '))
+        # Not in an mpi_aware context, no debug: we call numactl --show 
+        else:
+            [l_sockets,physcpubind] = self.__callNumactl()
 
         # generating m_cores from l_sockets and physcpubind
         for s in l_sockets:
@@ -239,3 +207,50 @@ class Shared(Architecture):
                 raise PlacementException(msg)
 
         return [l_sockets,m_cores]
+
+
+    def __callNumactl(self): 
+        """Call numactl, detecting reserved sockets and physical cores
+           return the list of reserved sockets, and the list of physical cores  """
+
+        cmd = "numactl --show"
+        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p.wait()
+        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
+        if p.returncode !=0:
+            msg = "OUPS "
+            msg += "Erreur numactl - peut-être n'êtes-vous pas sur la bonne machine ?"
+            raise PlacementException(msg)
+        else:
+            output = p.communicate()[0].split('\n')
+
+            # l_sockets is generated from line nodebind of numactl
+            # nodebind: 4 5 6 => [4,5,6]
+            for l in output:
+                if l.startswith('nodebind:'):
+                    l_sockets = map(int,l.rpartition(':')[2].strip().split(' '))
+                elif l.startswith('physcpubind:'):
+                    physcpubind = map(int,l.rpartition(':')[2].strip().split(' '))
+                
+            return [l_sockets,physcpubind]
+
+
+    def __callDebug(self):
+        """ Read the env variable PLACEMENT_DEBUG and return the list of reserved sockets, and the list of physical cores
+            Possible values for PLACEMENT_DEBUG: 
+              '[0-3]' Sockets 0 to 3, all cores
+              '[0,1]:[0-5,20,21]  Sockets 0,1, physical cores 0,1,2,3,4,5,20,21 """
+
+        placement_debug = os.environ['PLACEMENT_DEBUG']
+        part = placement_debug.partition(':')
+        l_sockets   = map(int,compactString2List(part[0]))
+        physcpubind = []
+        if part[2] == '':
+            for s in l_sockets:
+                min_c = self.hardware.getSocket2CoreMin(s)
+                for c in range(self.cores_per_socket):
+                    physcpubind.append(min_c+c)
+        else:
+            physcpubind = map(int,compactString2List(part[2]))
+        
+        return [l_sockets,physcpubind]
