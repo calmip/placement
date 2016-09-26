@@ -110,7 +110,7 @@ def main():
 
     # Analysing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.3.0"
+    ver="1.3.1"
     parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
     # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
@@ -138,12 +138,13 @@ def main():
     parser.add_argument("-G","--gnu_affinity",action="store_const",dest="output_mode",const="gomp",help="Output for gnu openmp compiler")
     parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
     parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
-    parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK=command name or user name or ALL)")
+    parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
     parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
     parser.add_argument("-Y","--memory",action="store_true",default=False,help="With --threads: show memory occupation relative to the sockets")
+    parser.add_argument("-S","--hide_small_memory",action="store_true",default=False,help="With --threads --memory: do not show the memory occupation of a process if too small")
     parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
     parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
     parser.set_defaults(output_mode="srun")
@@ -271,7 +272,7 @@ def buildOutputs(options,tasks_binding):
         if options.only_running == True:
             o.PrintOnlyRunningThreads()
         if options.memory == True:
-            o.PrintNumamem()
+            o.PrintNumamem(options.hide_small_memory)
         if options.sorted_threads_cores == True:
             o.SortedThreadsCores()
         if options.sorted_processes_cores == True:

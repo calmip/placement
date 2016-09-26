@@ -285,8 +285,9 @@ class PrintingForMatrixThreads(PrintingFor):
         self.__sorted_processes_cores = True
     def PrintOnlyRunningThreads(self):
         self.__print_only_running_threads = True
-    def PrintNumamem(self):
+    def PrintNumamem(self,hide_small_memory):
         self.__print_numamem = True
+        self.__hide_small_memory = hide_small_memory
     def __str__(self):
         if self._tasks_binding.tasks > 66:
             return "OUPS - Représentation des threads impossible pour plus de 66 tâches !"
@@ -336,7 +337,7 @@ class PrintingForMatrixThreads(PrintingFor):
         # If wanted, print 1 line concerning memory allocation on the sockets
         if self.__print_numamem:
             sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
-            rvl += m.getNumamem(sockets_mem)
+            rvl += m.getNumamem(sockets_mem,self.__hide_small_memory)
 
         # Prnt a second header line
         rvl += m.getHeader1()
