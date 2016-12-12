@@ -136,8 +136,10 @@ def main():
     parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
     parser.add_argument("-Z","--intel_affinity",action="store_const",dest="output_mode",const="kmp",help="Output for intel openmp compiler, try also --verbose")
     parser.add_argument("-G","--gnu_affinity",action="store_const",dest="output_mode",const="gomp",help="Output for gnu openmp compiler")
-    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
-    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
+#    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
+#    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
+    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. EXPERIMENTAL")
+    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - EXPERIMENTAL")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
     parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
@@ -338,8 +340,8 @@ def make_mpi_aware():
     # Copy the environment SLURM_TASKS, SLURM_CPUS_PER_TASK with a prefix, they will be available in 
     msg  = 'export PLACEMENT_PHYSCPU="'+cores+'"; '
     msg += 'export PLACEMENT_NODE="'+sockets+'"; ';
-#    msg += 'export PLACEMENT_SLURM_TASKS_PER_NODE="'+os.environ['SLURM_TASKS_PER_NODE']+'"; '
-#    msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
+    msg += 'export PLACEMENT_SLURM_TASKS_PER_NODE="'+os.environ['SLURM_TASKS_PER_NODE']+'"; '
+    msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
 
     print msg
     
@@ -348,13 +350,13 @@ def make_mpi_aware():
 def check_mpi_aware():
     """In mpi_aware mode, check the 4 environment variables are set and raise an exception if they are not """
 
-    return
+#    return
 
-############    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
-############        return
+    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
+        return
 
-    msg =  'OUPS - Je ne suis pas vraiment mpi_aware, il me manque quelques variables d\'environnement\n'
-    msg += '       Avez-vous mis la commande $(placement --make_mpi_aware) AVANT l\'appel mpi ?'
+    msg =  'OUPS - I am not really mpi_aware, some environment varialbes are missing !\n'
+    msg += '       Did you put in your script, BEFORE CALLING mpirun, the command $(placement --make_mpi_aware) ?'
     raise PlacementException(msg)
 
 def show_hard(hard):
@@ -470,7 +472,7 @@ def compute_data_from_parameters(options,args,hard):
     # Sort the threads
     task_distrib.threadsSort()
 
-    # If mpi aware, we keep only the task corresponding the to mpi rank
+    # If mpi aware, we keep only the task corresponding to the mpi rank
     if options.mpiaware == True:
         task_distrib.keepOnlyMpiRank()
 
