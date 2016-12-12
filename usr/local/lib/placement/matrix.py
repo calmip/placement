@@ -108,10 +108,10 @@ class Matrix(object):
         return rvl
 
 
-    def getNumamem(self,sockets_mem,h_header='  SOCKET MEMORY'):
-        """ Return a line describing memory occupation of the sockets """
+    def getNumamem(self,sockets_mem,hide_small_memory,h_header='  SOCKET MEMORY'):
+        """ Return a line describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket """
         space = "."
-        sockets_mem_rel = self.__getMem2Slice(sockets_mem)
+        sockets_mem_rel = self.__getMem2Slice(sockets_mem,hide_small_memory)
         rvl = h_header
         for s in range(self.__socket_min,self.__socket_max+1):
             rvl += ' '
@@ -130,14 +130,19 @@ class Matrix(object):
         #return str(sockets_mem_rel)+'\n'
 
 
-    def __getMem2Slice(self,sockets_mem):
-        """ Compute slices for the memory consumption, they are ready to be displayed """
+    def __getMem2Slice(self,sockets_mem,hide_small_memory):
+        """ Compute slices for the memory consumption, they are ready to be displayed. 
+            Return the same structure as sockets_mem, except that memory is counted in slices  """
 
+        # mem_slice is the memory per core
         mem_slice = self.__hard.MEM_PER_SOCKET / self.__hard.CORES_PER_SOCKET
         sockets_mem_rel = []
 
+        # for each socket
         for s in sockets_mem:
             s_r = {}
+
+            # for each task
             for t in s.keys():
                 m = int(s[t])
                 q = m / mem_slice
@@ -146,6 +151,8 @@ class Matrix(object):
                     s_r[t] = q
                 else:
                     s_r[t] = q + 1
+                if hide_small_memory==False and s_r[t] == 0:
+                    s_r[t] = 1
             sockets_mem_rel.append(s_r)
 
         return sockets_mem_rel
