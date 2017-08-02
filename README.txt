@@ -20,12 +20,21 @@ INSTALLING placement
    If not already done, please put this directory in your path !
 
 
-START USING placement
-=====================
+START USING placement:
+======================
 
    placement --documentation   | less   # read the doc !
    placement --documentation 7 | less   # read only from Section 7
    placement --help                     # shorter but helpful doc
  
+QUICK (and somewhat dirty) START:
+=================================
 
-Emmanuel C.
+   export PLACEMENT_ARCHI=Bullx_dlc
+   placement 4 4 --ascii-art
+
+
+Emmanuel
+emmanuel.courcelle@inp-toulouse.fr
+
+https://www.calmip.univ-toulouse.fr

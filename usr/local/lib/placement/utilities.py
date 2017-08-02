@@ -148,21 +148,23 @@ def compactString2List(S):
 
             
 def computeCpusTasksFromEnv(options,args):
-    """ Return cpu_per_task and tasks from the environment or from the switched"""
+    """ Return cpu_per_task and tasks from the environment or from the switches"""
 
-    # Valeurs par défaut: en l'absence d'autres indications
+    # Default values, if nothing else specified
     cpus_per_task = 4
     tasks         = 4
 
-    # Si on est en mpi_aware, regarder PLACEMENT_SLURM_TASKS_PER_NODE, sinon regarder SLURM_TASKS_PER_NODE
+    # --- COMPUTING TASKS PER NODE ---
+    # If mpi_aware, consider PLACEMENT_SLURM_TASKS_PER_NODE, else consider SLURM_TASKS_PER_NODE
     slurm_tasks_per_node = '0'
     if options.mpiaware:
-        slurm_tasks_per_node = os.environ['PLACEMENT_SLURM_TASKS_PER_NODE']
+        if 'PLACEMENT_SLURM_TASKS_PER_NODE' in os.environ:
+            slurm_tasks_per_node = os.environ['PLACEMENT_SLURM_TASKS_PER_NODE']
     else:
         if 'SLURM_TASKS_PER_NODE' in os.environ:
             slurm_tasks_per_node = os.environ['SLURM_TASKS_PER_NODE']
 
-    # Valeurs par défaut: on prend les variables d'environnement de SLURM, si posible
+    # If possible, use the SLURM environment
     if slurm_tasks_per_node != '0':
         tmp = slurm_tasks_per_node.partition('(')[0]         # 20(x2)   ==> 2
         tmp = map(int,tmp.split(','))                        # '11,10'  ==> [11,10]
@@ -171,19 +173,21 @@ def computeCpusTasksFromEnv(options,args):
         elif len(tmp)==2:
             tasks = min(tmp)
             if options.asciiart or options.human:
-                msg = "ATTENTION - SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node + "\n"
-                msg+= "            Le paradigme utilisé est probablement client-serveur, le placement prend en compte " + str(tasks) + " tâches"
+                msg = "WARNING - SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node + "\n"
+                msg+= "          We are probably using a cleint-server paradigm, placement takes into account " + str(tasks) + " tasks"
                 print msg
                 print 
         else:
-            msg =  "OUPS - Placement non supporté dans cette configuration:\n"
+            msg =  "OUPS - Placement not supported in this configuration:\n"
             msg += "       SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node
             raise PlacementException(msg)
 
-    # Si on est en mpi_aware, regarder PLACEMENT_SLURM_CPUS_PER_TASK, sinon regarder SLURM_CPUS_PER_TASK
+    # --- COMPUTING CPUS PER TASK ---
+    # If mpi_aware, consider PLACEMENT_SLURM_CPUS_PER_TASK, else consider SLURM_CPUS_PER_TASK
     slurm_cpus_per_task = '0'
     if options.mpiaware:
-        slurm_cpus_per_task = os.environ['PLACEMENT_SLURM_CPUS_PER_TASK']
+        if 'PLACEMENT_SLURM_CPUS_PER_TASK' in os.environ:
+            slurm_cpus_per_task = os.environ['PLACEMENT_SLURM_CPUS_PER_TASK']
     else:
         if 'SLURM_CPUS_PER_TASK' in os.environ:
             slurm_cpus_per_task = os.environ['SLURM_CPUS_PER_TASK']
@@ -191,13 +195,13 @@ def computeCpusTasksFromEnv(options,args):
     if slurm_cpus_per_task != '0':
         cpus_per_task = int(slurm_cpus_per_task)
     
-    # Les valeurs spécifiées dans la ligne de commande ont la priorité !
+    # In anything specified in the command line, use it preferably
     if args[1] > 0:
         cpus_per_task = int(args[1])
     if args[0] > 0:
         tasks         = int(args[0])
 
-    # retourne les valeurs calculées
+    # Returning computing values
     return [cpus_per_task,tasks]
 
 def bold():
