@@ -107,7 +107,7 @@ class TasksBinding(object):
                 # Le rank si on utilise intelmpi
                 rank = os.environ['PMI_RANK']
             except KeyError:
-                msg = "ERREUR NINI - NI intelmpi, NI bullxmpi, NI openmpi"
+                msg = "NINI ERROR - NOT intelmpi, NOT bullxmpi, NOT openmpi"
                 for k in os.environ.keys():
                     print k + ' => ' + os.environ[k]
 

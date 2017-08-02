@@ -110,7 +110,7 @@ def main():
 
     # Analysing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.3.1"
+    ver="1.3.2"
     parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
     # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
@@ -138,8 +138,8 @@ def main():
     parser.add_argument("-G","--gnu_affinity",action="store_const",dest="output_mode",const="gomp",help="Output for gnu openmp compiler")
 #    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
 #    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
-    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. EXPERIMENTAL")
     parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - EXPERIMENTAL")
+    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, should be used with --numactl. EXPERIMENTAL")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
     parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
@@ -312,7 +312,7 @@ def documentation(section):
 # Make the environment variables useful in mpi_aware mode
 # Use with: eval $(~/bin/placement --make_mpi_aware)
 #
-# Analyze the output of umactl --show
+# Analyze the output of numactl --show
 #
 ###########################################################
 def make_mpi_aware():
@@ -337,11 +337,13 @@ def make_mpi_aware():
     cores=cores.strip().replace(' ',',')
     sockets=sockets.strip().replace(' ',',')
 
-    # Copy the environment SLURM_TASKS, SLURM_CPUS_PER_TASK with a prefix, they will be available in 
+    # Copy the environment SLURM_TASKS, SLURM_CPUS_PER_TASK with a prefix, they will be available if we live in a sbatch script
     msg  = 'export PLACEMENT_PHYSCPU="'+cores+'"; '
     msg += 'export PLACEMENT_NODE="'+sockets+'"; ';
-    msg += 'export PLACEMENT_SLURM_TASKS_PER_NODE="'+os.environ['SLURM_TASKS_PER_NODE']+'"; '
-    msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
+    if 'SLURM_TASKS_PER_NODE' in os.environ:
+        msg += 'export PLACEMENT_SLURM_TASKS_PER_NODE="'+os.environ['SLURM_TASKS_PER_NODE']+'"; '
+    if 'SLURM_CPUS_PER_TASK' in os.environ:
+        msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
 
     print msg
     
@@ -352,10 +354,11 @@ def check_mpi_aware():
 
 #    return
 
-    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
+#    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
+    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE'):
         return
 
-    msg =  'OUPS - I am not really mpi_aware, some environment varialbes are missing !\n'
+    msg =  'OUPS - I am not really mpi_aware, some environment variables are missing !\n'
     msg += '       Did you put in your script, BEFORE CALLING mpirun, the command $(placement --make_mpi_aware) ?'
     raise PlacementException(msg)
 
