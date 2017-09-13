@@ -6,7 +6,7 @@ version=$(python --version 2>&1)
 if [[ "$version" =~ "2.6" ]]
 then
 	module purge >/dev/null 2>&1
-	module load python >/dev/null 2>&1
+	module load python/2.7.6 >/dev/null 2>&1
 fi
 
 # pythonpath 
