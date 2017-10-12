@@ -307,10 +307,6 @@ class PrintingForMatrixThreads(PrintingFor):
         threads_bound = A dictionary containing a lot of data about each running task, see running.py for details
         """
 
-        # The whole machine is considered
-        ppsr_min = 0
-        ppsr_max = archi.sockets_per_node * archi.cores_per_node - 1
-
         # For each task in threads_bound, compute the ppsr_min and ppsr_max, ie the min and max physical cores
         ppsr_min = 999999
         ppsr_max = 0
@@ -328,6 +324,11 @@ class PrintingForMatrixThreads(PrintingFor):
                     ppsr_max=ppsr
                     
             threads_bound[pid]['ppsr_min'] = p_ppsr_min
+
+        # If memory printing, consider the whole machine
+        if self.__print_numamem:
+            ppsr_min = 0
+            ppsr_max = archi.sockets_per_node * archi.cores_per_node - 1
 
         # First, create a Matrix and print the header
         m = Matrix(archi,ppsr_min,ppsr_max)
@@ -399,7 +400,7 @@ class PrintingForMatrixThreads(PrintingFor):
             numamem = threads_bound[pid]['numamem']
             for s in sockets:
                 sockets_mem[s][tag]=numamem[s]
-        
+
         return sockets_mem
 
 
