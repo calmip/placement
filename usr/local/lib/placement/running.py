@@ -82,6 +82,7 @@ class RunningMode(TasksBinding):
         for pid in self.threads_bound:
             cmd = 'numastat ' + str(pid)
             tmp = subprocess.check_output(cmd.split(' ')).split('\n')
+            #print '\n'.join(tmp)
 
             # Keep only last line (Total=)
             ttl = tmp[-2].split()
@@ -106,7 +107,7 @@ class RunningMode(TasksBinding):
         The data structures processus and pid are created by this function:
         self.processus is a dictionary of dictionaries:
              k = pid
-             v = {'pid':pid, 'user':'utilisateur', 'cmd':'commande','threads':{'tid':{'tid':tid, 'psr';psr}}
+             v = {'pid':pid, 'user':'utilisateur', 'cmd':'commande','threads':{'tid':{'tid':tid, 'psr':psr}}
         self.pid is the sorted list of pids
 
         """
