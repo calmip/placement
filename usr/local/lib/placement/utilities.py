@@ -98,10 +98,12 @@ def expandNodeList(nodelist):
         toto[5-6] -> return ['toto5','toto6'] 
         toto      -> return ['toto'] """
     
-    matches = re.match('(.+)\[(.+)\]',nodelist)
+    matches = re.match('(.+)\[(.+)\](.*)',nodelist)
     if matches:
         prefix = matches.group(1)
-        return map(lambda x:prefix+str(x),compactString2List(matches.group(2)))
+	postfix= matches.group(3)
+        #print map(lambda x:prefix+str(x)+postfix,compactString2List(matches.group(2)))
+        return map(lambda x:prefix+str(x)+postfix,compactString2List(matches.group(2)))
     else:
         return [ nodelist ]
 
