@@ -97,20 +97,21 @@ then
 # --host: Sending the command on the requested host
 elif [[ $host != "" ]]
 then
-	# Détecter la partition, à condition qu'un job soit exécuté sur le host !
-	# Et sinon la commande n'a aucun intérêt
-	P=$(squeue --noheader -w $host -o "%.9P"|head -1)
-	if [[ $P == "" ]]
-	then
-		echo "OUPS - No job on $host yet"
-		exit 1
-	fi
-	if [[ $verb == 1 ]]
-	then
-		echo "$host: CALLING $0 $*"
-	fi
-
-	ssh $host export PLACEMENT_PARTITION=\"$P\" \;  $0 $*
+	for n in $(nodeset -e $host)
+	do
+		# Détecter la partition, à condition qu'un job soit exécuté sur le host !
+		# Et sinon la commande n'a aucun intérêt
+		P=$(squeue --noheader -w $n -o "%.9P"|head -1)
+		if [[ $P == "" ]]
+		then
+			echo "OUPS - No job on $n yet"
+		fi
+		if [[ $verb == 1 ]]
+		then
+			echo "$n: CALLING $0 $*"
+		fi
+		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check ALL $*
+	done
 
 # Pas de $job_id: on passe les switches à placement.py
 else
