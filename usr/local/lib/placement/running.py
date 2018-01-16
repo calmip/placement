@@ -8,6 +8,7 @@ from tasksbinding import *
 from utilities import *
 from architecture import *
 import subprocess
+import xml.etree.ElementTree as et
 
 #
 # This file is part of PLACEMENT software
@@ -66,6 +67,7 @@ class RunningMode(TasksBinding):
         self.processus=[]
         self.tasks_bound   = None
         self.threads_bound = None
+        self.gpus_info     = None
         self.archi = None
         self.cpus_per_task = 0
         self.tasks = 0
@@ -75,7 +77,57 @@ class RunningMode(TasksBinding):
         self.__processus_reserves = ['srun', 'mpirun', 'ps', 'sshd' ]
         self.__users_reserves     = ['root' ]
         self.__initTasksThreadsBound()
+
+    def __identGpus(self):
+        """ Call nvidia-smi to get gpus status
+            Store status in a DATA STRUCTURE:
+            gpus_bound = A list of lists.
+                         1st level of list = The socket numbers of the node
+                         2nd level of lists= The gpus (objects) attached to each socket
+            gpu        = A dictionary describing the gpu utilization (built from nvidia-smi -q -x output)"""
+
+        gpus = self.archi.gpus
+        if gpus == '':
+            return
+            
+        # provisoire
+        tree = et.parse('/users/sysadmin/manu/TMP/gpu.xml')
         
+        # '0-1,2-3' ==> ['0-1','2-3'] ==> [[0,1],[2,3]]
+        gpus_bound_tmp = []
+        for s in gpus.split(','):
+            gpus_bound_tmp.append(compactString2List(s))
+
+        gpus_bound = []
+        for s in gpus_bound_tmp:
+            sg = []
+            for g in s:
+                xpath_request = ".//gpu/[minor_number='"+str(g)+"']";
+                obj_g = tree.findall(xpath_request)[0]  # TODO - Verifier qu'il n'y en a qu'un seul !
+                gpu   = {}
+                
+                # Memory used
+                mem_used = int(obj_g.find(".//fb_memory_usage/used").text.partition(' ')[0])
+                mem_total= int(obj_g.find(".//fb_memory_usage/total").text.partition(' ')[0])
+                gpu['M'] = int((100.0*mem_used)/mem_total);
+                
+                # gpu utilization
+                gpu['U'] = int(obj_g.find(".//utilization/gpu_util").text.translate(None,' %'))
+                
+                # power used
+                pwr_used = float(obj_g.find(".//power_readings/power_draw").text.partition(' ')[0])
+                pwr_limit= float(obj_g.find(".//power_readings/power_limit").text.partition(' ')[0])
+                gpu['P'] = int(100 * pwr_used / pwr_limit)
+                
+                # gpu number
+                gpu['id'] = g
+                
+                sg.append(gpu)
+            gpus_bound.append(sg)
+
+        self.gpus_info = gpus_bound                
+        #print ("coucoucou " + str(self.gpus_info))
+                
     def __identNumaMem(self):
         """ Call numastat for each pid of threads_bound, and keep the returned info inside threads_bound"""
                 
@@ -268,7 +320,6 @@ class RunningMode(TasksBinding):
             self.__initTasksThreadsBound()
         return self.tasks_bound 
 
-
     def __initTasksThreadsBound(self):
         """ Call __identProcesses then __buildTasksBound and other things """
 
@@ -293,6 +344,9 @@ class RunningMode(TasksBinding):
         # Call numastat to get information about the memory
         if self.withMemory:
             self.__identNumaMem()
+            
+        # Call the gpu information
+        self.__identGpus()
 
     def PrintingForVerbose(self):
         """Return some verbose information"""

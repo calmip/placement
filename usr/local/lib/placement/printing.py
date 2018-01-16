@@ -292,11 +292,32 @@ class PrintingForMatrixThreads(PrintingFor):
         if self._tasks_binding.tasks > 66:
             return "OUPS - Représentation des threads impossible pour plus de 66 tâches !"
         else:
-            return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.threads_bound)
+            rvl = self.__getCpuBinding(self._tasks_binding)
+            if self._tasks_binding.gpus_info != None:
+                rvl += self.__getGpuInfo(self._tasks_binding)
+            return rvl
+
+    def __getGpuInfo(self,tasks_binding):
+        """ return a string, representing the status of the gpus connected to the sockets"""
+        
+        gpus_info = tasks_binding.gpus_info
+        rvl    = "\nGPUS INFO:"
+        i = 0
+        j = tasks_binding.archi.cores_per_socket + 1
+        k = 0
+        for s in gpus_info:
+            for g in s:
+                if k==0:
+                    rvl += 6*' ' + j*i*' '
+                    k+=1
+                else:
+                    rvl += 16*' ' + j*i*' '
+                rvl += str(g['id'])+'-'+'U'+str(g['U'])+'%-M'+str(g['M'])+'%-C'+str(g['P'])+'%'+"\n"
+            i += 1
+        return rvl
 
 
-
-    def __getCpuBinding(self,archi,threads_bound):
+    def __getCpuBinding(self,tasks_binding):
         """ return a string, representing sets of threads and tasks in a matrix representation, used only for running tasks
 
         1 column/PHYSICAL core, 1 line/process
@@ -307,6 +328,10 @@ class PrintingForMatrixThreads(PrintingFor):
         threads_bound = A dictionary containing a lot of data about each running task, see running.py for details
         """
 
+        archi         = tasks_binding.archi
+        threads_bound = tasks_binding.threads_bound
+        gpus_info     = tasks_binding.gpus_info
+        
         # For each task in threads_bound, compute the ppsr_min and ppsr_max, ie the min and max physical cores
         ppsr_min = 999999
         ppsr_max = 0
@@ -325,8 +350,8 @@ class PrintingForMatrixThreads(PrintingFor):
                     
             threads_bound[pid]['ppsr_min'] = p_ppsr_min
 
-        # If memory printing, consider the whole machine
-        if self.__print_numamem:
+        # If memory printing, or gpu_info, consider the whole machine
+        if self.__print_numamem or gpus_info != None:
             ppsr_min = 0
             ppsr_max = archi.sockets_per_node * archi.cores_per_node - 1
 
@@ -372,6 +397,8 @@ class PrintingForMatrixThreads(PrintingFor):
                     rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['mem'])
                 else:
                     rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'])
+
+        #print ("coucoucou " + str(threads_bound.gpus_bound))
 
         return rvl
 
