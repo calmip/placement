@@ -110,7 +110,7 @@ def main():
 
     # Analysing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.3.5"
+    ver="1.3.6"
     parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
     # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
@@ -118,7 +118,7 @@ def main():
     group = parser.add_argument_group('checking jobs running on compute nodes (THOSE SWITCHES MUST BE SPECIFIED FIRST)')
     group.add_argument("--checkme",dest='checkme',action="store_true",help="Check my running job")
     group.add_argument("--jobid",dest='jobid',action="store_true",help="Check this running job (must be mine, except for sysadmins)")
-    group.add_argument("--host",dest='host',action="store_true",help="Check this host (must execute my jobs, except for sysadmins)")
+    group.add_argument("--host",dest='host',action="store_true",help="Check those hosts, ex: node[10-15] (must execute my jobs, except for sysadmins)")
 
     group = parser.add_argument_group('Displaying some information')
     group.add_argument("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware and leave")
@@ -141,7 +141,7 @@ def main():
     parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - EXPERIMENTAL")
     parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, should be used with --numactl. EXPERIMENTAL")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
-    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus")
+    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus (default if check specified)")
     parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
@@ -259,7 +259,10 @@ def buildOutputs(options,tasks_binding):
             outputs.append(PrintingForGnuAff(tasks_binding,options.verbose))
             return outputs
 
-
+    # If check, the output default is --threads
+    if options.check!=None and (options.asciiart==False and options.human==False):
+        options.threads = True
+        
     # Print for human beings
     if options.human==True:
         outputs.append(PrintingForHuman(tasks_binding))
