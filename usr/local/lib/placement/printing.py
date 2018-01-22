@@ -336,11 +336,11 @@ class PrintingForMatrixThreads(PrintingFor):
         rvl += m.getHeader()
 
         # If wanted, print 1 line concerning memory allocation on the sockets
-        if self.__print_numamem:
-            sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
-            rvl += m.getNumamem(sockets_mem,self.__hide_small_memory)
+        # if self.__print_numamem:
+        #    sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
+        #    rvl += m.getNumamem(sockets_mem,self.__hide_small_memory)
 
-        # Prnt a second header line
+        # Print a second header line
         rvl += m.getHeader1()
 
         # Printing the body
@@ -373,6 +373,12 @@ class PrintingForMatrixThreads(PrintingFor):
                 else:
                     rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'])
 
+        # If wanted, print 1 line / process about memory allocation
+        if self.__print_numamem:
+            sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
+            rvl += "\n"
+            rvl += m.getNumamem(sockets_mem,self.__hide_small_memory)
+            
         return rvl
 
 
