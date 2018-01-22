@@ -145,8 +145,8 @@ def main():
     parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
-    parser.add_argument("-Y","--memory",action="store_true",default=False,help="With --threads: show memory occupation relative to the sockets")
-    parser.add_argument("-S","--hide_small_memory",action="store_true",default=False,help="With --threads --memory: do not show the memory occupation of a process if too small")
+    parser.add_argument("-Y","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
+    parser.add_argument("-S","--mem_proc",action="store_true",default=False,help="With --threads --memory: show the memory occupation/socket relative to the process memory (the default is relative to the socket memory)")
     parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
     parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
     parser.set_defaults(output_mode="srun")
@@ -277,7 +277,7 @@ def buildOutputs(options,tasks_binding):
         if options.only_running == True:
             o.PrintOnlyRunningThreads()
         if options.memory == True:
-            o.PrintNumamem(options.hide_small_memory)
+            o.PrintNumamem(options.mem_proc)
         if options.sorted_threads_cores == True:
             o.SortedThreadsCores()
         if options.sorted_processes_cores == True:

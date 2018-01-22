@@ -162,34 +162,6 @@ class Matrix(object):
 
         return rvl
 
-
-    def __getMem2Slice_OLD(self,sockets_mem,hide_small_memory):
-        """ Compute slices for the memory consumption, they are ready to be displayed. 
-            Return the same structure as sockets_mem, except that memory is counted in slices  """
-
-        # mem_slice is the memory per core
-        mem_slice = self.__hard.MEM_PER_SOCKET / self.__hard.CORES_PER_SOCKET
-        sockets_mem_rel = []
-
-        # for each socket
-        for s in sockets_mem:
-            s_r = {}
-
-            # for each task
-            for t in s.keys():
-                m = int(s[t])
-                q = m / mem_slice
-                r = m % mem_slice
-                if r <= mem_slice / 2:
-                    s_r[t] = q
-                else:
-                    s_r[t] = q + 1
-                if hide_small_memory==False and s_r[t] == 0:
-                    s_r[t] = 1
-            sockets_mem_rel.append(s_r)
-
-        return sockets_mem_rel
-
     def __getMemPidSocket(self,sockets_mem,mem_proc):
         """ Compute a NEW dict of arrays: 
                  - Key is a process tag
