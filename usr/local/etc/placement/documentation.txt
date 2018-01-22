@@ -199,37 +199,7 @@ mpirun  -n 2 numactl $(placement 1 16 --numactl) ./exec_50k.x
 placement can be used to check a running job. For example, to check the last running job you just launched,
 you could run from the frontal node:
 
-placement --checkme --ascii --mem --thre --sorted_th
-eoscomp102
-  S0-------- S1-------- 
-P ....A.A... AAA....... 
-L AAAAAAAAAA .........A 
-
-                0000000000 0000000000
-                0000000000 1111111111
-                0123456789 0123456789
-  SOCKET MEMORY AAAAAAAAA. ..........
-     PID    TID                        %CPU %MEM
-A  32529  32553 .......... ..........   0.0 44.6
-A         32599 A......... ..........  76.5 44.6
-A         32551 .......... ..........   0.0 44.6
-A         32595 .......... ..........   0.0 44.6
-A         32602 .A........ ..........  76.5 44.6
-A         32610 ..A....... ..........  76.5 44.6
-A         32606 ...A...... ..........  76.5 44.6
-A         32607 ....A..... ..........  76.5 44.6
-A         32608 ....A..... ..........  76.5 44.6
-A         32601 .....A.... ..........  76.5 44.6
-A         32605 ......A... ..........  76.5 44.6
-A         32609 ......A... ..........  76.5 44.6
-A         32603 .......A.. ..........  76.5 44.6
-A         32600 ........A. ..........  76.5 44.6
-A         32596 .........A ..........  76.5 44.6
-A         32597 .......... A.........  76.5 44.6
-A         32604 .......... .A........  76.5 44.6
-A         32598 .......... ..A.......  76.5 44.6
-A         32529 .......... .........A  89.0 44.6
-
+placement --checkme --ascii --memory --threads --sorted_threads
 eoscomp103
   S0-------- S1-------- 
 P .......AAA .AA..A.... 
@@ -238,7 +208,6 @@ L AAAAAA.A.. A..A.....A
                 0000000000 0000000000
                 0000000000 1111111111
                 0123456789 0123456789
-  SOCKET MEMORY AAAAAAAAA. ..........
      PID    TID                        %CPU %MEM
 A  63062  63075 .......... ..........   0.0 44.6
 A         63118 A......... ..........  99.0 44.6
@@ -260,11 +229,17 @@ A         63120 .......... ...A......  99.5 44.6
 A         63125 .......... .....A....  99.0 44.6
 A         63062 .......... .........A  97.3 44.6
 
-This shows that placement is very poor in this running job, on both nodes
-Using the commands explained in Section S5, the situation can be improved,
-and you can check this:
+  SOCKET MEMORY relative to the socket memory
+A               *********. ..........
 
-placement --checkme --ascii --mem --thre --sorted_th
+This shows that the placement is very poor in this running job. The threads
+are not equally distributed on both sockets (10+8), and only the memory of 
+the first socket is used.
+
+Using the commands explained in Section S5, the situation can be improved,
+and you can check this improvement:
+
+placement --checkme --ascii --memory --threads --sorted_threads
 eoscomp8
   S0-------- S1-------- 
 P AAAAAAAA.. AAAAAAAA.. 
@@ -295,37 +270,11 @@ A         98656 .......... .....A....  82.0 44.6
 A         98657 .......... ......A...  82.0 44.6
 A         98658 .......... .......A..  82.0 44.6
 
-eoscomp17
-  S0-------- S1-------- 
-P AAAAAAAA.. AAAAAAAA.. 
-L .......... .......... 
+  SOCKET MEMORY relative to the socket memory
+A               *********. ..........
 
-                0000000000 0000000000
-                0000000000 1111111111
-                0123456789 0123456789
-  SOCKET MEMORY AAAAAAAAA. ..........
-     PID    TID                        %CPU %MEM
-A 106955 106955 A......... ..........  93.9 44.6
-A        106968 .......... ..........   0.0 44.6
-A        106966 .......... ..........   0.0 44.6
-A        107047 .A........ ..........  94.3 44.6
-A        107048 ..A....... ..........  94.3 44.6
-A        107049 ...A...... ..........  94.3 44.6
-A        107050 ....A..... ..........  94.0 44.6
-A        107051 .....A.... ..........  94.0 44.6
-A        107052 ......A... ..........  94.3 44.6
-A        107053 .......A.. ..........  94.3 44.6
-A        107054 .......... A.........  94.3 44.6
-A        107046 .......... ..........   0.0 44.6
-A        107055 .......... .A........  94.3 44.6
-A        107056 .......... ..A.......  94.3 44.6
-A        107057 .......... ...A......  94.3 44.6
-A        107058 .......... ....A.....  94.3 44.6
-A        107059 .......... .....A....  94.3 44.6
-A        107060 .......... ......A...  94.0 44.6
-A        107061 .......... .......A..  94.0 44.6
-
-However, the line "SOCKET MEMORY" shows that the memory used by your process is
+The threads distribution is already better, but the line "SOCKET MEMORY" 
+shows that the memory used by your process is still
 allocated on one socket only: you could improve the code to change this behaviour, 
 then check again with placement.
 

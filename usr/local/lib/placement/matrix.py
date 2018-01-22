@@ -107,58 +107,110 @@ class Matrix(object):
         rvl += '\n'
         return rvl
 
-
-    def getNumamem(self,sockets_mem,hide_small_memory,h_header='  SOCKET MEMORY'):
-        """ Return a line describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket """
+    def getNumamem(self,sockets_mem,mem_proc):
+        """ Return a line describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket 
+            if mem_dist==False we show the memory occupation relative to each memory socket
+            if mem_dist==True  we show the %age memory occupation on each socket, related to the process memory
+            This difference may be important is the memory footprint is low
+        """
+        
+        mem_pid_socket = self.__getMemPidSocket(sockets_mem,mem_proc)
         space = "."
-        sockets_mem_rel = self.__getMem2Slice(sockets_mem,hide_small_memory)
-        rvl = h_header
-        for s in range(self.__socket_min,self.__socket_max+1):
-            rvl += ' '
-            i=0
-            s_m = sockets_mem_rel[s]
-            for t in s_m.keys():
-                rvl += mag_foreground()
-                for l in range(s_m[t]):
-                    rvl += t
-                    i += 1
-                rvl += normal()
-            for l in range(i,self.__hard.CORES_PER_SOCKET):
-                rvl += space
-        rvl += '\n'
+
+        h_header='  SOCKET MEMORY '
+        if mem_proc:
+            h_header += "relative to the process memory"
+        else:
+            h_header += "relative to the socket memory"
+        
+        rvl =  h_header
+        rvl += "\n"
+        #rvl += str(sockets_mem)
+        #rvl += "\n"
+        #rvl += str(mem_pid_socket)
+        #return rvl
+        
+        
+        
+        
+        #sockets_mem_rel = self.__getMem2Slice(sockets_mem,mem_proc)
+        #rvl = h_header
+        #rvl += "\n"
+        #rvl += len(h_header)*' '+' '
+        #rvl += str(sockets_mem)
+        #rvl += "===================\n"
+        #rvl += len(h_header)*' '+' '
+        #rvl += str(sockets_mem_rel)
+        #return rvl
+        for tag,val in mem_pid_socket.iteritems():
+            rvl += tag
+            rvl += ' ' * 14;
+            for m in val:
+                rvl += ' '
+                p = self.__hard.CORES_PER_SOCKET - m
+
+                # Write m times the tag (ex: AAAA) in magenta
+                if m>0:
+                    rvl += mag_foreground()
+                    rvl += '*'*m
+                    rvl += normal()
+
+                # Write p time a space in normal
+                if p>0:
+                    rvl += space*p
+            rvl += "\n"
+
         return rvl
-        #return str(sockets_mem_rel)+'\n'
 
+    def __getMemPidSocket(self,sockets_mem,mem_proc):
+        """ Compute a NEW dict of arrays: 
+                 - Key is a process tag
+                 - Value is an array: 
+                         if mem_proc==False: the quantity of memory used per socket, counted in slices. 0 if permission problem
+                         if mem_proc==True:  the distribution of memory among sockets, counted in slices. 0 if permission problem """
+                                       
 
-    def __getMem2Slice(self,sockets_mem,hide_small_memory):
-        """ Compute slices for the memory consumption, they are ready to be displayed. 
-            Return the same structure as sockets_mem, except that memory is counted in slices  """
+        # Create and fill the processes dictionary        
+        processes = {}
+        mem_p_proc= {} # key = tag, val = the total mem used by this process
+        for sm in sockets_mem:
+            for tag,val in sm.iteritems():
+                if not tag in processes:
+                    processes[tag] = []
+                if not tag in mem_p_proc:
+                    mem_p_proc[tag] = 0
+                processes[tag].append(val)
+                mem_p_proc[tag] += val
+                
+        # Replace absolute values with "slices"
+        # mem_slice is the quantity of mem in a slice: 
+        # calculated from the mem by core, ...
+        if mem_proc == False:
+            mem_slice = self.__hard.MEM_PER_SOCKET // self.__hard.CORES_PER_SOCKET
+            mem_slice2= mem_slice // 2
 
-        # mem_slice is the memory per core
-        mem_slice = self.__hard.MEM_PER_SOCKET / self.__hard.CORES_PER_SOCKET
-        sockets_mem_rel = []
+        # ... or from the mem_by_proc (thus deferred)
+        else:
+            mem_slice  = 0
+            mem_slice2 = 0
 
-        # for each socket
-        for s in sockets_mem:
-            s_r = {}
+        for tag,val in processes.iteritems():
+            slice_val = []
+            if mem_proc:
+                mem_slice = int(mem_p_proc[tag]) // self.__hard.CORES_PER_SOCKET
+                mem_slice2= int(mem_p_proc[tag]) // 2
+            for mem in val:
+                s = int(mem) // mem_slice
+                s1= int(mem) % mem_slice
+                if s1>= mem_slice2:
+                    s += 1
+                slice_val.append(s)
+            processes[tag] = slice_val
 
-            # for each task
-            for t in s.keys():
-                m = int(s[t])
-                q = m / mem_slice
-                r = m % mem_slice
-                if r <= mem_slice / 2:
-                    s_r[t] = q
-                else:
-                    s_r[t] = q + 1
-                if hide_small_memory==False and s_r[t] == 0:
-                    s_r[t] = 1
-            sockets_mem_rel.append(s_r)
-
-        return sockets_mem_rel
-
+        return processes
+                        
     def getLine(self,pid,tid,ppsr,S,H,cpu=100,mem='-'):
-        """ Return a line fulll of '.' and a letter on the psr coloumn, plus cpu occupation at end of line"""
+        """ Return a line full of '.' and a letter on the psr coloumn, plus cpu occupation at end of line"""
 
         if (ppsr<self.__ppsr_min or ppsr>self.__ppsr_max):
             raise PlacementException("INTERNAL ERROR - psr ("+str(ppsr)+") should belong to ["+str(self.__ppsr_min)+','+str(self.__ppsr_max)+"]")
@@ -176,10 +228,10 @@ class Matrix(object):
         socket= self.__hard.getCore2Socket(ppsr)
         core  = self.__hard.getCore2Core(ppsr)
 
-        # Les colonnes vides avant le cœur concerné
+        # Les colonnes vides avant le coeur concerne
         debut = self.__blankBeforeCore(socket,core)
         
-        # Les colonnes vides après le cœur concerné
+        # Les colonnes vides après le coeur concerne
         fin   = self.__blankAfterCore(socket,core)
 
         # Les infos de %cpu et %mem
