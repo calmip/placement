@@ -206,6 +206,20 @@ def computeCpusTasksFromEnv(options,args):
     # Returning computing values
     return [cpus_per_task,tasks]
 
+
+def mem2Slice(mem,mem_slice):
+    """Compute a slice number from mem and mem per slice (two floats) - 
+       Do not use integer arithmetic because we have sometimes little numbers"""
+       
+    if mem_slice == 0:
+        return 0
+
+    s = int(mem/mem_slice)
+    if mem-s*mem_slice >= mem_slice/2:
+        s += 1
+    return s
+                        
+
 def bold():
     return '\033[1m'
 

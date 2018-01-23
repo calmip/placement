@@ -72,5 +72,17 @@ class TextExpandNodeList(unittest.TestCase):
     def test_limits(self):
         self.assertEqual(expandNodeList('eosmesca1'),['eosmesca1'])
 
+class TestNum2Slice(unittest.TestCase):
+    def test_normal(self):
+        self.assertEqual(mem2Slice(5.0,1.0),5)
+        self.assertEqual(mem2Slice(4.9,1.0),5)
+        self.assertEqual(mem2Slice(4.5,1.0),5)
+        self.assertEqual(mem2Slice(4.499,1.0),4)
+        self.assertEqual(mem2Slice(0.9,1.0),1)
+        self.assertEqual(mem2Slice(0.45,1.0),0)
+        
+    def test_limits(self):
+        self.assertEqual(mem2Slice(5.0,0),0)
+        
 if __name__ == '__main__':
     unittest.main()

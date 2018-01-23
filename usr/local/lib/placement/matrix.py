@@ -186,8 +186,8 @@ class Matrix(object):
         # mem_slice is the quantity of mem in a slice: 
         # calculated from the mem by core, ...
         if mem_proc == False:
-            mem_slice = self.__hard.MEM_PER_SOCKET // self.__hard.CORES_PER_SOCKET
-            mem_slice2= mem_slice // 2
+            mem_slice  = self.__hard.MEM_PER_SOCKET / self.__hard.CORES_PER_SOCKET
+            mem_slice2 = mem_slice / 2
 
         # ... or from the mem_by_proc (thus deferred)
         else:
@@ -197,18 +197,16 @@ class Matrix(object):
         for tag,val in processes.iteritems():
             slice_val = []
             if mem_proc:
-                mem_slice = int(mem_p_proc[tag]) // self.__hard.CORES_PER_SOCKET
-                mem_slice2= int(mem_p_proc[tag]) // 2
+                mem_slice = mem_p_proc[tag] / self.__hard.CORES_PER_SOCKET
+                mem_slice2= mem_p_proc[tag] / 2
+                
             for mem in val:
-                s = int(mem) // mem_slice
-                s1= int(mem) % mem_slice
-                if s1>= mem_slice2:
-                    s += 1
+                s = mem2slice(mem,mem_slice)
                 slice_val.append(s)
             processes[tag] = slice_val
 
         return processes
-                        
+        
     def getLine(self,pid,tid,ppsr,S,H,cpu=100,mem='-'):
         """ Return a line full of '.' and a letter on the psr coloumn, plus cpu occupation at end of line"""
 
