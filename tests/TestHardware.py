@@ -3,12 +3,14 @@
 
 from utilities import *
 from hardware import *
+import os
 import unittest
 
 #@unittest.skip("it works, not tested")
 class TestHardwareBullDlc(unittest.TestCase):
     def setUp(self):
-        self.hardware = Bullx_dlc()
+        os.environ['PLACEMENT_ARCHI'] = 'Bullx_dlc'
+        self.hardware = Hardware.factory()
 
     def test_getCore2Socket(self):
         self.assertEqual(self.hardware.getCore2Socket(0),0)
@@ -55,7 +57,8 @@ class TestHardwareBullDlc(unittest.TestCase):
 # bien qu'on teste ici une architecture Shared, on considère qu'elle est Exclusive
 class TestHardwareMesca2(unittest.TestCase):
     def setUp(self):
-        self.hardware = Mesca2()
+        os.environ['PLACEMENT_ARCHI'] = 'Mesca2'
+        self.hardware = Hardware.factory()
 
 #    @unittest.skip("it works, not tested")
     def test_getCore2Socket(self):
