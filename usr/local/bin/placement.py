@@ -455,7 +455,8 @@ def compute_data_from_parameters(options,args,hard):
     hard: The hardware
     """
 
-    check = not options.relax
+    #check = not options.relax
+    check = True
     over_cores = None
     [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
     hyper = options.hyper or options.hyper_phys
