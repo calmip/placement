@@ -142,7 +142,11 @@ class Matrix(object):
         #rvl += len(h_header)*' '+' '
         #rvl += str(sockets_mem_rel)
         #return rvl
-        for tag,val in mem_pid_socket.iteritems():
+        
+        tags = mem_pid_socket.keys()
+        tags.sort()
+        for tag in tags:
+            val = mem_pid_socket[tag]
             rvl += tag
             rvl += ' ' * 14;
             for m in val:
@@ -187,21 +191,18 @@ class Matrix(object):
         # calculated from the mem by core, ...
         if mem_proc == False:
             mem_slice  = self.__hard.MEM_PER_SOCKET / self.__hard.CORES_PER_SOCKET
-            mem_slice2 = mem_slice / 2
 
         # ... or from the mem_by_proc (thus deferred)
         else:
             mem_slice  = 0
-            mem_slice2 = 0
 
         for tag,val in processes.iteritems():
             slice_val = []
             if mem_proc:
                 mem_slice = mem_p_proc[tag] / self.__hard.CORES_PER_SOCKET
-                mem_slice2= mem_p_proc[tag] / 2
                 
             for mem in val:
-                s = mem2slice(mem,mem_slice)
+                s = mem2Slice(mem,mem_slice)
                 slice_val.append(s)
             processes[tag] = slice_val
 
