@@ -52,7 +52,7 @@ class ScatterGenMode(TasksBinding):
 
     def checkParameters(self):
         """ Avoiding tasks straddling different sockets and other ugly things"""
-
+ 
         self._checkParameters()
 
         if self.cpus_per_task % self.archi.threads_per_core!=0:
@@ -74,7 +74,7 @@ class ScatterGenMode(TasksBinding):
         max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
         if self.cpus_per_task>1:
             if self.tasks>max_tasks and max_tasks>0:
-                msg = "OUPS - One task is straddling tow sockets ! Please lower the number of tasks/node, max is "
+                msg = "OUPS - One task is straddling two sockets ! Please lower the number of tasks/node, max is "
                 msg += str(max_tasks)
                 raise PlacementException(msg)
 
@@ -82,9 +82,9 @@ class ScatterGenMode(TasksBinding):
 class ScatterMode(ScatterGenMode):
     """Scatter cyclic distribution mode"""
 
-    def __init__(self,archi,cpus_per_task=0,tasks=0):
+    def __init__(self,archi,check=True,cpus_per_task=0,tasks=0):
         ScatterGenMode.__init__(self,archi,cpus_per_task,tasks)
-        self.distribTasks()
+        self.distribTasks(check)
         
     def distribTasks(self,check=True):
         """Return self.tasks_bound"""
@@ -198,9 +198,9 @@ class ScatterMode(ScatterGenMode):
 class ScatterBlockMode(ScatterGenMode):
     """Scatter block distribution mode"""
 
-    def __init__(self,archi,cpus_per_task=0,tasks=0):
+    def __init__(self,archi,check=True,cpus_per_task=0,tasks=0):
         ScatterGenMode.__init__(self,archi,cpus_per_task,tasks)
-        self.distribTasks()
+        self.distribTasks(check)
         
     def distribTasks(self,check=True):
         """Return self.tasks_bound"""
@@ -263,6 +263,7 @@ class ScatterBlockMode(ScatterGenMode):
             # TODO - ONLY TESTED WITH 2 THREADS/CORE ! (Xeon OK, KNL not tested)
             # nb of tasks x2, nb of threads /2 then recursive call
             tmp_task_distrib = ScatterBlockMode(self.archi,
+                                                check,
                                                 self.cpus_per_task/2,
                                                 self.tasks*2)
             tmp_tasks_bound= tmp_task_distrib.distribTasks(check=False)

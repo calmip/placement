@@ -33,7 +33,7 @@ class CompactGenMode(TasksBinding):
     """ Distributing processes on core in "scatter" modes, this generic class is a base class """
 
 
-    def __init__(self,archi,cpus_per_task=0,tasks=0):
+    def __init__(self,archi,check=True,cpus_per_task=0,tasks=0):
         TasksBinding.__init__(self,archi,cpus_per_task,tasks)
 
     def checkParameters(self):
@@ -62,9 +62,9 @@ class CompactMode(CompactGenMode):
 
     """
 
-    def __init__(self,archi):
+    def __init__(self,archi,check=True):
         TasksBinding.__init__(self,archi)
-        self.distribTasks()
+        self.distribTasks(check)
         
     def distribTasks(self, check=True):
         if self.tasks_bound != None:
@@ -100,7 +100,7 @@ class CompactMode(CompactGenMode):
 
 #
 # class CompactMode, dérive de TaskBinding, implémente les algos utilisés en mode compact
-#                    Utilisé lorsque le swtiche --hyper_as_physical est utilisé, traite les cœurs logiques
+#                    Utilisé lorsque le switch --hyper_as_physical est utilisé, traite les cœurs logiques
 #                    comme des sockets supplémentaires
 #
 class CompactPhysicalMode(CompactGenMode):
@@ -113,9 +113,9 @@ class CompactPhysicalMode(CompactGenMode):
     
     """
 
-    def __init__(self,archi):
+    def __init__(self,archi,check=True):
         TasksBinding.__init__(self,archi)
-        self.distribTasks()
+        self.distribTasks(check)
         
     def distribTasks(self, check=True):
         if self.tasks_bound != None:

@@ -130,6 +130,7 @@ def main():
     parser.add_argument("-T","--hyper",action="store_true",default=False,dest="hyper",help='Force use of hyperthreading (False)')
     parser.add_argument("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (False)")
     parser.add_argument("-M","--mode",choices=["compact","scatter","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter, scatter_cyclic (same as scatter),scatter_block, compact (scatter_cyclic)")
+#    parser.add_argument("--relax",action="store_true",default=False,help="DO NOT USE unless you know what you are doing")
     parser.add_argument("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable")
     parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
     parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
@@ -454,6 +455,7 @@ def compute_data_from_parameters(options,args,hard):
     hard: The hardware
     """
 
+    check = not options.relax
     over_cores = None
     [cpus_per_task,tasks] = computeCpusTasksFromEnv(options,args)
     hyper = options.hyper or options.hyper_phys
@@ -464,16 +466,16 @@ def compute_data_from_parameters(options,args,hard):
             
     task_distrib = ""
     if options.mode == "scatter":
-        task_distrib = ScatterMode(archi)
+        task_distrib = ScatterMode(archi,check)
     elif options.mode == "scatter_cyclic":
-        task_distrib = ScatterMode(archi)
+        task_distrib = ScatterMode(archi,check)
     elif options.mode == "scatter_block":
-        task_distrib = ScatterBlockMode(archi)
+        task_distrib = ScatterBlockMode(archi,check)
     else:
         if options.hyper_phys == True:
-            task_distrib = CompactPhysicalMode(archi)
+            task_distrib = CompactPhysicalMode(archi,check)
         else:
-            task_distrib = CompactMode(archi)
+            task_distrib = CompactMode(archi,check)
             
     # Sort the threads
     task_distrib.threadsSort()
