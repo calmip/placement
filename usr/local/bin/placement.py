@@ -5,7 +5,7 @@
 # This file is part of PLACEMENT software
 # PLACEMENT helps users to bind their processes to one or more cpu cores
 #
-# Copyright (C) 2015,2016 Emmanuel Courcelle
+# Copyright (C) 2015-2018 Emmanuel Courcelle
 # PLACEMENT is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -84,8 +84,8 @@ Please have a look to this file and adapt it to YOUR configuration !
 
 ###############################################################
 emmanuel.courcelle@inp-toulouse.fr
-http://www.calmip.univ-toulouse.fr
-June 2016
+https://www.calmip.univ-toulouse.fr
+2016-2018
 ################################################################
 """
 

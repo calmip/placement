@@ -10,7 +10,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
 #  PLACEMENT is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the

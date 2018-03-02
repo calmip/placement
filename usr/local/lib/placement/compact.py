@@ -1,11 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-from exception import *
-from tasksbinding import *
-from scatter import *
-
 #
 # This file is part of PLACEMENT software
 # PLACEMENT helps users to bind their processes to one or more cpu-cores
@@ -15,7 +10,7 @@ from scatter import *
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
 #  PLACEMENT is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -28,6 +23,11 @@ from scatter import *
 #        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
 #        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
 #
+
+import os
+from exception import *
+from tasksbinding import *
+from scatter import *
 
 class CompactGenMode(TasksBinding):
     """ Distributing processes on core in "scatter" modes, this generic class is a base class """
