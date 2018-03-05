@@ -1,7 +1,30 @@
 #! /bin/bash
 
-# Version de Python: nous avons besoin de Python 2.7, ce qui nécessite un module sur eos
-# (pas eosmesca1)
+#
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu-cores
+#
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
+
+# We need python 2.7 or more
+# The following may be necessary or not, it depends of your installation
 version=$(python --version 2>&1)
 if [[ "$version" =~ "2.6" ]]
 then
@@ -9,16 +32,21 @@ then
 	module load python/2.7.6 >/dev/null 2>&1
 fi
 
-# pythonpath 
+# The python executable
+PYTHON=python
+
+# The pythonpath env variable
 dir=$(dirname $0)
-export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P)
+export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P):${PYTHONPATH-}
+
+# ================ The following should not be changed =====================
 
 # placementetc
 # You'll find configuration files in this directory
 export PLACEMENTETC=$(cd $dir;cd ../etc/placement; pwd -P)
 
 # Name of the python script
-placement="python $0.py"
+PLACEMENT="$PYTHON $0.py"
 
 # verbose !
 if [[ "$*" =~ "--verb" ]]
@@ -28,32 +56,32 @@ else
 	verb=0
 fi
 
-# --checkme => We check the job in state "RUNNING"
+# --checkme => We check the first job in state "RUNNING"
 if [[ $1 == "--checkme" ]]
 then
 	shift
-	job_id=$(squeue --noheader -u $(whoami) -t R -o %A|head -1)
-	if [[ $job_id == "" ]]
+	jobid=$(squeue --noheader -u $(whoami) -t R -o %A|head -1)
+	if [[ $jobid == "" ]]
 	then
 		echo "ERROR - --checkme is a nonsense if you do not have any running job !"
 		exit 1
 	fi
 	if [[ $verb == 1 ]]
 	then
-		echo "OPTION --checkme: Now checking job $job_id for user $(whoami)"
+		echo "OPTION --checkme: Now checking job $jobid for user $(whoami)"
 	fi
 	set -- $* "--check=$(whoami)"
 fi
 	
-# --job_id 12345 => On checke le job 12345
+# --jobid 12345 => Checking the job nb 12345
 if [[ $1 == "--jobid" ]]
 then
 	shift
-	job_id=$1
+	jobid=$1
 	shift
 fi
 
-# --host taratata => On checke le host taratata
+# --host taratata => Checking the host called taratata
 if [[ $1 == "--host" ]]
 then
 	shift
@@ -61,13 +89,16 @@ then
 	shift
 fi
 
-# $job_id est spécifié => On va checker sur les nœuds
-if [[ $job_id != "" ]]
+# If checking a jobid, try to detect the corresponding node names
+# This works only with slurm !
+if [[ $jobid != "" ]]
 then
-    PN=$( squeue -j $job_id --noheader -o "%.9P@%.16R@%.8u" )
+	# The following returns something like <partition_name>@<node_name>[570-572]@ <user_name>
+	# Example: exclusive@eoscomp[570-572]@ toto
+    PN=$( squeue -j $jobid --noheader -o "%.9P@%.16R@%.8u" )
 	if [[ $? != 0 || $PN == "" ]]
     then
-		echo "ERROR - Bad jobid ! ($job_id)"
+		echo "ERROR - Bad jobid ! ($jobid)"
 		exit 1
 	fi
 
@@ -80,7 +111,7 @@ then
 
 	if [[ $N =~ \(.*\) ]] 
 	then
-       echo "ERROR - Bad jobid ! ($job_id)"
+       echo "ERROR - Bad jobid ! ($jobid)"
 	   exit 1
 	fi
 
@@ -90,36 +121,41 @@ then
 		then
 			echo "$n: CALLING $0 --check $U $*"
 		fi
+		# Force the partition, check all processes belonging to user on the node $n
 		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check $U $*
+
+		# Checking ONLY FIRST NODE, we consider that all nodes behave the same
 		break		
 	done
 
-# --host: Sending the command on the requested host
+# --host: Sending the command on the requested hosts
 elif [[ $host != "" ]]
 then
 	for n in $(nodeset -e $host)
 	do
-		# Détecter la partition, à condition qu'un job soit exécuté sur le host !
-		# Et sinon la commande n'a aucun intérêt
+		# The following returns only the partition name
+		# exclusive
 		P=$(squeue --noheader -w $n -o "%.9P"|head -1)
 		if [[ $P == "" ]]
 		then
-			echo "OUPS - No job on $n yet"
+			echo "ERROR - No job on $n yet"
 		fi
 		if [[ $verb == 1 ]]
 		then
 			echo "$n: CALLING $0 $*"
 		fi
+		# Force the partition, check all processes runnning on the node $n
 		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check ALL $*
 	done
 
-# Pas de $job_id: on passe les switches à placement.py
+# The switches --jobid, --host --checkme should be specified FIRST
 else
-	if [[ "$*" =~ --jobid ]]
+	if [[ "$*" =~ --jobid || "$*" =~ --host || "$*" =~ --checkme ]]
 	then
-       echo "Usage: placement --jobid 12345 --check=EXE [--ascii] [--taskset]"
+       echo "Usage: placement [--jobid 12345] [--host totocomp[1-5]] [--checkme] [other_options]"
+       echo "ERROR - --jobid, --host and --checkme should be the FIRST OPTION specified"
 	   exit 1
 	else
-	   exec $placement $*
+	   exec $PLACEMENT $*
 	fi
 fi
