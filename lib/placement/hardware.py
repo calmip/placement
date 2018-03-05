@@ -66,10 +66,13 @@ class Hardware(object):
     def factory():
         """ Build a Hardware object from several env variables: PLACEMENT_ARCHI, PLACEMENT_PARTITION, HOSTNAME"""
 
-        # 1st stage: Read the configuration file
-        conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
+        # 1st stage: Read the configuration file, if possible
+        conf_file = None
         config    = ConfigParser.RawConfigParser()
-        config.read(conf_file)        
+        if os.environ.has_key('PLACEMENTETC'):
+            conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
+            if os.path.exists(conf_file):
+                config.read(conf_file)        
 
         # 2nd stage: Guess the architecture name from the env variables
         archi_name = Hardware.__guessArchiName(conf_file,config)
@@ -111,15 +114,20 @@ class Hardware(object):
                 archi_name = config.get('partitions',placement_archi)
                 
         # Archi not yet guessed, trying to guess from the hostname
+        node = getHostname()
         if archi_name == '':
-            node = getHostname()
             archi_name = Hardware.__hostname2Archi(config, node)
             
-            if archi_name == None:
-                archi_name = Hardware.__hostname2ArchiFromSlurmConf(config,node)
+        if archi_name == None:
+            archi_name = Hardware.__hostname2ArchiFromSlurmConf(config,node)
 
-            if archi_name == None:
-                raise(PlacementException("OUPS - Could not guess the architecture from the hostname (" + node + ") - Please check " + conf_path))
+        if archi_name == None:
+            msg = "ERROR - Could not guess the architecture from the hostname (" + node + ") - ";
+            if conf_path==None or not os.path.exists(conf_path):
+                msg += "May be you should write a placement.conf file ";
+            else:
+                msg += "Please check " + conf_path
+            raise(PlacementException(msg))
             
         return archi_name
 
@@ -134,11 +142,11 @@ class Hardware(object):
         config A ConfigParser object
         host   A hostname
         """
-
-        options = config.options('hosts')
-        for o in options:
-            if host in expandNodeList(o):
-                return config.get('hosts',o)
+        if config.has_section('partitions')==True:
+            options = config.options('hosts')
+            for o in options:
+                if host in expandNodeList(o):
+                    return config.get('hosts',o)
         return None
 
     @staticmethod

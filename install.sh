@@ -54,7 +54,7 @@ BIN="$DST/bin"
 LIB="$DST/lib/placement"
 ETC="$DST/etc/placement"
 
-SRC=usr/local
+SRC=.
 
 if [ "$HOST" = 'LOCAL' ]
 then
@@ -69,7 +69,7 @@ do
   cp $SRC/lib/placement/$f $LIB
 done
 
-for f in placement.conf documentation.txt
+for f in placement.conf-dist documentation.txt
 do
   cp $SRC/etc/placement/$f $ETC
 done
@@ -91,7 +91,7 @@ do
   scp -P $PORT $SRC/lib/placement/$f "$USER@$HOST:$LIB"
 done
 
-for f in placement.conf documentation.txt
+for f in placement.conf-dist documentation.txt
 do
   scp -P $PORT $SRC/etc/placement/$f "$USER@$HOST:$ETC"
 done
