@@ -98,20 +98,15 @@ class Hardware(object):
         # Forcing an architecture from its name, using $PLACEMENT_ARCHI
         if 'PLACEMENT_ARCHI' in os.environ:
             placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
-            if config.has_section(placement_archi)==False:
-                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Unknown architecture, check placement.conf")
-            else:
+            if config.has_section(placement_archi)==True:
                 archi_name = placement_archi
 
         # Forcing an architecture from its partition name, using $PLACEMENT_PARTITION
         elif 'PLACEMENT_PARTITION' in os.environ:
             placement_archi=os.environ['PLACEMENT_PARTITION'].strip()
-            if config.has_section('partitions')==False:
-                raise PlacementException("OUPS - PLACEMENT_PARTITION is set but there is no section called partitions in placement.conf")
-            if config.has_option('partitions',placement_archi)==None:
-                raise PlacementException("OUPS - PLACEMENT_PARTITION="+os.environ['PLACEMENT_PARTITION']+" Unknown partition, can't guess the architecture")
-            else:
-                archi_name = config.get('partitions',placement_archi)
+            if config.has_section('partitions')==True:
+                if config.has_option('partitions',placement_archi)==None:
+                    archi_name = config.get('partitions',placement_archi)
                 
         # Archi not yet guessed, trying to guess from the hostname
         node = getHostname()
