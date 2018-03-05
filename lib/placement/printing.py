@@ -130,7 +130,7 @@ class PrintingForAsciiArt(PrintingFor):
 
     def __str__(self):
         if self._tasks_binding.tasks > 66:
-            return "OUPS - AsciiArt representation unsupported if more than 66 tasks !"
+            return "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
         else:
             return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
 
@@ -208,7 +208,7 @@ class PrintingForIntelAff(PrintingFor):
 
     def __str__(self):
         if len(self._tasks_binding.tasks_bound) > 1:
-            return "OUPS - KMP_Affinity representation impossible if more than 1 task !"
+            return "ERROR - KMP_Affinity representation impossible if more than 1 task !"
         else:
             rvl  = 'export KMP_AFFINITY="granularity=fine,explicit,proclist=';
             rvl += self.__getCpuBinding(self._tasks_binding.tasks_bound);
@@ -236,7 +236,7 @@ class PrintingForGnuAff(PrintingFor):
 
     def __str__(self):
         if len(self._tasks_binding.tasks_bound) > 1:
-            return "OUPS - Gnu_Affinity representation impossible if more than 1 task !"
+            return "ERROR - Gnu_Affinity representation impossible if more than 1 task !"
         else:
             rvl  = 'export GOMP_CPU_AFFINITY="';
             rvl += self.__getCpuBinding(self._tasks_binding.tasks_bound);
@@ -291,7 +291,7 @@ class PrintingForMatrixThreads(PrintingFor):
         self.__mem_proc = mem_proc
     def __str__(self):
         if self._tasks_binding.tasks > 66:
-            return "OUPS - Représentation des threads impossible pour plus de 66 tâches !"
+            return "ERROR - Threads representation is not supported if more thant 66 tasks !"
         else:
             return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.threads_bound)
 

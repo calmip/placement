@@ -33,9 +33,10 @@ class Architecture(object):
     """ Describing the architecture of the system
 
     The architecture, is driven by:
-    - The guessed hardware
+    - The hardware, guessed from the hostname
     - The number of sockets/node: on a shared machine we do not necessarily use ALL sockets
-    - The number of tasks (processes or threads) who may start hyperthreading use (if allowed by the hardware)
+    - The number of tasks (processes or threads) which may start
+    - hyperthreading use (if allowed by the hardware)
 
     THIS IS AN ABSTRACT CLASS
     """
@@ -46,7 +47,7 @@ class Architecture(object):
         Arguments:
         hardware     : An object of class Hardware, descriving the hardware limits of the system
         tasks        : The number of tasks (= processes)
-        cpus_per_task: The number of cpus dedicated to each process (enerally the number of threads)
+        cpus_per_task: The number of cpus dedicated to each process (generally the number of threads)
         hyper        : If False, do not used hyperthreading, even if allowed by the hardware
         sockets_per_node : Should be < hardware.SOCKETS_PER_NODE - Not used yet
 
@@ -60,7 +61,7 @@ class Architecture(object):
         """
 
         if sockets_per_node > hardware.SOCKETS_PER_NODE:
-            msg = "ERREUR INTERNE "
+            msg = "INTERNAL ERROR "
             msg += str(sockets_per_node)
             msg += " > " 
             msg += str(hardware.SOCKETS_PER_NODE)
@@ -87,8 +88,12 @@ class Architecture(object):
         """ Initialize an attribute only if it does not already exist"""
 
         try:
+            # If getattr does not raise an exception, the attribut already exists so we raise an exception
+            # because the attributes should be immutable
             getattr(self,name)
-            raise PlacementException("ERREUR INTERNE - Pas le droit de changer les attributs")
+            raise PlacementException("INTERNAL ERROR - Architecture::__setattr__")
+            
+        # getattr raised an exception: good, the attribute did not exist
         except Exception:
             object.__setattr__(self,name,value)
 
@@ -103,7 +108,7 @@ class Architecture(object):
             if self.hardware.HYPERTHREADING:
                 threads_per_core = self.hardware.THREADS_PER_CORE
             else:
-                msg = "OUPS - l'hyperthreading n'est pas actif sur cette machine"
+                msg = "ERROR - Hyperthreading is NOT activated on this node !"
                 raise PlacementException(msg)
         return threads_per_core
 
@@ -171,8 +176,8 @@ class Shared(Architecture):
         if 'PLACEMENT_NODE' in os.environ:
             l_sockets = map(int,os.environ['PLACEMENT_NODE'].split(','))
             if 'PLACEMENT_PHYSCPU' not in os.environ:
-                msg = "OUPS "
-                msg += "Erreur - PLACEMENT_NODE est défini mais PAS PLACEMENT_PHYSCPU - Avez-vous appelé auparavant placement --make_mpi_aware ?"
+                msg = "ERROR -";
+                msg += "PLACEMENT_NODE is set, but PLACEMENT_PHYSCPU is NOT set. Did you call before placement --make_mpi_aware ?"
                 raise PlacementException(msg)
             physcpubind = map(int,os.environ['PLACEMENT_PHYSCPU'].split(','))
 
@@ -194,20 +199,18 @@ class Shared(Architecture):
 
         # Checking there is not incoherency
         if len(l_sockets) > self.sockets_per_node:
-            msg  = "OUPS - sockets_per_node=" + str(self.sockets_per_node)
+            msg  = "ERROR - sockets_per_node=" + str(self.sockets_per_node)
             msg += " should be at least " +  str(len(l_sockets))
             msg += " Please check switch -S"
             raise PlacementException(msg)
 
         for s in l_sockets:
             if len(m_cores[s]) != self.cores_per_socket:
-                msg  = "OUPS - cores_per_socket=" + str(self.cores_per_socket)
+                msg  = "ERROR - cores_per_socket=" + str(self.cores_per_socket)
                 msg += " should be equal to " +  str(m_cores[s])
-                msg += " Check the switch -S"
                 raise PlacementException(msg)
 
         return [l_sockets,m_cores]
-
 
     def __callNumactl(self): 
         """Call numactl, detecting reserved sockets and physical cores
@@ -218,8 +221,8 @@ class Shared(Architecture):
         p.wait()
         # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
         if p.returncode !=0:
-            msg = "OUPS "
-            msg += "Erreur numactl - peut-être n'êtes-vous pas sur la bonne machine ?"
+            msg = "ERROR - "
+            msg += "numactl error - Are you sure you are on the correct node ?"
             raise PlacementException(msg)
         else:
             output = p.communicate()[0].split('\n')

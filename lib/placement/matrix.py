@@ -37,16 +37,22 @@ from utilities import *
 #
 
 class Matrix(object):
-    """ Compute the placement in  matrix (1 col/core, 1 line/thread) for sets of running threads """
+    """ Compute the placement in  matrix (1 col/core, 1 line/thread) for sets of running threads 
+        This representation is used ONLY with the option --check, to check running jobs
+    """
 
     def __init__(self,archi,ppsr_min=-1,ppsr_max=-1):
+        """ Parameters: archi    = The object Architecture found
+                        ppsr_min = The min used core number 
+                        ppsr_max = The max used core number (useful if not all sockets are used by the job, as we do not draw all sockets)
+        """
         self.__hard  = archi.hardware
         self.__archi = archi
         if ppsr_min < 0:
             self.__ppsr_min = 0
             self.__ppsr_max = archi.sockets_per_node * archi.cores_per_socket - 1
         else:
-            # Partir toujours au premier core d'un socket jusqu'au dernier core
+            # We correct ppsr_min and ppsr_max to sockets boundaries
             self.__socket_min = self.__hard.getCore2Socket(ppsr_min)
             self.__socket_max = self.__hard.getCore2Socket(ppsr_max)
             self.__ppsr_min = self.__hard.getSocket2CoreMin(self.__socket_min)

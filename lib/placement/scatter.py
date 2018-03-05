@@ -29,7 +29,7 @@ from exception import *
 from tasksbinding import *
 
 class ScatterGenMode(TasksBinding):
-    """ Distributing processes on core in "scatter" modes, this generic class is a base class
+    """ Distributing processes on cores in "scatter" modes, this generic class is a base class
 
     Two scatter modes are currently implemented:
         1/ scatter_cyclic (default mode)
@@ -55,7 +55,7 @@ class ScatterGenMode(TasksBinding):
         self._checkParameters()
 
         if self.cpus_per_task % self.archi.threads_per_core!=0:
-            msg = "OUPS - cpus_per_task ("
+            msg = "ERROR - cpus_per_task ("
             msg += str(self.cpus_per_task)
             msg += ") => should be a multiple of threads_per_core ("
             msg += str(self.archi.threads_per_core)
@@ -65,15 +65,15 @@ class ScatterGenMode(TasksBinding):
         # max_cpus = It more than 1 task, each must have less threads than logical cores/socket
         if self.tasks > 1:
             if self.cpus_per_task > self.archi.threads_per_core*self.archi.cores_per_socket:
-                msg  = "OUPS - Diminuez le nombre de threads (le maximum est " + str(self.archi.threads_per_core*self.archi.cores_per_socket) +")\n"
-                msg += "       Ou alors ne mettez qu'une seule tâche par nœud et passez en mode scatter_cyclic !"
+                msg  = "ERROR - Please reduce the threads number (max threads number = " + str(self.archi.threads_per_core*self.archi.cores_per_socket) +")\n"
+                msg += "        Or use only ONE task/node and go to mode scatter_cyclic !"
                 raise PlacementException(msg)
                 
         # Avoiding tasks straddling on several sockets ! 
         max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
         if self.cpus_per_task>1:
             if self.tasks>max_tasks and max_tasks>0:
-                msg = "OUPS - One task is straddling two sockets ! Please lower the number of tasks/node, max is "
+                msg = "ERROR - One task is straddling two sockets ! Please lower the number of tasks/node, max is "
                 msg += str(max_tasks)
                 raise PlacementException(msg)
 

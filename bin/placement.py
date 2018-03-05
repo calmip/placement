@@ -148,7 +148,7 @@ def main():
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
     parser.add_argument("-Y","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
     parser.add_argument("-S","--mem_proc",action="store_true",default=False,help="With --threads --memory: show the memory occupation/socket relative to the process memory (the default is relative to the socket memory)")
-    parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
+#    parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
     parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
     parser.set_defaults(output_mode="srun")
     options=parser.parse_args()

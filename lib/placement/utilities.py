@@ -44,7 +44,7 @@ def numTaskToLetter(n):
     """ Return a single letter (A-Z-a-z0-9) from a (task) number (0..66) """
 
     if n<0 or n>66:
-        raise PlacementException("ERREUR INTERNE - Si plus de 62 tâches, utilisez getCpuTaskAsciiBinding")
+        raise PlacementException("INTERNAL ERROR - If more than 66 tasks, please use getCpuTaskAsciiBinding")
     if n<26:
         return chr(65+n)   # A..Z
     if n<52:
@@ -116,7 +116,7 @@ def getHostname():
 
         # If error, it is a Fatal Error !!!
         if p.returncode !=0:
-            msg = "OUPS "
+            msg = "ERROR - "
             msg += "/bin/hostname -s returned an error !"
             raise PlacementException(msg)
         else:
@@ -178,7 +178,7 @@ def computeCpusTasksFromEnv(options,args):
                 print msg
                 print 
         else:
-            msg =  "OUPS - Placement not supported in this configuration:\n"
+            msg =  "ERROR - Placement not supported in this configuration:\n"
             msg += "       SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node
             raise PlacementException(msg)
 

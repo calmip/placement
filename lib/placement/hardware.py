@@ -33,9 +33,9 @@ from utilities import  expandNodeList, getHostname
 class Hardware(object):
     """ Describing hardware configuration 
     
-    This file uses slurm.conf if possible, or placement.conf, to guess the correct hardware configuration, using some environment variables
+    This file uses placement.conf if exists, else slurm.conf, to guess the correct hardware configuration, using some environment variables
     The private member IS_SHARED describes the fact that the HOST is SHARED between users (if True) or exclusively dedicated (if False) to the job
-    It is not strictly hardware consideration, but as it never changes during the node life, it makes sense considering it as a hardware parameter
+    It is not strictly hardware consideration, but as it never changes during the node lifetime, it makes sense considering it as a hardware parameter
     WARNING FOR SLURM ADMINS - IS_SHARED means here "The NODE is shared", NOT the Resource. 
                                So you may have Shared=No in slurm.conf and IS_SHARED set to False !
                                IS_SHARED is set to False ONLY if you have Shared=EXCLUSIVE in slurm.conf
@@ -50,7 +50,7 @@ class Hardware(object):
 
     @staticmethod
     def catalog():
-        """ Return the available hostsnames (as regex), partitions, architectures as lists of lists """
+        """ Return the available hostnames (as regex), partitions, architectures as lists of lists """
 
         conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
         config    = ConfigParser.RawConfigParser()
@@ -87,10 +87,10 @@ class Hardware(object):
         """  Guess the architecture name from the environment variables:
 
         Arguments:
-        conf_file: The config path, used only for display
+        conf_file: The config path, used only for error messages
         config:    A ConfigParser object, already created
 
-        return the architecture name, of rais an exception if impossible to check
+        return the architecture name, raise an exception if impossible to guess
         """
 
         archi_name = ''
@@ -131,7 +131,7 @@ class Hardware(object):
         """ return the architecture name from the hostname, using the configuration
         Each option is a list of hosts: try to find a list of hosts we could be a part of
         When found return the corresponding value
-        If no match, return None
+        If nothing found, return None
 
         Arguments:
         config A ConfigParser object
@@ -332,7 +332,7 @@ class SpecificHardware(Hardware):
     def __init__(self,conf_file, config,archi_name):
         # archi_name should be a section in the configuration file
         if config.has_section(archi_name)==False:
-            raise(PlacementException("OUPS - The architecture " + archi_name + " is unknown - Please check " + conf_file))
+            raise(PlacementException("ERROR - The architecture " + archi_name + " is unknown - Please check " + conf_file))
 
         try:
             self.NAME             = archi_name
@@ -345,7 +345,7 @@ class SpecificHardware(Hardware):
             self.CORES_PER_NODE   = self.CORES_PER_SOCKET*self.SOCKETS_PER_NODE
 
         except Exception, e:
-            msg = "OUPS - Something is wrong in the configuration - Please check " + conf_file
+            msg = "ERROR - Something is wrong in the configuration - Please check " + conf_file
             msg += "\n"
             msg += "ERROR WAS = " + str(e)
             raise(PlacementException(msg))

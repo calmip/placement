@@ -23,8 +23,9 @@
 #        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
 #
 
-# We need python 2.7 or more
-# The following may be necessary or not, it depends of your installation
+# We need python 2.7 BUT placement DOES NOT WORK (yet) WITH PYTHON 3
+
+# The following may be necessary or not, it depends on your installation
 version=$(python --version 2>&1)
 if [[ "$version" =~ "2.6" ]]
 then
