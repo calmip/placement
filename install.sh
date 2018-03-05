@@ -38,7 +38,7 @@ HOST=$1
 # Install top directory defaults to home directory
 if [ "$HOST" = 'LOCAL' ]
 then
-	DST=${2-$(cd; pwd -P)}
+	DST=${2-$(cd; pwd -P)}/placement
 else
 	DST=${2-$(ssh -p $PORT $USER@$HOST pwd -P)}
 fi
@@ -51,8 +51,8 @@ echo DST=$DST
 [ "$USER" = "" -o "$PORT" = "" -o "$HOST" = "" -o "$DST" = "" ] && Usage
 
 BIN="$DST/bin"
-LIB="$DST/lib/placement"
-ETC="$DST/etc/placement"
+LIB="$DST/lib"
+ETC="$DST/etc"
 
 SRC=.
 
@@ -64,19 +64,23 @@ echo "OK pour une installation en local..."
 [ ! -d $LIB ] && (mkdir -p $LIB || exit 1)
 [ ! -d $ETC ] && (mkdir -p $ETC || exit 1)
 
-for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py
 do
-  cp $SRC/lib/placement/$f $LIB
+  cp $SRC/lib/$f $LIB
 done
 
 for f in placement.conf-dist documentation.txt
 do
-  cp $SRC/etc/placement/$f $ETC
+  cp $SRC/etc/$f $ETC
 done
 
-cp $SRC/bin/placement.py $SRC/bin/placement $BIN
-chmod -R a=rX,u+w $LIB
-chmod  a=rx,u+w $BIN/placement.py $BIN/placement
+cp $SRC/bin/placement-dist $BIN
+chmod -R a=rX,u+w $LIB $BIN $ETC
+chmod a+rx $BIN/placement-dist $LIB/placement.py
+
+# edit placement-dist 
+sed -i -e "s!PLACEMENT_LIB!$LIB!" $BIN/placement-dist
+sed -i -e "s!PLACEMENT_ETC!$ETC!" $BIN/placement-dist
 
 else
 

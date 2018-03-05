@@ -37,17 +37,21 @@ fi
 PYTHON=python
 
 # The pythonpath env variable
-dir=$(dirname $0)
-export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P):${PYTHONPATH-}
+#dir=$(dirname $0)
+#export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P):${PYTHONPATH-}
+# The installation script will write the correct pathes !
+export PYTHONPATH=PLACEMENT_LIB:$PYTHONPATH
+PLACEMENTPY=PLACEMENT_LIB/placement.py
+export PLACEMENTETC=PLACEMENT_ETC
 
 # ================ The following should not be changed =====================
 
 # placementetc
 # You'll find configuration files in this directory
-export PLACEMENTETC=$(cd $dir;cd ../etc/placement; pwd -P)
+#export PLACEMENTETC=$(cd $dir;cd ../etc/placement; pwd -P)
 
 # Name of the python script
-PLACEMENT="$PYTHON $0.py"
+#PLACEMENT="$PYTHON $0.py"
 
 # verbose !
 if [[ "$*" =~ "--verb" ]]
@@ -157,6 +161,6 @@ else
        echo "ERROR - --jobid, --host and --checkme should be the FIRST OPTION specified"
 	   exit 1
 	else
-	   exec $PLACEMENT $*
+	   exec $PLACEMENTPY $*
 	fi
 fi

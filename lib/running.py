@@ -330,39 +330,39 @@ class BuildTasksBound:
 
 # This functor build the tasks_bound data structure from taskset 
 # --- THIS IS NO MORE USED ---
-class BuildTasksBoundFromTaskSet(BuildTasksBound):
-    """Calling taskset, BUT DOES NOT WORK ANYMORE, IS IT STILL USEFUL ?"""
+#class BuildTasksBoundFromTaskSet(BuildTasksBound):
+    #"""Calling taskset, BUT DOES NOT WORK ANYMORE, IS IT STILL USEFUL ?"""
 
-    # Appelle __taskset sur le tableau tasksBinding.pid
-    # Transforme les affinités retournées: 0-3 ==> [0,1,2,3]
-    # Renvoie tasks_bound + tableau vide (pas d'infos sur les threads)
-    def __call__(self,tasksBinding):
-        raise PlacementException("Sorry, --taskset switch is not implemented")
+    ## Appelle __taskset sur le tableau tasksBinding.pid
+    ## Transforme les affinités retournées: 0-3 ==> [0,1,2,3]
+    ## Renvoie tasks_bound + tableau vide (pas d'infos sur les threads)
+    #def __call__(self,tasksBinding):
+        #raise PlacementException("Sorry, --taskset switch is not implemented")
 
-        tasks_bound=[]
-        for p in tasksBinding.pid:
-            aff = self.__runTaskSet(p)
-            tasks_bound.append(compactString2List(aff))
+        #tasks_bound=[]
+        #for p in tasksBinding.pid:
+            #aff = self.__runTaskSet(p)
+            #tasks_bound.append(compactString2List(aff))
 
-        return tasks_bound
+        #return tasks_bound
 
-    # Appelle taskset pour le ps passé en paramètre
-    def __runTaskSet(self,p):
-        cmd = "taskset -c -p "
-        cmd += str(p)
-        try:
-            out = subprocess.check_output(cmd.split(' ')).rstrip('\n')
+    ## Appelle taskset pour le ps passé en paramètre
+    #def __runTaskSet(self,p):
+        #cmd = "taskset -c -p "
+        #cmd += str(p)
+        #try:
+            #out = subprocess.check_output(cmd.split(' ')).rstrip('\n')
 
-        except subprocess.CalledProcessError,e:
-            msg = "ERROR -  "
-            msg += "The command: "
-            msg += cmd
-            msg += " Returned an error: "
-            msg += str(p.returncode)
-            raise PlacementException(msg)
+        #except subprocess.CalledProcessError,e:
+            #msg = "ERROR -  "
+            #msg += "The command: "
+            #msg += cmd
+            #msg += " Returned an error: "
+            #msg += str(p.returncode)
+            #raise PlacementException(msg)
 
-        # On renvoie l'affinité
-        return out.rpartition(" ")[2]
+        ## On renvoie l'affinité
+        #return out.rpartition(" ")[2]
 
 # This functor builds the tasks_bound data structure from ps
 # Construit tasks_bound à partir de la structure de données tasksBinding.processus

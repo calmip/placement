@@ -424,13 +424,14 @@ def compute_data_from_running(options,args,hard):
     hard: The hardware
     """
 
+
+    #if options.taskset == True:
+        #buildTasksBound = BuildTasksBoundFromTaskSet()
+    #else:
+        #buildTasksBound = BuildTasksBoundFromPs()
+
+    buildTasksBound = BuildTasksBoundFromPs()
     path = options.check
-
-    if options.taskset == True:
-        buildTasksBound = BuildTasksBoundFromTaskSet()
-    else:
-        buildTasksBound = BuildTasksBoundFromPs()
-
     task_distrib = RunningMode(path,hard,buildTasksBound,options.memory)
 
     return task_distrib
