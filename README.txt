@@ -1,40 +1,50 @@
 INSTALLING placement
 ====================
 
-1/ Prerequisite: placement needs python 2.X, with X <= 6, the shell wrapper arranges for this, using a module command 
-2/ Have a look to the file ./usr/local/etc/placement/placement.conf and modify it to your needs
-3/ TO INSTALL ON YOUR MACHINE, Home directory:
-   	  ./install.sh LOCAL
-4/ TO INSTALL ON YOUR MACHINE, /some/other/directory:
-   	  ./install.sh LOCAL /some/other/directory
-5/ TO INSTALL ON ANOTHER MACHINE:
-   arrange for sshing on the remote host with key authentication
-   ./install.sh REMOTE
+1/ Prerequisites: 
+    -placement needs python 2.7.x, but NOT (yet) python3 !
+    -You should use slurm as resource scheduler (at least for --check use)
+    -When you are running a job on a cluster, you should be able to ssh to the working node
+     to be able to use placement --checkme or any other --check option
+
+2/ Execute the installation script:
+           ./install.sh                      ==> Installing in the directory ~/placement
+           or
+           ./install.sh /usr/local/placement ==> Installing in the directory /usr/local/placement
+3/ OPTIONAL:
+   copy the file ...../placement/etc/placement.conf-dist to ...../placement/etc/placement.conf
+   Edit placement.conf to configure placement to your needs
+
+4/ REQUIRED:
+   copy the file ...../placement/bin/placement-dist to ...../placement/bin/placement
+   Edit the new file to check that everything is OK for your, particularly the python version (2.7.x, no more, no less)
+   Create a symbolic link from a directory in the path (~/bin, /usr/local/bin, etc) to this file
+
    OR
-   ./install.sh REMOTE DIRECTORY
-   OR (other options)
-   ./install.sh -h
 
-6/ The following subdirectories will be created by this installation: lib/placement, etc/placement
-7/ placement itself is in ~/bin subdirectory (the wrapper placement AND the python program placement.py)
-   If not already done, please put this directory in your path !
-
-
+   copy the file ...../placement/bin/placement-dist to a directory in the path
+   Edit the new file as explained above
+     
 START USING placement:
 ======================
-
    placement --documentation   | less   # read the doc !
    placement --documentation 7 | less   # read only from Section 7
    placement --help                     # shorter but helpful doc
- 
-QUICK (and somewhat dirty) START:
-=================================
+   
+QUICK and DIRTY START:
+======================
+   copy placement.conf as explained in 3/ (no use editing the file), then:
 
-   export PLACEMENT_ARCHI=Bullx_dlc
-   placement 4 4 --ascii-art
+# export PLACEMENT_ARCHI=Bullx_dlc
+# placement 4 4 --ascii-art
+  S0-------- S1-------- 
+P AAAABBBB.. CCCCDDDD.. 
 
+
+
+
+Have fun !
 
 Emmanuel
 emmanuel.courcelle@inp-toulouse.fr
-
 https://www.calmip.univ-toulouse.fr
