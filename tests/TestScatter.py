@@ -33,9 +33,10 @@ import unittest
 #@unittest.skip("it works, not tested")
 class TestScatterExclusive(unittest.TestCase):
     def setUp(self):
-        os.environ['PLACEMENT_PARTITION'] = 'exclusive'
+        os.environ['PLACEMENT_CONF'] = 'test3.conf'
+        os.environ['HOSTNAME'] = 'node101'
         self.hardware = Hardware.factory()
-        self.assertEqual(self.hardware.NAME,'Bullx_dlc')
+        self.assertEqual(self.hardware.NAME,'hard1')
 
         # Architecture = 4 tâches/4 threads
         self.exclu_ok1   = Exclusive(self.hardware,4,4,False)
@@ -126,10 +127,11 @@ class TestScatterExclusive(unittest.TestCase):
 # bien qu'on teste ici une architecture Shared, tout se passe comme si elle était exclusive
 class TestScatterSharedMesca(unittest.TestCase):
     def setUp(self):
-        os.environ['PLACEMENT_PARTITION'] = 'mesca'
-        os.environ['PLACEMENT_DEBUG']     = '0-7'
+        os.environ['PLACEMENT_CONF']  = 'test3.conf'
+        os.environ['PLACEMENT_ARCHI'] = 'hard4'
+        os.environ['PLACEMENT_DEBUG'] = '0-7'
         self.hardware = Hardware.factory()
-        self.assertEqual(self.hardware.NAME,'Mesca2')
+        self.assertEqual(self.hardware.NAME,'hard4')
 
         # Architecture = 8 sockets/4 tâches/4 threads
         self.shared_ok1   = Shared(self.hardware,4,4,False)
@@ -163,9 +165,11 @@ class TestScatterSharedMesca(unittest.TestCase):
 #@unittest.skip("it works, not tested")
 class TestScatterBlockExclusive(unittest.TestCase):
     def setUp(self):
-        os.environ['PLACEMENT_PARTITION'] = 'exclusive'
+        os.environ['PLACEMENT_CONF']  = 'test3.conf'
+        os.environ['PLACEMENT_ARCHI'] = 'hard1'
+        os.environ.pop('PLACEMENT_DEBUG',0)
         self.hardware = Hardware.factory()
-        self.assertEqual(self.hardware.NAME,'Bullx_dlc')
+        self.assertEqual(self.hardware.NAME,'hard1')
 
         # Architecture = 4 tâches/4 threads
         self.exclu_ok1   = Exclusive(self.hardware,4,4,False)

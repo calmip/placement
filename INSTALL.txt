@@ -8,22 +8,34 @@ INSTALLING placement
      to be able to use placement --checkme or any other --check option
 
 2/ Execute the installation script:
-           ./install.sh                      ==> Installing in the directory ~/placement
-           or
-           ./install.sh /usr/local/placement ==> Installing in the directory /usr/local/placement
-3/ OPTIONAL:
-   copy the file ...../placement/etc/placement.conf-dist to ...../placement/etc/placement.conf
+   ./install.sh                      ==> Installing in your home: ~/placement
+
+   or
+
+   ./install.sh /usr/local/placement ==> Installing in the directory /usr/local/placement
+
+   In the following, $PLACEMENT_ROOT means "the placement directory"
+
+3/ OPTIONAL but RECOMMANDED:
+   cp $PLACEMENT_ROOT/etc/placement.conf-dist $PLACEMENT_ROOT/etc/placement.conf
    Edit placement.conf to configure placement to your needs
 
 4/ REQUIRED:
-   copy the file ...../placement/bin/placement-dist to ...../placement/bin/placement
+   cp $PLACEMENT_ROOT/bin/placement-dist $PLACEMENT_ROOT/bin/placement
    Edit the new file to check that everything is OK for your, particularly the python version (2.7.x, no more, no less)
-   Create a symbolic link from a directory in the path (~/bin, /usr/local/bin, etc) to this file
+    
+   Create a symbolic link from a directory in the path:
+       cd /usr/local/bin; ln -s $PLACEMENT_ROOT/bin/placement
 
    OR
 
-   copy the file ...../placement/bin/placement-dist to a directory in the path
-   Edit the new file as explained above
+   copy the file placement to some directory in the path:
+       cd /usr/local/bin; cp $PLACEMENT_ROOT/bin/placement .
+       
+   OR
+   
+   Call placement using the complete path:
+       $PLACEMENT_ROOT/bin/placement
      
 START USING placement:
 ======================
@@ -33,14 +45,12 @@ START USING placement:
    
 QUICK and DIRTY START:
 ======================
-   copy placement.conf as explained in 3/ (no use editing the file), then:
+   copy placement.conf as explained in 3/ and do not further edit the file, then:
 
 # export PLACEMENT_ARCHI=Bullx_dlc
 # placement 4 4 --ascii-art
   S0-------- S1-------- 
 P AAAABBBB.. CCCCDDDD.. 
-
-
 
 
 Have fun !
