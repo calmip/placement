@@ -52,7 +52,7 @@ class Hardware(object):
     def catalog():
         """ Return the available hostnames (as regex), partitions, architectures as lists of lists """
 
-        conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
+        conf_file = os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
         config    = ConfigParser.RawConfigParser()
         config.read(conf_file)        
         partitions = config.options('partitions')
@@ -69,8 +69,8 @@ class Hardware(object):
         # 1st stage: Read the configuration file, if possible
         conf_file = None
         config    = ConfigParser.RawConfigParser()
-        if os.environ.has_key('PLACEMENTETC'):
-            conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
+        if os.environ.has_key('PLACEMENT_ROOT'):
+            conf_file = os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
             if os.path.exists(conf_file):
                 config.read(conf_file)        
 

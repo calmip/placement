@@ -299,7 +299,7 @@ def documentation(section):
         sct  = str(section) + '.'
     
     #print "coucou " + str(section)
-    f_doc  = os.environ['PLACEMENTETC'] + '/documentation.txt'
+    f_doc  = os.environ['PLACEMENT_ROOT'] + '/etc/documentation.txt'
     fh_doc = open(f_doc, 'r')
     
     for line in fh_doc:
@@ -398,7 +398,7 @@ def show_env():
     msg = "Current environment...\n"
     msg += "WORKING ON HOST " + getHostname() + ', should match one of ' + str(cat[0]) + '\n'
     
-    for v in ['PYTHONPATH','PLACEMENTETC','PLACEMENT_ARCHI','PLACEMENT_PARTITION','SLURM_CONF','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
+    for v in ['PYTHONPATH','PLACEMENT_ROOT','PLACEMENT_ARCHI','PLACEMENT_PARTITION','SLURM_CONF','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
               'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK','PLACEMENT_DEBUG']:
         try:
             msg += v

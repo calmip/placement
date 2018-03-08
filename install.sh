@@ -3,7 +3,7 @@
 #PORT=""
 #USER=""
 HOST=""
-DST=""
+PLACEMENT_ROOT=""
 
 function Usage {
     echo "Usage: ./install.sh --help " &&
@@ -16,13 +16,13 @@ function Usage {
 [ "$1" = "--help" ] && Usage
 
 # Install top directory defaults to home directory
-DST=${2-$(cd; pwd -P)}/placement
+PLACEMENT_ROOT=${2-$(cd; pwd -P)}/placement
 
-echo DST=$DST
+echo PLACEMENT_ROOT=$PLACEMENT_ROOT
 
-BIN="$DST/bin"
-LIB="$DST/lib"
-ETC="$DST/etc"
+BIN="$PLACEMENT_ROOT/bin"
+LIB="$PLACEMENT_ROOT/lib"
+ETC="$PLACEMENT_ROOT/etc"
 
 SRC=.
 
@@ -46,13 +46,13 @@ chmod -R a=rX,u+w $LIB $BIN $ETC
 chmod a+rx $BIN/placement-dist $LIB/placement.py
 
 # edit placement-dist 
-sed -i -e "s!PLACEMENT_LIB!$LIB!" $BIN/placement-dist
-sed -i -e "s!PLACEMENT_ETC!$ETC!" $BIN/placement-dist
+sed -i -e "s!PLACEMENT_ROOT!$PLACEMENT_ROOT!" $BIN/placement-dist
 
 echo "That's all for me, folks !"
 echo
 echo "Now, you should do: "
-echo "     cp $BIN/placement-dist in/a/directory/of/the/path/placement"
+echo "     cp $BIN/placement-dist /directory/of/the/path/placement"
+echo "     chmod a+rx /directory/of/the/path/placement"
 echo "     EDIT THE FILE to be sure all is OK (the python version for example)"
 echo ""
 echo "     cp $ETC/placement.conf-dist $ETC/placement.conf"
