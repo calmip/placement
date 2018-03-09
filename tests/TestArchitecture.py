@@ -1,6 +1,29 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+#
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu cores
+#
+# Copyright (C) 2015-2018 Emmanuel Courcelle
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
+
 from utilities import *
 from hardware import *
 from architecture import *
@@ -13,11 +36,8 @@ import unittest
 #@unittest.skip("it works, not tested")
 class TestShared1(unittest.TestCase):
     def setUp(self):
-        try:
-            del os.environ['PLACEMENT_PARTITION']
-        except Exception:
-            pass
-        os.environ['HOSTNAME']          = 'bigmemory1'
+        os.environ['PLACEMENT_CONF']  = 'test3.conf'
+        os.environ['PLACEMENT_ARCHI'] = 'hard4'
         os.environ['PLACEMENT_NODE']    = '0,1'
         os.environ['PLACEMENT_PHYSCPU'] = '0,1,2,3,4,5,6,7,16,17,18,19,20,21,22,23'
         self.hardware = Hardware.factory()
@@ -46,7 +66,7 @@ class TestShared1(unittest.TestCase):
 #                 1:{16:True,17:True,18:True,19:True,20:True,21:True,22:True,23:True}}
         archi = Shared(self.hardware,8,4,False,2)
 
-        self.assertEqual(self.hardware.NAME,'Mesca2')
+        self.assertEqual(self.hardware.NAME,'hard4')
         self.assertEqual(archi.l_sockets,sock)
         self.assertEqual(archi.m_cores[0],cores[0])
         self.assertEqual(archi.m_cores[1],cores[1])
@@ -56,16 +76,16 @@ class TestShared1(unittest.TestCase):
 #@unittest.skip("it works, not tested")
 class TestShared2(unittest.TestCase):
     def setUp(self):
-        os.environ['HOSTNAME   ']    = 'bigmemory1'
-        os.environ['PLACEMENT_NODE'] = '0,1'
-        del os.environ['PLACEMENT_PHYSCPU']
+        os.environ['PLACEMENT_CONF']  = 'test3.conf'
+        os.environ['PLACEMENT_ARCHI'] = 'hard4'
+        os.environ['PLACEMENT_NODE']    = '0,1'
+        os.environ.pop('PLACEMENT_PHYSCPU',0)
         self.hardware = Hardware.factory()
 
     def test_shared(self):
         #sock  = [0,1]
         #cores = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
         #archi = Shared(self.hardware,8,4,False,2)
-        self.assertEqual(self.hardware.NAME,'Mesca2')
         self.assertRaises(PlacementException,Shared,self.hardware,8,4,False,2)
         
 # Testing Mesca2, the cpuset is simulated in PLACEMENT_PHYSCPU
@@ -74,7 +94,7 @@ class TestShared2(unittest.TestCase):
 #@unittest.skip("it works, not tested")
 class TestShared3(unittest.TestCase):
     def setUp(self):
-        os.environ['HOSTNAME']          = 'bigmemory1'
+        os.environ['HOSTNAME']          = 'clusterfat1'
         os.environ['PLACEMENT_NODE']    = '2,3'
         os.environ['PLACEMENT_PHYSCPU'] = '32,33,34,35,36,37,38,39,48,49,50,51,52,53,54,55'
         self.hardware = Hardware.factory()

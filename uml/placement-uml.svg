@@ -1,246 +1,250 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
-<svg width="81cm" height="50cm" viewBox="19 -423 1614 986" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="81cm" height="51cm" viewBox="13 -424 1608 1001" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <g>
-    <rect style="fill: #ffffff" x="335" y="-148" width="241" height="70"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="335" y="-148" width="241" height="70"/>
+    <rect style="fill: #ffffff" x="335" y="-148" width="241" height="112"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="335" y="-148" width="241" height="112"/>
     <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="455.5" y="-129">Architecture</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="455.5" y="-113.5">Description des tâches et des</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="455.5" y="-99.5">cpus mis à disposition des</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="455.5" y="-85.5">tâches</text>
-    <rect style="fill: #ffffff" x="335" y="-78" width="241" height="236"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="335" y="-78" width="241" height="236"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="-64">#sockets_per_node: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="-48">#cores_per_socket: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="-32">#threads_per_core: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="-16">#sockets_reserved: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="-1.77636e-14">#cores_reserved: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="16">#cores_per_node: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="32">#tasks: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="48">#cpus_per_task: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="64">#l_sockets: array</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="78.5">Liste des sockets utilisés</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="101">-m_cores</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="115.5">Liste (masque) des cœurs</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="129.5">utilisés</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="152">#hardware: Hardware</text>
-    <rect style="fill: #ffffff" x="335" y="158" width="241" height="119"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="335" y="158" width="241" height="119"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="172">+getCore2Socket(core:int): int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="188">+getSocket2CoreMax(s:int): int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="204">+getSocket2CoreMin(s:int): int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="220">+getCore2Core(core:int): int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="236">+__set_attr()</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="250.5">Permet d'initialiser les</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="264.5">attributs une seule fois</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="455.5" y="-113.5">Describing tasks/threads, and</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="455.5" y="-99.5">sockets/cores used by them.</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="455.5" y="-85.5">Using Hardware</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="455.5" y="-71.5">specifications, but also</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="455.5" y="-57.5">numactl in the case of shared</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="455.5" y="-43.5">nodes</text>
+    <rect style="fill: #ffffff" x="335" y="-36" width="241" height="250"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="335" y="-36" width="241" height="250"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="-22">#sockets_per_node: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="-6">#cores_per_socket: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="10">#threads_per_core: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="26">#sockets_reserved: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="42">#cores_reserved: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="58">#cores_per_node: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="74">#tasks: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="90">#cpus_per_task: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="106">#l_sockets: array</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="120.5">A list: the usable sockets in</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="134.5">a shared node</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="157">-m_cores</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="171.5">A mask: the usable cores in</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="185.5">each socket, in a shared node</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="208">#hardware: Hardware</text>
+    <rect style="fill: #ffffff" x="335" y="214" width="241" height="147"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="335" y="214" width="241" height="147"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="228">+getCore2Socket(core:int): int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="244">+getCore2Core(core:int): int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="260">+getSocket2CoreMax(s:int): int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="276">+getSocket2CoreMin(s:int): int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="338" y="292">+__set_attr()</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="306.5">This setter lets you</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="320.5">initialize an attribute, but</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="334.5">only one time (no</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="338" y="348.5">modification possible)</text>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="47" y="437" width="238.1" height="42"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="47" y="437" width="238.1" height="42"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="166.05" y="456">Exclusive</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="166.05" y="471.5">Cas d'un nœud exclusif (pas de partage)</text>
-    <rect style="fill: #ffffff" x="47" y="479" width="238.1" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="47" y="479" width="238.1" height="8"/>
-    <rect style="fill: #ffffff" x="47" y="487" width="238.1" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="47" y="487" width="238.1" height="8"/>
+    <rect style="fill: #ffffff" x="211.811" y="442.045" width="231.55" height="56"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="211.811" y="442.045" width="231.55" height="56"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="327.586" y="461.045">Exclusive</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="327.586" y="476.545">The whole node is dedicated to the job,</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="327.586" y="490.545">we can use all resources</text>
+    <rect style="fill: #ffffff" x="211.811" y="498.045" width="231.55" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="211.811" y="498.045" width="231.55" height="8"/>
+    <rect style="fill: #ffffff" x="211.811" y="506.045" width="231.55" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="211.811" y="506.045" width="231.55" height="8"/>
   </g>
   <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="254" y="281">
     <tspan x="254" y="281"></tspan>
   </text>
   <g>
-    <rect style="fill: #ffffff" x="492" y="443" width="231.3" height="56"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="492" y="443" width="231.3" height="56"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="607.65" y="462">Shared</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="607.65" y="477.5">Cas où le nœud est partagé entre</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="607.65" y="491.5">utilisateurs</text>
-    <rect style="fill: #ffffff" x="492" y="499" width="231.3" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="492" y="499" width="231.3" height="8"/>
-    <rect style="fill: #ffffff" x="492" y="507" width="231.3" height="55"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="492" y="507" width="231.3" height="55"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="495" y="521">+__detectSockets()</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="495" y="535.5">Initialise l_sockets et m_cores à</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="495" y="549.5">partir de la commande numactl --show </text>
+    <rect style="fill: #ffffff" x="498.727" y="443" width="232.85" height="70"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="498.727" y="443" width="232.85" height="70"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="615.152" y="462">Shared</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="615.152" y="477.5">The node is shared between users/jobs,</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="615.152" y="491.5">so only several sockets/cores can be</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="615.152" y="505.5">used</text>
+    <rect style="fill: #ffffff" x="498.727" y="513" width="232.85" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="498.727" y="513" width="232.85" height="8"/>
+    <rect style="fill: #ffffff" x="498.727" y="521" width="232.85" height="55"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="498.727" y="521" width="232.85" height="55"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="501.727" y="535">+__detectSockets()</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="501.727" y="549.5">Initialising  l_sockets and m_cores</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="501.727" y="563.5">with numactl --show </text>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="455.5,296.243 455.5,368 607.65,368 607.65,441.993 "/>
-    <polygon style="fill: #ffffff" points="463.5,296.243 455.5,280.243 447.5,296.243 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="463.5,296.243 455.5,280.243 447.5,296.243 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="594.236,288 615.152,288 615.152,443 "/>
+    <polygon style="fill: #ffffff" points="594.236,280 578.236,288 594.236,296 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="594.236,280 578.236,288 594.236,296 "/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="20" y="-155" width="233.3" height="56"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="-155" width="233.3" height="56"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="136.65" y="-136">Hardware</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="136.65" y="-120.5">Décrit le hardware à partir d'un</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="136.65" y="-106.5">nom de machine (eosmesca1 etc)</text>
-    <rect style="fill: #ffffff" x="20" y="-99" width="233.3" height="100"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="-99" width="233.3" height="100"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="-85">+NAME: string</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="-69">+SOCKETS_PER_NODE: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="-53">+CORES_PER_SOCKET: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="-37">+HYPERTHREADING: boolean</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="-21">+THREADS_PER_CORE: int</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="-5">+IS_SHARED: boolean</text>
-    <rect style="fill: #ffffff" x="20" y="1" width="233.3" height="55"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="1" width="233.3" height="55"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="15">+Hardware.factory(): Hardware</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="23" y="29.5">Construit un objet de type</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="23" y="43.5">Hardware</text>
+    <rect style="fill: #ffffff" x="20" y="-106.42" width="233.3" height="84"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="-106.42" width="233.3" height="84"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="136.65" y="-87.4204">Hardware</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="136.65" y="-71.9204">Detect hardware specifications</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="136.65" y="-57.9204">from the hostname and from a</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="136.65" y="-43.9204">configuration file, or slurm.conf</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="136.65" y="-29.9204">as a last resort</text>
+    <rect style="fill: #ffffff" x="20" y="-22.4204" width="233.3" height="100"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="-22.4204" width="233.3" height="100"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="-8.42039">+NAME: string</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="7.57961">+SOCKETS_PER_NODE: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="23.5796">+CORES_PER_SOCKET: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="39.5796">+HYPERTHREADING: boolean</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="55.5796">+THREADS_PER_CORE: int</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="71.5796">+IS_SHARED: boolean</text>
+    <rect style="fill: #ffffff" x="20" y="77.5796" width="233.3" height="41"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="77.5796" width="233.3" height="41"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="23" y="91.5796">+Hardware.factory(): Hardware</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="23" y="106.08">Build a Hardware object</text>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="455.5,296.235 455.5,422 166.05,422 166.05,435.997 "/>
-    <polygon style="fill: #ffffff" points="463.5,296.235 455.5,280.235 447.5,296.235 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="463.5,296.235 455.5,280.235 447.5,296.235 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="455.5,379.236 455.5,422 327.586,422 327.586,441.04 "/>
+    <polygon style="fill: #ffffff" points="463.5,379.236 455.5,363.236 447.5,379.236 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="463.5,379.236 455.5,363.236 447.5,379.236 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="333.993,64.5 294.15,64.5 294.15,-49.5 254.307,-49.5 "/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="296.15" y="3.5"/>
-    <polygon style="fill: #000000" points="298.15,3.5 298.15,-4.5 306.15,-0.5 "/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:end;font-family:monospace;font-style:normal;font-weight:normal" x="329.993" y="60.5"/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="258.307" y="-53.5"/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="333.993,106.5 294.15,106.5 294.15,6.07961 254.307,6.07961 "/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="296.15" y="53.2898"/>
+    <polygon style="fill: #000000" points="298.15,53.2898 298.15,45.2898 306.15,49.2898 "/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:end;font-family:monospace;font-style:normal;font-weight:normal" x="329.993" y="103.5"/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="258.307" y="3.07961"/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="860.812" y="39.1272" width="235.6" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="860.812" y="39.1272" width="235.6" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="978.612" y="58.1272">TasksBinding</text>
-    <rect style="fill: #ffffff" x="860.812" y="67.1272" width="235.6" height="231"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="860.812" y="67.1272" width="235.6" height="231"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="863.812" y="81.1272">+archi: Architecture</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="863.812" y="95.6272">déterminée à partir du nom de la</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="863.812" y="109.627">machine, pour RunningMode aussi à</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="863.812" y="123.627">partir de la liste des processes</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="863.812" y="146.127">+tasks_bound: Array</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="863.812" y="160.627">tel process sur tels cœurs</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="863.812" y="183.127">+threads_bound: Array</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="863.812" y="197.627">tel thread sur tel cœur</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="863.812" y="220.127">+tasks: int</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="863.812" y="234.627">Nombre de tâches</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="863.812" y="257.127">+overlap: Array</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="863.812" y="271.627">Cœurs en overlap, utilisé seulement par</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="863.812" y="285.627">RunningMode</text>
-    <rect style="fill: #ffffff" x="860.812" y="298.127" width="235.6" height="52"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="860.812" y="298.127" width="235.6" height="52"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:italic;font-weight:700" x="863.812" y="312.127">+checkParameters()()</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:italic;font-weight:700" x="863.812" y="328.127">+distribTasks()()</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="863.812" y="344.127">#_checkParameters()</text>
+    <rect style="fill: #ffffff" x="816.312" y="72.2847" width="228.85" height="84"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="816.312" y="72.2847" width="228.85" height="84"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="930.737" y="91.2847">TasksBinding</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="930.737" y="106.785">Class encapsulating algorithms for</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="930.737" y="120.785">assigning cores and sockets to threads</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="930.737" y="134.785">and tasks, as well as data structures</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="930.737" y="148.785">describing those assignments</text>
+    <rect style="fill: #ffffff" x="816.312" y="156.285" width="228.85" height="210"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="816.312" y="156.285" width="228.85" height="210"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="819.312" y="170.285">+archi: Architecture</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="819.312" y="186.285">+tasks_bound: Array</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="819.312" y="200.785">A dictionary describing the</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="819.312" y="214.785">process-cores relationship</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="819.312" y="237.285">+threads_bound: Array</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="819.312" y="251.785">A dictionary describing the</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="819.312" y="265.785">threads-cores relationship</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="819.312" y="288.285">+tasks: int</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="819.312" y="302.785">Total Number of tasks in the node</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="819.312" y="325.285">+overlap: Array</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="819.312" y="339.785">Overlapping cores, used ONLY by</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="819.312" y="353.785">RunningMode</text>
+    <rect style="fill: #ffffff" x="816.312" y="366.285" width="228.85" height="52"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="816.312" y="366.285" width="228.85" height="52"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:italic;font-weight:700" x="819.312" y="380.285">+checkParameters()()</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:italic;font-weight:700" x="819.312" y="396.285">+distribTasks()()</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="819.312" y="412.285">#_checkParameters()</text>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="535.99" y="-258.33" width="164" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.99" y="-258.33" width="164" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="617.99" y="-239.33">ScatterGenMode</text>
-    <rect style="fill: #ffffff" x="535.99" y="-230.33" width="164" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.99" y="-230.33" width="164" height="8"/>
-    <rect style="fill: #ffffff" x="535.99" y="-222.33" width="164" height="20"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.99" y="-222.33" width="164" height="20"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="538.99" y="-208.33">+checkParameters()()</text>
+    <rect style="fill: #ffffff" x="286.923" y="-329.272" width="164" height="126"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="286.923" y="-329.272" width="164" height="126"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="368.923" y="-310.272">ScatterGenMode</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="368.923" y="-294.772">Threads and</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="368.923" y="-280.772">processes are</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="368.923" y="-266.772">spread out among</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="368.923" y="-252.772">sockets. A</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="368.923" y="-238.772">process cannot</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="368.923" y="-224.772">straddle two</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="368.923" y="-210.772">sockets</text>
+    <rect style="fill: #ffffff" x="286.923" y="-203.272" width="164" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="286.923" y="-203.272" width="164" height="8"/>
+    <rect style="fill: #ffffff" x="286.923" y="-195.272" width="164" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="286.923" y="-195.272" width="164" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="289.923" y="-181.272">+checkParameters()()</text>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="860.812,216.128 694.368,216.128 694.368,28 576,28 "/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="696.368" y="118.064"/>
-    <polygon style="fill: #000000" points="698.368,118.064 698.368,110.064 706.368,114.064 "/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:end;font-family:monospace;font-style:normal;font-weight:normal" x="856.812" y="212.128"/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="580" y="24"/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="816.312,284.285 694.368,284.285 694.368,70 576,70 "/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="696.368" y="174.142"/>
+    <polygon style="fill: #000000" points="698.368,174.142 698.368,166.142 706.368,170.142 "/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:end;font-family:monospace;font-style:normal;font-weight:normal" x="812.312" y="281.285"/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="580" y="67"/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,142.127 716.66,142.127 716.66,-212.33 699.99,-212.33 "/>
-    <polygon style="fill: #ffffff" points="842.576,150.127 858.576,142.127 842.576,134.127 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,150.127 858.576,142.127 842.576,134.127 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="797.119,245.285 712.848,245.285 712.848,3.95653 588.028,3.95653 588.028,-184.623 451.896,-184.623 "/>
+    <polygon style="fill: #ffffff" points="797.119,253.285 813.119,245.285 797.119,237.285 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="797.119,253.285 813.119,245.285 797.119,237.285 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,77.1272 776.738,77.1272 776.738,-285.856 708.665,-285.856 "/>
-    <polygon style="fill: #ffffff" points="842.576,85.1272 858.576,77.1272 842.576,69.1272 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="842.576,85.1272 858.576,77.1272 842.576,69.1272 "/>
-  </g>
-  <g>
-    <rect style="fill: #ffffff" x="798.802" y="-222.15" width="264.1" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="798.802" y="-222.15" width="264.1" height="28"/>
+    <rect style="fill: #ffffff" x="798.802" y="-222.15" width="264.1" height="56"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="798.802" y="-222.15" width="264.1" height="56"/>
     <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="930.852" y="-203.15">RunningMode</text>
-    <rect style="fill: #ffffff" x="798.802" y="-194.15" width="264.1" height="20"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="798.802" y="-194.15" width="264.1" height="20"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-180.15">-buildTasksBound: BuildTasksBound</text>
-    <rect style="fill: #ffffff" x="798.802" y="-174.15" width="264.1" height="152"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="798.802" y="-174.15" width="264.1" height="152"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-160.15">-IdentProcesses()</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="801.802" y="-145.65">Appelle ps et détermine la liste des</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="801.802" y="-131.65">processes</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-109.15">-buildArchi(): Architecture</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="801.802" y="-94.65">Construit l'architecture à partir de</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="801.802" y="-80.65">tasks_bound et des inofrmations de</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="801.802" y="-66.65">hardware</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-44.15">+checkParameters()()</text>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-28.15">+distribTasks()</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="930.852" y="-187.65">A TasksBinding useful for observing</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="930.852" y="-173.65">running jobs</text>
+    <rect style="fill: #ffffff" x="798.802" y="-166.15" width="264.1" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="798.802" y="-166.15" width="264.1" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-152.15">-buildTasksBound: BuildTasksBound</text>
+    <rect style="fill: #ffffff" x="798.802" y="-146.15" width="264.1" height="138"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="798.802" y="-146.15" width="264.1" height="138"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-132.15">-IdentProcesses()</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="801.802" y="-117.65">Calling ps to build the list of</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="801.802" y="-103.65">processes</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-81.15">-buildArchi(): Architecture</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="801.802" y="-66.65">Building the architecture from</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:italic;font-weight:normal" x="801.802" y="-52.65">task_bound and hardware configuration</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-30.15">+checkParameters()()</text>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="801.802" y="-14.15">+distribTasks()</text>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="978.612,19.8816 978.612,0.486906 930.852,0.486906 930.852,-21.1438 "/>
-    <polygon style="fill: #ffffff" points="970.612,19.8816 978.612,35.8816 986.612,19.8816 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="970.612,19.8816 978.612,35.8816 986.612,19.8816 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="930.737,53.0582 930.737,31.1748 930.852,31.1748 930.852,-7.14795 "/>
+    <polygon style="fill: #ffffff" points="922.737,53.0582 930.737,69.0582 938.737,53.0582 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="922.737,53.0582 930.737,69.0582 938.737,53.0582 "/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="810.806" y="-356.138" width="219.9" height="56"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="810.806" y="-356.138" width="219.9" height="56"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="920.756" y="-337.138">BuildTasksBound</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="920.756" y="-321.638">Objet-fonction servant à construire le</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="920.756" y="-307.638">tasks_bound</text>
-    <rect style="fill: #ffffff" x="810.806" y="-300.138" width="219.9" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="810.806" y="-300.138" width="219.9" height="8"/>
-    <rect style="fill: #ffffff" x="810.806" y="-292.138" width="219.9" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="810.806" y="-292.138" width="219.9" height="8"/>
+    <rect style="fill: #ffffff" x="820.83" y="-357.68" width="220.55" height="56"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="820.83" y="-357.68" width="220.55" height="56"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="931.105" y="-338.68">BuildTasksBound</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="931.105" y="-323.18">functor to build the tasks_bound data</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="931.105" y="-309.18">structure from a running job</text>
+    <rect style="fill: #ffffff" x="820.83" y="-301.68" width="220.55" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="820.83" y="-301.68" width="220.55" height="8"/>
+    <rect style="fill: #ffffff" x="820.83" y="-293.68" width="220.55" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="820.83" y="-293.68" width="220.55" height="8"/>
   </g>
   <g>
     <rect style="fill: #ffffff" x="1163.2" y="-421.838" width="229.25" height="56"/>
     <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1163.2" y="-421.838" width="229.25" height="56"/>
     <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1277.83" y="-402.838">BuildTasksBoundFromPs</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1277.83" y="-387.338">Objet-fonction, construit le</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1277.83" y="-373.338">tasks_bound en utilisant ps</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1277.83" y="-387.338">functor, building the tasks_bound data</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1277.83" y="-373.338">structure using ps</text>
     <rect style="fill: #ffffff" x="1163.2" y="-365.838" width="229.25" height="8"/>
     <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1163.2" y="-365.838" width="229.25" height="8"/>
     <rect style="fill: #ffffff" x="1163.2" y="-357.838" width="229.25" height="8"/>
     <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1163.2" y="-357.838" width="229.25" height="8"/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="1161.61" y="-313.539" width="278.1" height="56"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1161.61" y="-313.539" width="278.1" height="56"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1300.66" y="-294.539">BuildTasksBoundFromTaskSet</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1300.66" y="-279.039">Objet-fonction servant à construire le</text>
-    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1300.66" y="-265.039">tasks_bound</text>
-    <rect style="fill: #ffffff" x="1161.61" y="-257.539" width="278.1" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1161.61" y="-257.539" width="278.1" height="8"/>
-    <rect style="fill: #ffffff" x="1161.61" y="-249.539" width="278.1" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1161.61" y="-249.539" width="278.1" height="8"/>
+    <rect style="fill: #ffffff" x="1161.61" y="-320.686" width="278.1" height="70"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1161.61" y="-320.686" width="278.1" height="70"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1300.66" y="-301.686">BuildTasksBoundFromTaskSet</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1300.66" y="-286.186">functor, building the tasks_bound data</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1300.66" y="-272.186">structure using taskset</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="1300.66" y="-258.186">(DEPRECATED)</text>
+    <rect style="fill: #ffffff" x="1161.61" y="-250.686" width="278.1" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1161.61" y="-250.686" width="278.1" height="8"/>
+    <rect style="fill: #ffffff" x="1161.61" y="-242.686" width="278.1" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1161.61" y="-242.686" width="278.1" height="8"/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="920.756,-283.129 920.756,-253.143 930.852,-253.143 930.852,-223.156 "/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="925.804" y="-257.143"/>
-    <polygon style="fill: #000000" points="927.804,-257.143 927.804,-265.143 935.804,-261.143 "/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="924.756" y="-271.129"/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="934.852" y="-227.156"/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="931.105,-284.671 931.105,-253.914 930.852,-253.914 930.852,-223.157 "/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="930.979" y="-256.914"/>
+    <polygon style="fill: #000000" points="932.979,-256.914 932.979,-264.914 940.979,-260.914 "/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="935.105" y="-272.671"/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="934.852" y="-227.157"/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1049.95,-320.138 1104.95,-320.138 1104.95,-385.838 1162.2,-385.838 "/>
-    <polygon style="fill: #ffffff" points="1049.95,-328.138 1033.95,-320.138 1049.95,-312.138 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1049.95,-328.138 1033.95,-320.138 1049.95,-312.138 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1059.62,-285.68 1109.49,-285.68 1109.49,-285.686 1161.61,-285.686 "/>
+    <polygon style="fill: #ffffff" points="1059.62,-293.68 1043.62,-285.68 1059.62,-277.68 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1059.62,-293.68 1043.62,-285.68 1059.62,-277.68 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1049.95,-320.138 1104.15,-320.138 1104.15,-277.539 1160.6,-277.539 "/>
-    <polygon style="fill: #ffffff" points="1049.95,-328.138 1033.95,-320.138 1049.95,-312.138 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1049.95,-328.138 1033.95,-320.138 1049.95,-312.138 "/>
-  </g>
-  <g>
-    <rect style="fill: #ffffff" x="1232.07" y="160.748" width="225.6" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1232.07" y="160.748" width="225.6" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="1344.87" y="179.748">PrintingFor</text>
-    <rect style="fill: #ffffff" x="1232.07" y="188.748" width="225.6" height="20"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1232.07" y="188.748" width="225.6" height="20"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="1235.07" y="202.748">#tasks_binding: TasksBinding</text>
-    <rect style="fill: #ffffff" x="1232.07" y="208.748" width="225.6" height="20"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1232.07" y="208.748" width="225.6" height="20"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="1235.07" y="222.748">+str(): string</text>
-  </g>
-  <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1097.42,194.627 1164.24,194.627 1164.24,194.748 1231.07,194.748 "/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="1166.24" y="190.688"/>
-    <polygon style="fill: #000000" points="1168.24,190.688 1168.24,182.688 1176.24,186.688 "/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="1101.42" y="190.627"/>
-    <text font-size="12.7998" style="fill: #000000;text-anchor:end;font-family:monospace;font-style:normal;font-weight:normal" x="1227.07" y="190.748"/>
+    <rect style="fill: #ffffff" x="1231.1" y="168.415" width="225.6" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1231.1" y="168.415" width="225.6" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:700" x="1343.9" y="187.415">PrintingFor</text>
+    <rect style="fill: #ffffff" x="1231.1" y="196.415" width="225.6" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1231.1" y="196.415" width="225.6" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="1234.1" y="210.415">#tasks_binding: TasksBinding</text>
+    <rect style="fill: #ffffff" x="1231.1" y="216.415" width="225.6" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1231.1" y="216.415" width="225.6" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="1234.1" y="230.415">+str(): string</text>
   </g>
   <g>
     <rect style="fill: #ffffff" x="1165.62" y="331.654" width="153.95" height="28"/>
@@ -252,36 +256,36 @@
     <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1165.62" y="367.654" width="153.95" height="8"/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1213.84,218.748 1143.61,218.748 1143.61,353.654 1164.61,353.654 "/>
-    <polygon style="fill: #ffffff" points="1213.84,226.748 1229.84,218.748 1213.84,210.748 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1213.84,226.748 1229.84,218.748 1213.84,210.748 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1212.86,206.415 1143.61,206.415 1143.61,353.654 1164.61,353.654 "/>
+    <polygon style="fill: #ffffff" points="1212.86,214.415 1228.86,206.415 1212.86,198.415 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1212.86,214.415 1228.86,206.415 1212.86,198.415 "/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="1438.2" y="333.57" width="175.4" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1438.2" y="333.57" width="175.4" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1525.9" y="352.57">PrintingForHuman</text>
-    <rect style="fill: #ffffff" x="1438.2" y="361.57" width="175.4" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1438.2" y="361.57" width="175.4" height="8"/>
-    <rect style="fill: #ffffff" x="1438.2" y="369.57" width="175.4" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1438.2" y="369.57" width="175.4" height="8"/>
+    <rect style="fill: #ffffff" x="1444.03" y="333.57" width="175.4" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1444.03" y="333.57" width="175.4" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1531.73" y="352.57">PrintingForHuman</text>
+    <rect style="fill: #ffffff" x="1444.03" y="361.57" width="175.4" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1444.03" y="361.57" width="175.4" height="8"/>
+    <rect style="fill: #ffffff" x="1444.03" y="369.57" width="175.4" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1444.03" y="369.57" width="175.4" height="8"/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="1449.42" y="89.9222" width="182.1" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1449.42" y="89.9222" width="182.1" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1540.47" y="108.922">PrintingForAsciiArt</text>
-    <rect style="fill: #ffffff" x="1449.42" y="117.922" width="182.1" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1449.42" y="117.922" width="182.1" height="8"/>
-    <rect style="fill: #ffffff" x="1449.42" y="125.922" width="182.1" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1449.42" y="125.922" width="182.1" height="8"/>
+    <rect style="fill: #ffffff" x="1438.39" y="89.9222" width="182.1" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1438.39" y="89.9222" width="182.1" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1529.44" y="108.922">PrintingForAsciiArt</text>
+    <rect style="fill: #ffffff" x="1438.39" y="117.922" width="182.1" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1438.39" y="117.922" width="182.1" height="8"/>
+    <rect style="fill: #ffffff" x="1438.39" y="125.922" width="182.1" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1438.39" y="125.922" width="182.1" height="8"/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="1251.82" y="400.6" width="186.65" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1251.82" y="400.6" width="186.65" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1345.15" y="419.6">PrintingForNumactl</text>
-    <rect style="fill: #ffffff" x="1251.82" y="428.6" width="186.65" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1251.82" y="428.6" width="186.65" height="8"/>
-    <rect style="fill: #ffffff" x="1251.82" y="436.6" width="186.65" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1251.82" y="436.6" width="186.65" height="8"/>
+    <rect style="fill: #ffffff" x="1250.45" y="400.6" width="186.65" height="28"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1250.45" y="400.6" width="186.65" height="28"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1343.77" y="419.6">PrintingForNumactl</text>
+    <rect style="fill: #ffffff" x="1250.45" y="428.6" width="186.65" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1250.45" y="428.6" width="186.65" height="8"/>
+    <rect style="fill: #ffffff" x="1250.45" y="436.6" width="186.65" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1250.45" y="436.6" width="186.65" height="8"/>
   </g>
   <g>
     <rect style="fill: #ffffff" x="1222.59" y="30.4532" width="242.6" height="28"/>
@@ -293,93 +297,126 @@
     <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1222.59" y="66.4532" width="242.6" height="8"/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1344.87,247.993 1344.87,322.675 1345.15,322.675 1345.15,399.594 "/>
-    <polygon style="fill: #ffffff" points="1352.87,247.993 1344.87,231.993 1336.87,247.993 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1352.87,247.993 1344.87,231.993 1336.87,247.993 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1343.9,255.66 1343.9,326.509 1343.77,326.509 1343.77,399.594 "/>
+    <polygon style="fill: #ffffff" points="1351.9,255.66 1343.9,239.66 1335.9,255.66 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1351.9,255.66 1343.9,239.66 1335.9,255.66 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1475.91,218.748 1525.9,218.748 1525.9,333.57 "/>
-    <polygon style="fill: #ffffff" points="1475.91,210.748 1459.91,218.748 1475.91,226.748 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1475.91,210.748 1459.91,218.748 1475.91,226.748 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1474.94,226.415 1531.73,226.415 1531.73,333.57 "/>
+    <polygon style="fill: #ffffff" points="1474.94,218.415 1458.94,226.415 1474.94,234.415 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1474.94,218.415 1458.94,226.415 1474.94,234.415 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1476.92,194.748 1540.47,194.748 1540.47,133.922 "/>
-    <polygon style="fill: #ffffff" points="1476.92,186.748 1460.92,194.748 1476.92,202.748 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1476.92,186.748 1460.92,194.748 1476.92,202.748 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1475.94,202.415 1529.44,202.415 1529.44,133.922 "/>
+    <polygon style="fill: #ffffff" points="1475.94,194.415 1459.94,202.415 1475.94,210.415 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1475.94,194.415 1459.94,202.415 1475.94,210.415 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1344.87,141.503 1344.87,109.096 1343.89,109.096 1343.89,74.4532 "/>
-    <polygon style="fill: #ffffff" points="1336.87,141.503 1344.87,157.503 1352.87,141.503 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1336.87,141.503 1344.87,157.503 1352.87,141.503 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1343.9,149.171 1343.9,112.93 1343.89,112.93 1343.89,74.4532 "/>
+    <polygon style="fill: #ffffff" points="1335.9,149.171 1343.9,165.171 1351.9,149.171 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1335.9,149.171 1343.9,165.171 1351.9,149.171 "/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="334.318" y="-290.417" width="125.5" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="334.318" y="-290.417" width="125.5" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="397.068" y="-271.417">ScatterMode</text>
-    <rect style="fill: #ffffff" x="334.318" y="-262.417" width="125.5" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="334.318" y="-262.417" width="125.5" height="8"/>
-    <rect style="fill: #ffffff" x="334.318" y="-254.417" width="125.5" height="20"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="334.318" y="-254.417" width="125.5" height="20"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="337.318" y="-240.417">+distribTasks()</text>
+    <rect style="fill: #ffffff" x="22.0205" y="-420.733" width="173.9" height="112"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="22.0205" y="-420.733" width="173.9" height="112"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="108.971" y="-401.733">ScatterBlockMode</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="108.971" y="-386.233">Cores are</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="108.971" y="-372.233">distributed to</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="108.971" y="-358.233">processes using</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="108.971" y="-344.233">a sockets</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="108.971" y="-330.233">round-robin</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="108.971" y="-316.233">algorithm </text>
+    <rect style="fill: #ffffff" x="22.0205" y="-308.733" width="173.9" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="22.0205" y="-308.733" width="173.9" height="8"/>
+    <rect style="fill: #ffffff" x="22.0205" y="-300.733" width="173.9" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="22.0205" y="-300.733" width="173.9" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="25.0205" y="-286.733">+distribTasks()</text>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="331.821" y="-219.91" width="150.6" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="331.821" y="-219.91" width="150.6" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="407.121" y="-200.91">ScatterAltMode</text>
-    <rect style="fill: #ffffff" x="331.821" y="-191.91" width="150.6" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="331.821" y="-191.91" width="150.6" height="8"/>
-    <rect style="fill: #ffffff" x="331.821" y="-183.91" width="150.6" height="20"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="331.821" y="-183.91" width="150.6" height="20"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="334.821" y="-169.91">+distribTasks()</text>
+    <rect style="fill: #ffffff" x="14.8979" y="-276.201" width="177.25" height="98"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="14.8979" y="-276.201" width="177.25" height="98"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="103.523" y="-257.201">ScatterCyclicMode</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="103.523" y="-241.701">Cores are</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="103.523" y="-227.701">assigned to</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="103.523" y="-213.701">processes in</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="103.523" y="-199.701">inceasing</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="103.523" y="-185.701">sockets numbers</text>
+    <rect style="fill: #ffffff" x="14.8979" y="-178.201" width="177.25" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="14.8979" y="-178.201" width="177.25" height="8"/>
+    <rect style="fill: #ffffff" x="14.8979" y="-170.201" width="177.25" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="14.8979" y="-170.201" width="177.25" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="17.8979" y="-156.201">+distribTasks()</text>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.752,-230.33 506.018,-230.33 506.018,-262.417 460.813,-262.417 "/>
-    <polygon style="fill: #ffffff" points="516.752,-222.33 532.752,-230.33 516.752,-238.33 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.752,-222.33 532.752,-230.33 516.752,-238.33 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="267.707,-252.272 259.88,-252.272 259.88,-213.201 193.077,-213.201 "/>
+    <polygon style="fill: #ffffff" points="267.707,-244.272 283.707,-252.272 267.707,-260.272 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="267.707,-244.272 283.707,-252.272 267.707,-260.272 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.858,-230.33 505.856,-230.33 505.856,-191.91 483.414,-191.91 "/>
-    <polygon style="fill: #ffffff" points="516.858,-222.33 532.858,-230.33 516.858,-238.33 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.858,-222.33 532.858,-230.33 516.858,-238.33 "/>
+    <rect style="fill: #ffffff" x="594.639" y="-251.661" width="173.4" height="112"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="594.639" y="-251.661" width="173.4" height="112"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="681.339" y="-232.661">CompactGenMode</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="681.339" y="-217.161">Threads and</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="681.339" y="-203.161">processes are</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="681.339" y="-189.161">affected core by</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="681.339" y="-175.161">core, ignoring</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="681.339" y="-161.161">sockets</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="681.339" y="-147.161">boundaries</text>
+    <rect style="fill: #ffffff" x="594.639" y="-139.661" width="173.4" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="594.639" y="-139.661" width="173.4" height="8"/>
+    <rect style="fill: #ffffff" x="594.639" y="-131.661" width="173.4" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="594.639" y="-131.661" width="173.4" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="597.639" y="-117.661">+checkParameters()()</text>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="535.265" y="-331.856" width="173.4" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.265" y="-331.856" width="173.4" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="621.965" y="-312.856">CompactGenMode</text>
-    <rect style="fill: #ffffff" x="535.265" y="-303.856" width="173.4" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.265" y="-303.856" width="173.4" height="8"/>
-    <rect style="fill: #ffffff" x="535.265" y="-295.856" width="173.4" height="20"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="535.265" y="-295.856" width="173.4" height="20"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="538.265" y="-281.856">+checkParameters()()</text>
+    <rect style="fill: #ffffff" x="601.374" y="-422.516" width="212.4" height="112"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="601.374" y="-422.516" width="212.4" height="112"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="707.574" y="-403.516">CompactPhysicalMode</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="707.574" y="-388.016">Two processes</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="707.574" y="-374.016">can share the</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="707.574" y="-360.016">same physical</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="707.574" y="-346.016">core if</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="707.574" y="-332.016">hyperthreading</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="707.574" y="-318.016">is used</text>
+    <rect style="fill: #ffffff" x="601.374" y="-310.516" width="212.4" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="601.374" y="-310.516" width="212.4" height="8"/>
+    <rect style="fill: #ffffff" x="601.374" y="-302.516" width="212.4" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="601.374" y="-302.516" width="212.4" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="604.374" y="-288.516">+distribTasks()</text>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="577.469" y="-420.973" width="212.4" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="577.469" y="-420.973" width="212.4" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="683.669" y="-401.973">CompactPhysicalMode</text>
-    <rect style="fill: #ffffff" x="577.469" y="-392.973" width="212.4" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="577.469" y="-392.973" width="212.4" height="8"/>
-    <rect style="fill: #ffffff" x="577.469" y="-384.973" width="212.4" height="20"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="577.469" y="-384.973" width="212.4" height="20"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="580.469" y="-370.973">+distribTasks()</text>
+    <rect style="fill: #ffffff" x="458.076" y="-420.712" width="138" height="84"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="458.076" y="-420.712" width="138" height="84"/>
+    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="527.076" y="-401.712">CompactMode</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="527.076" y="-386.212">Two processes</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="527.076" y="-372.212">cannot share the</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="527.076" y="-358.212">same physical</text>
+    <text font-size="11.2" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:italic;font-weight:normal" x="527.076" y="-344.212">core</text>
+    <rect style="fill: #ffffff" x="458.076" y="-336.712" width="138" height="8"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="458.076" y="-336.712" width="138" height="8"/>
+    <rect style="fill: #ffffff" x="458.076" y="-328.712" width="138" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="458.076" y="-328.712" width="138" height="20"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="461.076" y="-314.712">+distribTasks()</text>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="425.691" y="-419.17" width="138" height="28"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="425.691" y="-419.17" width="138" height="28"/>
-    <text font-size="16" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="494.691" y="-400.17">CompactMode</text>
-    <rect style="fill: #ffffff" x="425.691" y="-391.17" width="138" height="8"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="425.691" y="-391.17" width="138" height="8"/>
-    <rect style="fill: #ffffff" x="425.691" y="-383.17" width="138" height="20"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="425.691" y="-383.17" width="138" height="20"/>
-    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="428.691" y="-369.17">+distribTasks()</text>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="681.339,-269.897 681.339,-277.713 707.574,-277.713 707.574,-282.516 "/>
+    <polygon style="fill: #ffffff" points="673.339,-269.897 681.339,-253.897 689.339,-269.897 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="673.339,-269.897 681.339,-253.897 689.339,-269.897 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="727.906,-303.856 789.869,-303.856 789.869,-364.973 "/>
-    <polygon style="fill: #ffffff" points="727.906,-311.856 711.906,-303.856 727.906,-295.856 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="727.906,-311.856 711.906,-303.856 727.906,-295.856 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="576.403,-251.661 527.723,-251.661 527.723,-308.712 527.076,-308.712 "/>
+    <polygon style="fill: #ffffff" points="576.403,-243.661 592.403,-251.661 576.403,-259.661 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="576.403,-243.661 592.403,-251.661 576.403,-259.661 "/>
+  </g>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1045.16" y1="182.285" x2="1231.1" y2="182.415"/>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="268.687,-329.272 263.528,-329.272 263.528,-364.733 195.921,-364.733 "/>
+    <polygon style="fill: #ffffff" points="268.687,-321.272 284.687,-329.272 268.687,-337.272 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="268.687,-321.272 284.687,-329.272 268.687,-337.272 "/>
   </g>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.024,-303.856 425.691,-303.856 425.691,-363.17 "/>
-    <polygon style="fill: #ffffff" points="516.024,-295.856 532.024,-303.856 516.024,-311.856 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="516.024,-295.856 532.024,-303.856 516.024,-311.856 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1059.62,-329.68 1124.71,-329.68 1124.71,-393.838 1163.2,-393.838 "/>
+    <polygon style="fill: #ffffff" points="1059.62,-337.68 1043.62,-329.68 1059.62,-321.68 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1059.62,-337.68 1043.62,-329.68 1059.62,-321.68 "/>
   </g>
 </svg>

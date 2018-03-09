@@ -1,13 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-from running import *
-from matrix import *
-from utilities import *
-from exception import *
-from itertools import chain,product
-
 #
 # This file is part of PLACEMENT software
 # PLACEMENT helps users to bind their processes to one or more cpu-cores
@@ -17,7 +10,7 @@ from itertools import chain,product
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
 #  PLACEMENT is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -31,6 +24,12 @@ from itertools import chain,product
 #        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
 #
 
+import os
+from running import *
+from matrix import *
+from utilities import *
+from exception import *
+from itertools import chain,product
 
 class PrintingFor(object):
     """ Base class, all PrintingFor classes extend this class
@@ -131,7 +130,7 @@ class PrintingForAsciiArt(PrintingFor):
 
     def __str__(self):
         if self._tasks_binding.tasks > 66:
-            return "OUPS - AsciiArt representation unsupported if more than 66 tasks !"
+            return "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
         else:
             return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
 
@@ -209,7 +208,7 @@ class PrintingForIntelAff(PrintingFor):
 
     def __str__(self):
         if len(self._tasks_binding.tasks_bound) > 1:
-            return "OUPS - KMP_Affinity representation impossible if more than 1 task !"
+            return "ERROR - KMP_Affinity representation impossible if more than 1 task !"
         else:
             rvl  = 'export KMP_AFFINITY="granularity=fine,explicit,proclist=';
             rvl += self.__getCpuBinding(self._tasks_binding.tasks_bound);
@@ -237,7 +236,7 @@ class PrintingForGnuAff(PrintingFor):
 
     def __str__(self):
         if len(self._tasks_binding.tasks_bound) > 1:
-            return "OUPS - Gnu_Affinity representation impossible if more than 1 task !"
+            return "ERROR - Gnu_Affinity representation impossible if more than 1 task !"
         else:
             rvl  = 'export GOMP_CPU_AFFINITY="';
             rvl += self.__getCpuBinding(self._tasks_binding.tasks_bound);
@@ -275,22 +274,24 @@ class PrintingForNumactl(PrintingFor):
 class PrintingForMatrixThreads(PrintingFor):
     """ Printing the (running) threads in a matrix """
 
-    __print_only_running_threads = False
-    __sorted_threads_cores       = False
-    __sorted_processes_cores     = False
-    __print_numamem              = False
+    __show_idle              = False
+    __sorted_threads_cores   = False
+    __sorted_processes_cores = False
+    __print_numamem          = False
     def SortedThreadsCores(self):
         self.__sorted_threads_cores = True
     def SortedProcessesCores(self):
         self.__sorted_processes_cores = True
-    def PrintOnlyRunningThreads(self):
-        self.__print_only_running_threads = True
-    def PrintNumamem(self,hide_small_memory):
+    def ShowIdleThreads(self):
+        self.__show_idle = True
+    # mem_proc if True, display memory occupation/sockets relative to the process memory
+    #          if False, display memory occupation/sockets relative to the socket memory
+    def PrintNumamem(self,mem_proc):
         self.__print_numamem = True
-        self.__hide_small_memory = hide_small_memory
+        self.__mem_proc = mem_proc
     def __str__(self):
         if self._tasks_binding.tasks > 66:
-            return "OUPS - Représentation des threads impossible pour plus de 66 tâches !"
+            return "ERROR - Threads representation is not supported if more thant 66 tasks !"
         else:
             return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.threads_bound)
 
@@ -335,12 +336,7 @@ class PrintingForMatrixThreads(PrintingFor):
         rvl = ''
         rvl += m.getHeader()
 
-        # If wanted, print 1 line concerning memory allocation on the sockets
-        if self.__print_numamem:
-            sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
-            rvl += m.getNumamem(sockets_mem,self.__hide_small_memory)
-
-        # Prnt a second header line
+        # Print a second header line
         rvl += m.getHeader1()
 
         # Printing the body
@@ -360,7 +356,7 @@ class PrintingForMatrixThreads(PrintingFor):
                 sorted_threads = sorted(threads.iteritems())
 
             for (tid,thr) in sorted_threads:
-                if self.__print_only_running_threads and threads[tid]['state'] != 'R':
+                if not self.__show_idle and threads[tid]['state'] != 'R':
                     continue
                 if thr['state'] == 'R':
                     S = l
@@ -373,6 +369,12 @@ class PrintingForMatrixThreads(PrintingFor):
                 else:
                     rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'])
 
+        # If wanted, print 1 line / process about memory allocation
+        if self.__print_numamem:
+            sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
+            rvl += "\n"
+            rvl += m.getNumamem(sockets_mem,self.__mem_proc)
+            
         return rvl
 
 

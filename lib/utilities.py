@@ -1,13 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-import copy
-import re
-import subprocess
-from exception import *
-from itertools import chain,product
-
 #
 # This file is part of PLACEMENT software
 # PLACEMENT helps users to bind their processes to one or more cpu-cores
@@ -17,7 +10,7 @@ from itertools import chain,product
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
 #  PLACEMENT is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -30,7 +23,12 @@ from itertools import chain,product
 #        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
 #        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
 #
-
+import os
+import copy
+import re
+import subprocess
+from exception import *
+from itertools import chain,product
 
 def removeBlanks(L):
     """ remove the blanks from list of strings passed by parameters"""
@@ -46,7 +44,7 @@ def numTaskToLetter(n):
     """ Return a single letter (A-Z-a-z0-9) from a (task) number (0..66) """
 
     if n<0 or n>66:
-        raise PlacementException("ERREUR INTERNE - Si plus de 62 tâches, utilisez getCpuTaskAsciiBinding")
+        raise PlacementException("INTERNAL ERROR - If more than 66 tasks, please use getCpuTaskAsciiBinding")
     if n<26:
         return chr(65+n)   # A..Z
     if n<52:
@@ -118,7 +116,7 @@ def getHostname():
 
         # If error, it is a Fatal Error !!!
         if p.returncode !=0:
-            msg = "OUPS "
+            msg = "ERROR - "
             msg += "/bin/hostname -s returned an error !"
             raise PlacementException(msg)
         else:
@@ -180,7 +178,7 @@ def computeCpusTasksFromEnv(options,args):
                 print msg
                 print 
         else:
-            msg =  "OUPS - Placement not supported in this configuration:\n"
+            msg =  "ERROR - Placement not supported in this configuration:\n"
             msg += "       SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node
             raise PlacementException(msg)
 
@@ -205,6 +203,20 @@ def computeCpusTasksFromEnv(options,args):
 
     # Returning computing values
     return [cpus_per_task,tasks]
+
+
+def mem2Slice(mem,mem_slice):
+    """Compute a slice number from mem and mem per slice (two floats) - 
+       Do not use integer arithmetic because we have sometimes little numbers"""
+       
+    if mem_slice == 0:
+        return 0
+
+    s = int(mem/mem_slice)
+    if mem-s*mem_slice >= mem_slice/2:
+        s += 1
+    return s
+                        
 
 def bold():
     return '\033[1m'

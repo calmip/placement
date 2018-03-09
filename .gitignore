@@ -15,7 +15,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# We have a lib subdirectory, please do not ignore it !
+# lib/
 lib64/
 parts/
 sdist/

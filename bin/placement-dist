@@ -1,0 +1,160 @@
+#! /bin/bash
+
+#
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu-cores
+#
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
+
+# We need python 2.7 BUT placement DOES NOT WORK (yet) WITH PYTHON 3
+
+# The following may be necessary or not, it depends on your installation
+version=$(python --version 2>&1)
+if [[ "$version" =~ "2.6" ]]
+then
+	module purge >/dev/null 2>&1
+	module load python/2.7.6 >/dev/null 2>&1
+fi
+
+# The python executable
+PYTHON=python
+
+# The PLACEMENT_ROOT env variable (should be correctly set by the install script)
+export PLACEMENT_ROOT=PROOT
+
+# The PYTHONPATH env variable
+export PYTHONPATH=$PLACEMENT_ROOT/lib:$PYTHONPATH
+
+# Path to the placement.py python program
+PLACEMENTPY=$PLACEMENT_ROOT/lib/placement.py
+
+# ================ The following should not be changed =====================
+
+# verbose !
+if [[ "$*" =~ "--verb" ]]
+then
+	verb=1
+else
+	verb=0
+fi
+
+# --checkme => We check the first job in state "RUNNING"
+if [[ $1 == "--checkme" ]]
+then
+	shift
+	jobid=$(squeue --noheader -u $(whoami) -t R -o %A|head -1)
+	if [[ $jobid == "" ]]
+	then
+		echo "ERROR - --checkme is a nonsense if you do not have any running job !"
+		exit 1
+	fi
+	if [[ $verb == 1 ]]
+	then
+		echo "OPTION --checkme: Now checking job $jobid for user $(whoami)"
+	fi
+	set -- $* "--check=$(whoami)"
+fi
+	
+# --jobid 12345 => Checking the job nb 12345
+if [[ $1 == "--jobid" ]]
+then
+	shift
+	jobid=$1
+	shift
+fi
+
+# --host taratata => Checking the host called taratata
+if [[ $1 == "--host" ]]
+then
+	shift
+	host=$1
+	shift
+fi
+
+# If checking a jobid, try to detect the corresponding node names
+# This works only with slurm !
+if [[ $jobid != "" ]]
+then
+	# The following returns something like <partition_name>@<node_name>[570-572]@ <user_name>
+	# Example: exclusive@eoscomp[570-572]@ toto
+    PN=$( squeue -j $jobid --noheader -o "%.9P@%.16R@%.8u" )
+	if [[ $? != 0 || $PN == "" ]]
+    then
+		echo "ERROR - Bad jobid ! ($jobid)"
+		exit 1
+	fi
+
+	[[ $PN =~ (.*)@(.*)@(.*) ]]
+
+	# P = partition, N = nodeset
+	P=${BASH_REMATCH[1]}
+	N=${BASH_REMATCH[2]}
+	U=${BASH_REMATCH[3]}
+
+	if [[ $N =~ \(.*\) ]] 
+	then
+       echo "ERROR - Bad jobid ! ($jobid)"
+	   exit 1
+	fi
+
+	for n in $(nodeset -e $N)
+	do
+		if [[ $verb == 1 ]]
+		then
+			echo "$n: CALLING $0 --check $U $*"
+		fi
+		# Force the partition, check all processes belonging to user on the node $n
+		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check $U $*
+
+		# Checking ONLY FIRST NODE, we consider that all nodes behave the same
+		break		
+	done
+
+# --host: Sending the command on the requested hosts
+elif [[ $host != "" ]]
+then
+	for n in $(nodeset -e $host)
+	do
+		# The following returns only the partition name
+		# exclusive
+		P=$(squeue --noheader -w $n -o "%.9P"|head -1)
+		if [[ $P == "" ]]
+		then
+			echo "ERROR - No job on $n yet"
+		fi
+		if [[ $verb == 1 ]]
+		then
+			echo "$n: CALLING $0 $*"
+		fi
+		# Force the partition, check all processes runnning on the node $n
+		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check ALL $*
+	done
+
+# The switches --jobid, --host --checkme should be specified FIRST
+else
+	if [[ "$*" =~ --jobid || "$*" =~ --host || "$*" =~ --checkme ]]
+	then
+       echo "Usage: placement [--jobid 12345] [--host totocomp[1-5]] [--checkme] [other_options]"
+       echo "ERROR - --jobid, --host and --checkme should be the FIRST OPTION specified"
+	   exit 1
+	else
+	   exec $PLACEMENTPY $*
+	fi
+fi
