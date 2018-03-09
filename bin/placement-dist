@@ -36,12 +36,14 @@ fi
 # The python executable
 PYTHON=python
 
-# The pythonpath env variable
-#dir=$(dirname $0)
-#export PYTHONPATH=$(cd $dir;cd ../lib/placement; pwd -P):${PYTHONPATH-}
-# The installation script will write the correct pathes !
-export PYTHONPATH=PLACEMENT_ROOT/lib:$PYTHONPATH
-PLACEMENTPY=PLACEMENT_ROOT/lib/placement.py
+# The PLACEMENT_ROOT env variable (should be correctly set by the install script)
+export PLACEMENT_ROOT=PROOT
+
+# The PYTHONPATH env variable
+export PYTHONPATH=$PLACEMENT_ROOT/lib:$PYTHONPATH
+
+# Path to the placement.py python program
+PLACEMENTPY=$PLACEMENT_ROOT/lib/placement.py
 
 # ================ The following should not be changed =====================
 

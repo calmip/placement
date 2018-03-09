@@ -18,7 +18,13 @@ function Usage {
 # Install top directory defaults to home directory
 PLACEMENT_ROOT=${2-$(cd; pwd -P)}/placement
 
-echo PLACEMENT_ROOT=$PLACEMENT_ROOT
+echo "placement will be installed inside the directory: " $PLACEMENT_ROOT
+read -p "Are you OK (Y/N) ?"
+if [ "$REPLY" != "Y" ] 
+then
+    echo "Cancelled"; 
+    exit 1; 
+fi
 
 BIN="$PLACEMENT_ROOT/bin"
 LIB="$PLACEMENT_ROOT/lib"
@@ -46,17 +52,47 @@ chmod -R a=rX,u+w $LIB $BIN $ETC
 chmod a+rx $BIN/placement-dist $LIB/placement.py
 
 # edit placement-dist 
-sed -i -e "s!PLACEMENT_ROOT!$PLACEMENT_ROOT!" $BIN/placement-dist
+sed -i -e "s!PROOT!$PLACEMENT_ROOT!" $BIN/placement-dist
 
-echo "That's all for me, folks !"
 echo
+# Do we have numastat ?
+NUMASTAT=$(which numastat)
+if [ "$NUMASTAT" = "" ]
+then
+    echo "numastat is NOT installed on this machine. The switch --memory will NOT be available"
+else
+    echo "Found numastat = $NUMASTAT"
+fi
+
+# Do we have squeue or nodeset ?
+SQUEUE=$(which squeue)
+if [ "$SQUEUE" = "" ]
+then
+    echo "squeue is NOT installed on this machine. The switch --check, --checkme will NOT be available"
+else
+    echo "Found squeue   = $SQUEUE"
+fi
+
+# Do we have squeue or nodeset ?
+NODESET=$(which nodeset)
+if [ "$NODESET" = "" ]
+then
+    echo "nodeset is NOT installed on this machine. The switch --check, --checkme will NOT be available"
+else
+    echo "Found nodeset = $NODESET"
+fi
+echo
+echo "==========================="   
+echo "That's all for me, folks ! "
+echo "==========================="
+
 echo "Now, you should do: "
-echo "     cp $BIN/placement-dist /directory/of/the/path/placement"
-echo "     chmod a+rx /directory/of/the/path/placement"
-echo "     EDIT THE FILE to be sure all is OK (the python version for example)"
+echo "     cp $BIN/placement-dist /bin/directory/placement"
+echo "     chmod a+rx /bin/directory/placement"
+echo "     edit /bin/directory/placement to be sure all is OK (the python version for example)"
 echo ""
 echo "     cp $ETC/placement.conf-dist $ETC/placement.conf"
-echo "     EDIT THE FILE to configure placement"
+echo "     edit $ETC/placement.conf to configure placement"
 
 
 
