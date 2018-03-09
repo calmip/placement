@@ -129,7 +129,7 @@ def main():
     parser.add_argument('nbthreads', metavar='cpus_per_tasks',nargs='?',default=-1 ) 
     parser.add_argument("-T","--hyper",action="store_true",default=False,dest="hyper",help='Force use of hyperthreading (False)')
     parser.add_argument("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (False)")
-    parser.add_argument("-M","--mode",choices=["compact","scatter","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter, scatter_cyclic (same as scatter),scatter_block, compact (scatter_cyclic)")
+    parser.add_argument("-M","--mode",choices=["compact","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter_cyclic,scatter_block, compact (scatter_cyclic)")
 #    parser.add_argument("--relax",action="store_true",default=False,help="DO NOT USE unless you know what you are doing")
     parser.add_argument("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable")
     parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
@@ -143,7 +143,7 @@ def main():
     parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, should be used with --numactl. EXPERIMENTAL")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus (default if check specified)")
-    parser.add_argument("-r","--only_running",action="store_true",default=False,help="With --threads: show ONLY running threads")
+    parser.add_argument("-i","--show_idle",action="store_true",default=False,help="With --threads: show idle threads, not only running")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
     parser.add_argument("-Y","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
@@ -275,8 +275,8 @@ def buildOutputs(options,tasks_binding):
     # Only with --check: print a bind matrix
     if options.check!=None and options.threads==True:
         o = PrintingForMatrixThreads(tasks_binding)
-        if options.only_running == True:
-            o.PrintOnlyRunningThreads()
+        if options.show_idle == True:
+            o.ShowIdleThreads()
         if options.memory == True:
             o.PrintNumamem(options.mem_proc)
         if options.sorted_threads_cores == True:

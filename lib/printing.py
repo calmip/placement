@@ -274,16 +274,16 @@ class PrintingForNumactl(PrintingFor):
 class PrintingForMatrixThreads(PrintingFor):
     """ Printing the (running) threads in a matrix """
 
-    __print_only_running_threads = False
-    __sorted_threads_cores       = False
-    __sorted_processes_cores     = False
-    __print_numamem              = False
+    __show_idle              = False
+    __sorted_threads_cores   = False
+    __sorted_processes_cores = False
+    __print_numamem          = False
     def SortedThreadsCores(self):
         self.__sorted_threads_cores = True
     def SortedProcessesCores(self):
         self.__sorted_processes_cores = True
-    def PrintOnlyRunningThreads(self):
-        self.__print_only_running_threads = True
+    def ShowIdleThreads(self):
+        self.__show_idle = True
     # mem_proc if True, display memory occupation/sockets relative to the process memory
     #          if False, display memory occupation/sockets relative to the socket memory
     def PrintNumamem(self,mem_proc):
@@ -356,7 +356,7 @@ class PrintingForMatrixThreads(PrintingFor):
                 sorted_threads = sorted(threads.iteritems())
 
             for (tid,thr) in sorted_threads:
-                if self.__print_only_running_threads and threads[tid]['state'] != 'R':
+                if not self.__show_idle and threads[tid]['state'] != 'R':
                     continue
                 if thr['state'] == 'R':
                     S = l
