@@ -22,3 +22,5 @@ USING placement:
 ----------------
 
 `placement --documentation   | less`
+
+See also the wiki: https://github.com/manu5800/placement/wiki
