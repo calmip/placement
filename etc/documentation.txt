@@ -34,7 +34,7 @@ placement looks for the slurm.conf file (using the environment variable $SLURM_C
 so that if you use slurm you should not have anything to configure !
 
 BUT if you use some other scheduler, OR if you want to check the placement behaviour on some other machine than your supercomputer,
-you may edit the placement configuration file (${PLACEMENTETC}/placement.conf). This file is read BEFORE slurm.conf.
+you may edit the placement configuration file (${PLACEMENT_ROOT}/etc/placement.conf). This file is read BEFORE slurm.conf.
 
 It is a simple key-value file, structured in several sections. The purpose of this file is to help placement to guess,
 using several environment variables, the hardware configuration of the underlying machine
@@ -47,29 +47,6 @@ Current architecture = Bullx_dlc (2 sockets/node, 10 cores/socket, 2 threads/cor
 
 You can force an architecture with the environment variable:
 export PLACEMENT_ARCHI=Bullx_dlc
-
------------------------------------------
-Then environment variable PLACEMENT_DEBUG
------------------------------------------
-On a non-exclusive node, you can further debug the configuration:
-export PLACEMENT_DEBUG='0-1' means that only sockets 0,1 are reserved for your job
-
-You can even specify the complete cpuset: 
-export PLACEMENT_DEBUG='0-1:10-15,16-21' means that only 12 cores on 2 sockets are reserved for your job
-
-Of course, PLACEMENT_DEBUG SHOULD BE USED ONLY FOR DEBUGGING PURPOSE, AND SHOULD BE UNSET FOR PRODUCTION !
-When PLACEMENT_DEBUG is not set, placement calls numactl --show to know the current reserved cpuset
-
-You can thus simulate how placement will behave on your supercomputer:
-# ( export PLACEMENT_ARCHI=Mesca2; export PLACEMENT_DEBUG=1-2,4; ~/bin/placement 3 6   --mode=scatter --ascii )
-  S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
-P                  AAAAAA.......... BBBBBB..........                  CCCCCC..........                  
-
-If you specify some cores (ie you do not have whole sockets reserved, but only several cores), using scatter mode is a nonsense.
-However, you still can use the compact mode:
-( export PLACEMENT_ARCHI=Mesca2; export PLACEMENT_DEBUG='1-2,4:20-23,40-45,64-71'; ~/bin/placement 3 6   --mode=compact --ascii ) 
-  S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
-P                  ....AAAA........ ........AABBBB..                  BBCCCCCC........
 
 
 3. USING placement WITH srun, cpu_bind or WITH numactl
@@ -199,37 +176,7 @@ mpirun  -n 2 numactl $(placement 1 16 --numactl) ./exec_50k.x
 placement can be used to check a running job. For example, to check the last running job you just launched,
 you could run from the frontal node:
 
-placement --checkme --ascii --mem --thre --sorted_th
-eoscomp102
-  S0-------- S1-------- 
-P ....A.A... AAA....... 
-L AAAAAAAAAA .........A 
-
-                0000000000 0000000000
-                0000000000 1111111111
-                0123456789 0123456789
-  SOCKET MEMORY AAAAAAAAA. ..........
-     PID    TID                        %CPU %MEM
-A  32529  32553 .......... ..........   0.0 44.6
-A         32599 A......... ..........  76.5 44.6
-A         32551 .......... ..........   0.0 44.6
-A         32595 .......... ..........   0.0 44.6
-A         32602 .A........ ..........  76.5 44.6
-A         32610 ..A....... ..........  76.5 44.6
-A         32606 ...A...... ..........  76.5 44.6
-A         32607 ....A..... ..........  76.5 44.6
-A         32608 ....A..... ..........  76.5 44.6
-A         32601 .....A.... ..........  76.5 44.6
-A         32605 ......A... ..........  76.5 44.6
-A         32609 ......A... ..........  76.5 44.6
-A         32603 .......A.. ..........  76.5 44.6
-A         32600 ........A. ..........  76.5 44.6
-A         32596 .........A ..........  76.5 44.6
-A         32597 .......... A.........  76.5 44.6
-A         32604 .......... .A........  76.5 44.6
-A         32598 .......... ..A.......  76.5 44.6
-A         32529 .......... .........A  89.0 44.6
-
+placement --checkme --ascii --memory --threads --sorted_threads
 eoscomp103
   S0-------- S1-------- 
 P .......AAA .AA..A.... 
@@ -238,7 +185,6 @@ L AAAAAA.A.. A..A.....A
                 0000000000 0000000000
                 0000000000 1111111111
                 0123456789 0123456789
-  SOCKET MEMORY AAAAAAAAA. ..........
      PID    TID                        %CPU %MEM
 A  63062  63075 .......... ..........   0.0 44.6
 A         63118 A......... ..........  99.0 44.6
@@ -260,11 +206,17 @@ A         63120 .......... ...A......  99.5 44.6
 A         63125 .......... .....A....  99.0 44.6
 A         63062 .......... .........A  97.3 44.6
 
-This shows that placement is very poor in this running job, on both nodes
-Using the commands explained in Section S5, the situation can be improved,
-and you can check this:
+  SOCKET MEMORY relative to the socket memory
+A               *********. ..........
 
-placement --checkme --ascii --mem --thre --sorted_th
+This shows that the placement is very poor in this running job. The threads
+are not equally distributed on both sockets (10+8), and only the memory of 
+the first socket is used.
+
+Using the commands explained in Section S5, the situation can be improved,
+and you can check this improvement:
+
+placement --checkme --ascii --memory --threads --sorted_threads
 eoscomp8
   S0-------- S1-------- 
 P AAAAAAAA.. AAAAAAAA.. 
@@ -295,39 +247,44 @@ A         98656 .......... .....A....  82.0 44.6
 A         98657 .......... ......A...  82.0 44.6
 A         98658 .......... .......A..  82.0 44.6
 
-eoscomp17
-  S0-------- S1-------- 
-P AAAAAAAA.. AAAAAAAA.. 
-L .......... .......... 
+  SOCKET MEMORY relative to the socket memory
+A               *********. ..........
 
-                0000000000 0000000000
-                0000000000 1111111111
-                0123456789 0123456789
-  SOCKET MEMORY AAAAAAAAA. ..........
-     PID    TID                        %CPU %MEM
-A 106955 106955 A......... ..........  93.9 44.6
-A        106968 .......... ..........   0.0 44.6
-A        106966 .......... ..........   0.0 44.6
-A        107047 .A........ ..........  94.3 44.6
-A        107048 ..A....... ..........  94.3 44.6
-A        107049 ...A...... ..........  94.3 44.6
-A        107050 ....A..... ..........  94.0 44.6
-A        107051 .....A.... ..........  94.0 44.6
-A        107052 ......A... ..........  94.3 44.6
-A        107053 .......A.. ..........  94.3 44.6
-A        107054 .......... A.........  94.3 44.6
-A        107046 .......... ..........   0.0 44.6
-A        107055 .......... .A........  94.3 44.6
-A        107056 .......... ..A.......  94.3 44.6
-A        107057 .......... ...A......  94.3 44.6
-A        107058 .......... ....A.....  94.3 44.6
-A        107059 .......... .....A....  94.3 44.6
-A        107060 .......... ......A...  94.0 44.6
-A        107061 .......... .......A..  94.0 44.6
-
-However, the line "SOCKET MEMORY" shows that the memory used by your process is
+The threads distribution is already better, but the line "SOCKET MEMORY" 
+shows that the memory used by your process is still
 allocated on one socket only: you could improve the code to change this behaviour, 
 then check again with placement.
+
+8. DEBUGGING placement
+======================
+
+The following is for developers who want to debug placement:
+
+-----------------------------------------
+The environment variable PLACEMENT_DEBUG
+-----------------------------------------
+On a non-exclusive node, you can further debug the configuration:
+export PLACEMENT_DEBUG='0-1' means that only sockets 0,1 are reserved for your job
+
+You can even specify the complete cpuset: 
+export PLACEMENT_DEBUG='0-1:10-15,16-21' means that only 12 cores on 2 sockets are reserved for your job
+
+Of course, PLACEMENT_DEBUG SHOULD BE USED ONLY FOR DEBUGGING PURPOSE, AND SHOULD BE UNSET FOR PRODUCTION !
+
+When PLACEMENT_DEBUG is not set, placement calls numactl --show to know the current reserved cpuset
+
+You can simulate how placement will behave on your supercomputer:
+
+# ( export PLACEMENT_ARCHI=Mesca2; export PLACEMENT_DEBUG=1-2,4; ~/bin/placement 3 6   --mode=scatter --ascii )
+  S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
+P                  AAAAAA.......... BBBBBB..........                  CCCCCC..........                  
+
+If you specify some cores (ie you do not have whole sockets reserved, but only several cores), using scatter mode is a nonsense (and does not
+work). However, you can still use the compact mode:
+
+( export PLACEMENT_ARCHI=Mesca2; export PLACEMENT_DEBUG='0-7:20-23,40-45,64-71'; ~/bin/placement 3 6   --mode=compact --ascii ) 
+  S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
+P                  ....AAAA........ ........AABBBB..                  BBCCCCCC........
 
 
 Have fun using placement !

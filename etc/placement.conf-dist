@@ -1,0 +1,122 @@
+#
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu-cores
+#
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
+
+# placement is able to guess the machine hardware from the hostname
+# -----------------------------------------------------------------
+#
+# Two files may be used for that pupose:
+#     1/ placement.conf (this files)
+#     2/ slurm.conf
+#
+# Thus, placement.conf is OPTIONAL
+#
+# Is exists, this file is read by ConfigParser
+#
+
+#
+# 1/ (REQUIRED) First, we describe our hardware architectures.
+#    The section names ([vendor1]) are local to this file, you can choose the name you want
+#	 The parameter IS_SHARED should be set to False for an exclusive node, to True for a shared node
+#
+#    Environment variable: PLACEMENT_ARCHI
+#        You can tell placement on what architecture it runs using for example:
+#        export PLACEMENT_ARCHI=vendor1
+#
+
+# vendor1, 2 sockets 10 cores, hyperthreading on (2 threads), exclusive
+[vendor1]
+SOCKETS_PER_NODE:  2
+CORES_PER_SOCKET:  10
+HYPERTHREADING:    True
+THREADS_PER_CORE:  2
+MEM_PER_SOCKET:    32768
+IS_SHARED:         False
+
+# vendor1, 2 sockets 10 cores, hyperthreading on (2 threads), shared
+[vendor1_shared]
+SOCKETS_PER_NODE: 2
+CORES_PER_SOCKET: 10
+HYPERTHREADING:   True
+THREADS_PER_CORE: 2
+MEM_PER_SOCKET:   32768
+IS_SHARED:        True
+
+# vendor2, 8 sockets 16 cores, hyperthreading off, SHARED
+[vendor2]
+SOCKETS_PER_NODE: 8
+CORES_PER_SOCKET: 16
+HYPERTHREADING:   False
+THREADS_PER_CORE: 1
+MEM_PER_SOCKET:   262144
+IS_SHARED:        True
+
+# vendor3, same as vendor1 + 4 gpus attached to socket 0 and socket 1
+[vendor3]
+SOCKETS_PER_NODE: 2
+CORES_PER_SOCKET: 10
+HYPERTHREADING:   True
+THREADS_PER_CORE: 2
+MEM_PER_SOCKET:   65536
+IS_SHARED:        False
+GPUS:             0-1,2-3
+
+#
+# 2/ (optional) Second, we describe our SLURM partitions. 
+#    We consider that a partition is a set of homogeneous nodes
+#    It is thus easy to detect the architecture from the partition name
+#
+#    Environment variable: PLACEMENT_PARTITION
+#       You can tell placement on what architecture it runs using for example:
+#       export PLACEMENT_ARCHI=mesca
+#
+
+# The SLURM partitions: we 
+[partitions]
+exclusive:				vendor1
+shared:					vendor1_shared
+mesca:					vendor2
+
+#
+# 3/ (optional) The hosts section
+#    First column is a compact list of hosts (same syntax as slurm's compact names)
+#    Second column is the name of a hardware architecture
+#
+#    For each line (blank lines or # are skipped), the first name is compared to the real machine name
+#    and if a match is found the second name is returned, without further checking
+#
+#    The machine detected with getHostname() (cf. utilities.py)
+#
+
+[hosts]
+# The cluster compute nodes:
+clustercomp[0-96]:			vendor1
+
+# Several nodes are shared
+clustercomp[97-99]:			vendor1_shared
+
+# We also have several fat nodes:
+clusterfat[1,2,5]:			vendor2
+
+# The front nodes (generally not described in slurm.conf !)
+clusterfront[1-4]:			vendor1
+

@@ -10,7 +10,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
 #  PLACEMENT is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -33,9 +33,9 @@ from utilities import  expandNodeList, getHostname
 class Hardware(object):
     """ Describing hardware configuration 
     
-    This file uses slurm.conf if possible, or placement.conf, to guess the correct hardware configuration, using some environment variables
+    This file uses placement.conf if exists, else slurm.conf, to guess the correct hardware configuration, using some environment variables
     The private member IS_SHARED describes the fact that the HOST is SHARED between users (if True) or exclusively dedicated (if False) to the job
-    It is not strictly hardware consideration, but as it never changes during the node life, it makes sense considering it as a hardware parameter
+    It is not strictly hardware consideration, but as it never changes during the node lifetime, it makes sense considering it as a hardware parameter
     WARNING FOR SLURM ADMINS - IS_SHARED means here "The NODE is shared", NOT the Resource. 
                                So you may have Shared=No in slurm.conf and IS_SHARED set to False !
                                IS_SHARED is set to False ONLY if you have Shared=EXCLUSIVE in slurm.conf
@@ -51,9 +51,13 @@ class Hardware(object):
 
     @staticmethod
     def catalog():
-        """ Return the available hostsnames (as regex), partitions, architectures as lists of lists """
+        """ Return the available hostnames (as regex), partitions, architectures as lists of lists """
+        conf_file = Hardware.__getConfFile()
+        if os.environ.has_key('PLACEMENT_CONF'):
+            conf_file = os.environ['PLACEMENT_CONF']
+        else:                
+            conf_file = os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
 
-        conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
         config    = ConfigParser.RawConfigParser()
         config.read(conf_file)        
         partitions = config.options('partitions')
@@ -67,10 +71,11 @@ class Hardware(object):
     def factory():
         """ Build a Hardware object from several env variables: PLACEMENT_ARCHI, PLACEMENT_PARTITION, HOSTNAME"""
 
-        # 1st stage: Read the configuration file
-        conf_file = os.environ['PLACEMENTETC'] + '/placement.conf'
+        # 1st stage: Read the configuration file, if possible
+        conf_file = Hardware.__getConfFile()
         config    = ConfigParser.RawConfigParser()
-        config.read(conf_file)        
+        if os.path.exists(conf_file):
+            config.read(conf_file)        
 
         # 2nd stage: Guess the architecture name from the env variables
         archi_name = Hardware.__guessArchiName(conf_file,config)
@@ -81,46 +86,54 @@ class Hardware(object):
         return archi
 
     @staticmethod
+    def __getConfFile():
+        # Useful for testing !
+        if os.environ.has_key('PLACEMENT_CONF'):
+            return os.environ['PLACEMENT_CONF']
+        else:                
+            return os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
+        
+    @staticmethod
     def __guessArchiName(conf_path,config):
         """  Guess the architecture name from the environment variables:
 
         Arguments:
-        conf_file: The config path, used only for display
+        conf_file: The config path, used only for error messages
         config:    A ConfigParser object, already created
 
-        return the architecture name, of rais an exception if impossible to check
+        return the architecture name, raise an exception if impossible to guess
         """
 
-        archi_name = ''
+        archi_name = None
 
         # Forcing an architecture from its name, using $PLACEMENT_ARCHI
         if 'PLACEMENT_ARCHI' in os.environ:
             placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
-            if config.has_section(placement_archi)==False:
-                raise PlacementException("OUPS - PLACEMENT_ARCHI="+os.environ['PLACEMENT_ARCHI']+" Unknown architecture, check placement.conf")
-            else:
+            if config.has_section(placement_archi)==True:
                 archi_name = placement_archi
 
         # Forcing an architecture from its partition name, using $PLACEMENT_PARTITION
         elif 'PLACEMENT_PARTITION' in os.environ:
-            placement_archi=os.environ['PLACEMENT_PARTITION'].strip()
-            if config.has_section('partitions')==False:
-                raise PlacementException("OUPS - PLACEMENT_PARTITION is set but there is no section called partitions in placement.conf")
-            if config.has_option('partitions',placement_archi)==None:
-                raise PlacementException("OUPS - PLACEMENT_PARTITION="+os.environ['PLACEMENT_PARTITION']+" Unknown partition, can't guess the architecture")
-            else:
-                archi_name = config.get('partitions',placement_archi)
+            placement_partition=os.environ['PLACEMENT_PARTITION'].strip()
+            if config.has_section('partitions')==True:
+                if config.has_option('partitions',placement_partition)==True:
+                    archi_name = config.get('partitions',placement_partition)
                 
         # Archi not yet guessed, trying to guess from the hostname
-        if archi_name == '':
-            node = getHostname()
+        node = getHostname()
+        if archi_name == None:
             archi_name = Hardware.__hostname2Archi(config, node)
             
-            if archi_name == None:
-                archi_name = Hardware.__hostname2ArchiFromSlurmConf(config,node)
+        if archi_name == None:
+            archi_name = Hardware.__hostname2ArchiFromSlurmConf(config,node)
 
-            if archi_name == None:
-                raise(PlacementException("OUPS - Could not guess the architecture from the hostname (" + node + ") - Please check " + conf_path))
+        if archi_name == None:
+            msg = "ERROR - Could not guess the architecture from the hostname (" + node + ") - ";
+            if conf_path==None or not os.path.exists(conf_path):
+                msg += "May be you should write a placement.conf file ";
+            else:
+                msg += "Please check " + conf_path
+            raise(PlacementException(msg))
             
         return archi_name
 
@@ -129,17 +142,17 @@ class Hardware(object):
         """ return the architecture name from the hostname, using the configuration
         Each option is a list of hosts: try to find a list of hosts we could be a part of
         When found return the corresponding value
-        If no match, return None
+        If nothing found, return None
 
         Arguments:
         config A ConfigParser object
         host   A hostname
         """
-
-        options = config.options('hosts')
-        for o in options:
-            if host in expandNodeList(o):
-                return config.get('hosts',o)
+        if config.has_section('hosts')==True:
+            options = config.options('hosts')
+            for o in options:
+                if host in expandNodeList(o):
+                    return config.get('hosts',o)
         return None
 
     @staticmethod
@@ -165,16 +178,18 @@ class Hardware(object):
             fh_slurm_conf = open(slurm_conf,'r')
             slurm_lines   = fh_slurm_conf.readlines()
             fh_slurm_conf.close()
+            # Remove \n at end of lines !
+            slurm_lines = [l.strip("\n") for l in slurm_lines] 
 
         except IOError:
             return
 
         # Analyze the file, looking for NodeName=
         for l in slurm_lines:
-            if l[0] == '#':
+            if l=='' or l.startswith('#'):
                 continue
 
-            # Search a matching Nodename= and add an auto section to config
+            # Search a matching Nodename= and add an 'slurm' section to config
             fields = l.split(' ')
             for f in fields:
                 p = f.partition('=')
@@ -192,7 +207,7 @@ class Hardware(object):
         # The goal is to read the Shared parameter
         if config.has_section('Slurm'):
             for l in slurm_lines:
-                if l[0] == '#':
+                if l=='' or l.startswith('#'):
                     continue
 
                 fields = l.split(' ')
@@ -221,7 +236,7 @@ class Hardware(object):
                     else:
                         config.set('Slurm','IS_SHARED','True')
 
-                    # The architecture is definitvely 'Slurm'
+                    # The architecture is definitively 'Slurm'
                     return 'Slurm'
 
         # Configuration not found in slum.conf, or incomplete
@@ -330,7 +345,7 @@ class SpecificHardware(Hardware):
     def __init__(self,conf_file, config,archi_name):
         # archi_name should be a section in the configuration file
         if config.has_section(archi_name)==False:
-            raise(PlacementException("OUPS - The architecture " + archi_name + " is unknown - Please check " + conf_file))
+            raise(PlacementException("ERROR - The architecture " + archi_name + " is unknown - Please check " + conf_file))
 
         try:
             self.NAME             = archi_name
@@ -347,7 +362,7 @@ class SpecificHardware(Hardware):
                 pass
 
         except Exception, e:
-            msg = "OUPS - Something is wrong in the configuration - Please check " + conf_file
+            msg = "ERROR - Something is wrong in the configuration - Please check " + conf_file
             msg += "\n"
             msg += "ERROR WAS = " + str(e)
             raise(PlacementException(msg))

@@ -1,14 +1,114 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+#
+# This file is part of PLACEMENT software
+# PLACEMENT helps users to bind their processes to one or more cpu cores
+#
+# Copyright (C) 2015-2018 Emmanuel Courcelle
+# PLACEMENT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+#  PLACEMENT is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with PLACEMENT.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Emmanuel Courcelle - C.N.R.S. - UMS 3667 - CALMIP
+#        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
+#
+
 from utilities import *
 from hardware import *
+import os
 import unittest
 
+# Testing PLACEMENT_ARCHI
+class TestHardwareConf1(unittest.TestCase):
+    def setUp(self):
+        os.environ['PLACEMENT_CONF'] = 'test1.conf'
+        os.environ.pop('PLACEMENT_PARTITION',0)
+        os.environ.pop('HOSTNAME',0)
+
+    def test_archi_ok(self):
+        os.environ['PLACEMENT_ARCHI']= 'hard1'
+        self.assertEqual(Hardware.factory().NAME,'hard1')
+ 
+    def test_archi_ko(self):
+        os.environ['PLACEMENT_ARCHI']= 'toto'
+        self.assertRaises(PlacementException,Hardware.factory)
+
+# Testing PLACEMENT_PARTITION
+class TestHardwareConf2(unittest.TestCase):
+    def setUp(self):
+        os.environ['PLACEMENT_CONF'] = 'test2.conf'
+        os.environ.pop('PLACEMENT_ARCHI',0)
+        os.environ.pop('HOSTNAME',0)
+
+    def test_archi_ok(self):
+        os.environ['PLACEMENT_PARTITION']= 'partition1'
+        self.assertEqual(Hardware.factory().NAME,'hard2')
+ 
+    def test_archi_ko(self):
+        os.environ['PLACEMENT_PARTITION']= 'toto'
+        self.assertRaises(PlacementException,Hardware.factory)
+
+# Testing HOSTNAME
+class TestHardwareConf3(unittest.TestCase):
+    def setUp(self):
+        os.environ['PLACEMENT_CONF'] = 'test3.conf'
+        os.environ.pop('PLACEMENT_ARCHI',0)
+        os.environ.pop('PLACEMENT_PARTITION',0)
+
+    def test_archi_ok(self):
+        os.environ['HOSTNAME']= 'node45'
+        self.assertEqual(Hardware.factory().NAME,'hard3')
+ 
+    def test_archi_ko(self):
+        os.environ['HOSTNALE']= 'toto'
+        self.assertRaises(PlacementException,Hardware.factory)
+
+# Testing slurm.conf
+class TestHardwareSlurmConf(unittest.TestCase):
+    def setUp(self):
+        os.environ.pop('PLACEMENT_ARCHI',0)
+        os.environ.pop('PLACEMENT_PARTITION',0)
+        os.environ['PLACEMENT_CONF'] = 'file_does_not_exist'
+        os.environ['SLURM_CONF'] = 'slurm.conf'
+        
+    def test_archi_ok(self):
+        os.environ['HOSTNAME'] = 'node67'
+        self.hardware = Hardware.factory()
+        self.assertEqual(self.hardware.getCore2Socket(19),1)
+        self.assertEqual(self.hardware.getCore2Core(26),6)
+        self.assertEqual(self.hardware.getCore2PhysCore(30),10)
+
+    def test_archi_ko(self):
+        os.environ['HOSTNAME'] = 'node670'
+        self.assertRaises(PlacementException,Hardware.factory)
+
+class TestHardwareNoConf(unittest.TestCase):
+    def setUp(self):
+        os.environ.pop('PLACEMENT_ARCHI',0)
+        os.environ.pop('PLACEMENT_PARTITION',0)
+        os.environ['PLACEMENT_CONF'] = 'file_does_not_exist'
+        os.environ['SLURM_CONF'] = 'file_does_not_exist'
+    
+    def test_archi_ko(self):
+        self.assertRaises(PlacementException,Hardware.factory)
+                           
 #@unittest.skip("it works, not tested")
 class TestHardwareBullDlc(unittest.TestCase):
     def setUp(self):
-        self.hardware = Bullx_dlc()
+        os.environ['PLACEMENT_CONF'] = 'test3.conf'
+        os.environ['PLACEMENT_ARCHI'] = 'hard1'
+        self.hardware = Hardware.factory()
 
     def test_getCore2Socket(self):
         self.assertEqual(self.hardware.getCore2Socket(0),0)
@@ -55,7 +155,9 @@ class TestHardwareBullDlc(unittest.TestCase):
 # bien qu'on teste ici une architecture Shared, on considère qu'elle est Exclusive
 class TestHardwareMesca2(unittest.TestCase):
     def setUp(self):
-        self.hardware = Mesca2()
+        os.environ['PLACEMENT_CONF'] = 'test3.conf'
+        os.environ['PLACEMENT_ARCHI'] = 'hard4'
+        self.hardware = Hardware.factory()
 
 #    @unittest.skip("it works, not tested")
     def test_getCore2Socket(self):

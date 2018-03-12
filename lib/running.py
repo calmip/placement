@@ -1,15 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-import re
-from exception import *
-from tasksbinding import *
-from utilities import *
-from architecture import *
-import subprocess
-import xml.etree.ElementTree as et
-
 #
 # This file is part of PLACEMENT software
 # PLACEMENT helps users to bind their processes to one or more cpu-cores
@@ -19,7 +10,7 @@ import xml.etree.ElementTree as et
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
 #  PLACEMENT is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -33,21 +24,24 @@ import xml.etree.ElementTree as et
 #        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
 #
 
+import os
+import re
+from exception import *
+from tasksbinding import *
+from utilities import *
+from architecture import *
+import subprocess
 
 #
-# class RunningMode, dérive de TaskBuilding, implémente les algos utilisés en mode running, ie observe ce qui se passe
-#                    lorsque l'application est exécutée
-#                    En déduit archi, cpus_per_task,tasks !
+# class RunningMode, Extends TasksBinding.
+#                    Implements the algorithms used in Running mode: we observe a running job and we deduce 
+#                    the number of tasks and the number of threads per task
 # 
-# Paramètres: 
-#     path, le binaire ou le user sur lequel on a fait le --check
-#     hardware
-#     buildTasksBound L'algorithme utilisé pour savoir qui fait quoi où
-#     withMemory: si True, on appelle numamem pour connaitre l'occupation mémoire
-#
 
 class RunningMode(TasksBinding):
-    """ Observe the running tasks, and guess archi and threads_bound """
+    """ Observe the running tasks, and guess architecture and threads_bound 
+        ==> Hardware is guessed from the node name, as usual
+            Architecture is guessed from the running job """
 
     def __init__(self,path,hardware,buildTasksBound,withMemory):
         """ Constructor
@@ -56,7 +50,7 @@ class RunningMode(TasksBinding):
         path           : The running binary considered
         hardware       : The hardware we run on 
         buildTasksbound: How to build the tasks_bound data structure ? An object-function implementating the algorithm
-        withMemory     : If True, try to know memory occupation / socket using a num command
+        withMemory     : If True, try to know memory occupation / socket using a numastat command
         """
 
         TasksBinding.__init__(self,None,0,0)
@@ -152,21 +146,24 @@ class RunningMode(TasksBinding):
     def __identProcesses(self):
         """Identify the interesting processes together with their threads, from a set of commands ps
 
-        We keep only processes selected by the switch --check=
-        Among them, "reserved" commands ('ps', 'top' etc) are discarded
+        We keep only processes selected by the switch --check, ie proceses launched by a command, or belonging
+        to some user... pr all processes
+        Among them, some "reserved" commands ('ps', 'top' etc) are discarded
         And finally we keep only processes having at least ONE running thread
         
-        The data structures processus and pid are created by this function:
-        self.processus is a dictionary of dictionaries:
-             k = pid
-             v = {'pid':pid, 'user':'utilisateur', 'cmd':'commande','threads':{'tid':{'tid':tid, 'psr':psr}}
-        self.pid is the sorted list of pids
+        Two data structures are created by this function:
+   
+           self.processus is a dictionary of dictionaries:
+               k = pid
+               v = {'pid':pid, 'user':'user', 'cmd':'command line','threads':{'tid':{'tid':tid, 'psr':psr}}
+   
+           self.pid is the sorted list of pids
 
         """
 
         ps_res=''
 
-        # --check='+' ==> Just using the file called PROCESSES.txt in the current directory, used for debugging placement
+        # --check='+' ==> Just using the file called PROCESSES.txt in the current directory, used ONLY for debugging 
         if self.path == '+':
             fh_processes = open('PROCESSES.txt','r')
             ps_res = fh_processes.readlines()
@@ -188,7 +185,7 @@ class RunningMode(TasksBinding):
                         ps_res[i] = l.replace('\n','')
 
                 except subprocess.CalledProcessError,e:
-                    msg = "OUPS " + exe + " returned an error: " + str(e.returncode)
+                    msg = "ERROR " + exe + " returned an error: " + str(e.returncode)
                     raise PlacementException(msg)
 
             # --check='some_name' Let's suppose it is a user name
@@ -204,7 +201,7 @@ class RunningMode(TasksBinding):
 
                 except subprocess.CalledProcessError,e:
                     if (e.returncode != 1):
-                        msg = "OUPS " + exe + " returned an error: " + str(e.returncode)
+                        msg = "ERROR " + exe + " returned an error: " + str(e.returncode)
                         raise PlacementException(msg)
                     else:
                         ps_res = ""
@@ -221,7 +218,7 @@ class RunningMode(TasksBinding):
                             ps_res[i] = l.replace('\n','')
 
                     except subprocess.CalledProcessError,e:
-                        msg = "OUPS "
+                        msg = "ERROR "
 
                         if (e.returncode == 1):
                             msg += "No task found: Are you sure you are working on the correct host ?"
@@ -304,7 +301,7 @@ class RunningMode(TasksBinding):
 
 
     def __buildArchi(self,tasks_bound):
-        """ Guess archi from observed tasks_bound"""
+        """ Guess architecture from observed tasks_bound"""
 
         # The parameter cpus_per_task is not used here
         self.cpus_per_task = -1
@@ -332,7 +329,7 @@ class RunningMode(TasksBinding):
 
         # No task found
         if len(self.tasks_bound)==0:
-            msg = "OUPS No task found !"
+            msg = "ERROR No task found !"
             raise PlacementException(msg)
 
         # Detect overlaps, if any
@@ -377,49 +374,50 @@ class RunningMode(TasksBinding):
         return rvl
 
 
-# Classe abstraite de base
 class BuildTasksBound:
-    """ This is a functor, use to build the data structure tasksBinding from taskset or ps"""
+    """ This is a functor, use to build the data structure tasksBinding from taskset or ps
+        ABSTRACT CLASS """
 
     def __call__(self):
-        raise("ERREUR INTERNE - FONCTION VIRTUELLE PURE !")
+        raise("INTERNAL ERROR - VIRTUAL PURE FUNCTION !")
 
-# Fonction-objet pour construire la structure de données tasksBinding à partir de taskset
-class BuildTasksBoundFromTaskSet(BuildTasksBound):
-    """Calling taskset, BUT DOES NOT WORK ANYMORE, IS IT STILL USEFUL ?"""
+# This functor build the tasks_bound data structure from taskset 
+# --- THIS IS NO MORE USED ---
+#class BuildTasksBoundFromTaskSet(BuildTasksBound):
+    #"""Calling taskset, BUT DOES NOT WORK ANYMORE, IS IT STILL USEFUL ?"""
 
-    # Appelle __taskset sur le tableau tasksBinding.pid
-    # Transforme les affinités retournées: 0-3 ==> [0,1,2,3]
-    # Renvoie tasks_bound + tableau vide (pas d'infos sur les threads)
-    def __call__(self,tasksBinding):
-        raise PlacementException("Sorry, --taskset switch is not implemented")
+    ## Appelle __taskset sur le tableau tasksBinding.pid
+    ## Transforme les affinités retournées: 0-3 ==> [0,1,2,3]
+    ## Renvoie tasks_bound + tableau vide (pas d'infos sur les threads)
+    #def __call__(self,tasksBinding):
+        #raise PlacementException("Sorry, --taskset switch is not implemented")
 
-        tasks_bound=[]
-        for p in tasksBinding.pid:
-            aff = self.__runTaskSet(p)
-            tasks_bound.append(compactString2List(aff))
+        #tasks_bound=[]
+        #for p in tasksBinding.pid:
+            #aff = self.__runTaskSet(p)
+            #tasks_bound.append(compactString2List(aff))
 
-        return tasks_bound
+        #return tasks_bound
 
-    # Appelle taskset pour le ps passé en paramètre
-    def __runTaskSet(self,p):
-        cmd = "taskset -c -p "
-        cmd += str(p)
-        try:
-            out = subprocess.check_output(cmd.split(' ')).rstrip('\n')
+    ## Appelle taskset pour le ps passé en paramètre
+    #def __runTaskSet(self,p):
+        #cmd = "taskset -c -p "
+        #cmd += str(p)
+        #try:
+            #out = subprocess.check_output(cmd.split(' ')).rstrip('\n')
 
-        except subprocess.CalledProcessError,e:
-            msg = "OUPS "
-            msg += "La commande "
-            msg += cmd
-            msg += " a renvoyé l'erreur "
-            msg += str(p.returncode)
-            raise PlacementException(msg)
+        #except subprocess.CalledProcessError,e:
+            #msg = "ERROR -  "
+            #msg += "The command: "
+            #msg += cmd
+            #msg += " Returned an error: "
+            #msg += str(p.returncode)
+            #raise PlacementException(msg)
 
-        # On renvoie l'affinité
-        return out.rpartition(" ")[2]
+        ## On renvoie l'affinité
+        #return out.rpartition(" ")[2]
 
-# Fonction-objet pour construire la structure de données tasksBinding
+# This functor builds the tasks_bound data structure from ps
 # Construit tasks_bound à partir de la structure de données tasksBinding.processus
 # tasks_bound est construit dans l'ordre donné par les labels des processes (cf. __identProcesses)
 # Ne considère QUE les threads en état 'R' !
@@ -441,8 +439,6 @@ class BuildTasksBoundFromPs(BuildTasksBound):
         return tasks_bound
 
 
-# Renvoie les couples de processes qui présentent un recouvrement, ainsi que
-# la liste des cœurs en cause
 def _detectOverlap(tasks_bound):
     """ Return couples of overlapping as a list of pairs, together with the list of impacted cores"""
 

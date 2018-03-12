@@ -1,10 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-from exception import *
-from tasksbinding import *
-
 #
 # This file is part of PLACEMENT software
 # PLACEMENT helps users to bind their processes to one or more cpu-cores
@@ -14,7 +10,7 @@ from tasksbinding import *
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-#  Copyright (C) 2015,2016 Emmanuel Courcelle
+#  Copyright (C) 2015-2018 Emmanuel Courcelle
 #  PLACEMENT is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -28,9 +24,12 @@ from tasksbinding import *
 #        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
 #
 
+import os
+from exception import *
+from tasksbinding import *
 
 class ScatterGenMode(TasksBinding):
-    """ Distributing processes on core in "scatter" modes, this generic class is a base class
+    """ Distributing processes on cores in "scatter" modes, this generic class is a base class
 
     Two scatter modes are currently implemented:
         1/ scatter_cyclic (default mode)
@@ -52,11 +51,11 @@ class ScatterGenMode(TasksBinding):
 
     def checkParameters(self):
         """ Avoiding tasks straddling different sockets and other ugly things"""
-
+ 
         self._checkParameters()
 
         if self.cpus_per_task % self.archi.threads_per_core!=0:
-            msg = "OUPS - cpus_per_task ("
+            msg = "ERROR - cpus_per_task ("
             msg += str(self.cpus_per_task)
             msg += ") => should be a multiple of threads_per_core ("
             msg += str(self.archi.threads_per_core)
@@ -66,15 +65,15 @@ class ScatterGenMode(TasksBinding):
         # max_cpus = It more than 1 task, each must have less threads than logical cores/socket
         if self.tasks > 1:
             if self.cpus_per_task > self.archi.threads_per_core*self.archi.cores_per_socket:
-                msg  = "OUPS - Diminuez le nombre de threads (le maximum est " + str(self.archi.threads_per_core*self.archi.cores_per_socket) +")\n"
-                msg += "       Ou alors ne mettez qu'une seule tâche par nœud et passez en mode scatter_cyclic !"
+                msg  = "ERROR - Please reduce the threads number (max threads number = " + str(self.archi.threads_per_core*self.archi.cores_per_socket) +")\n"
+                msg += "        Or use only ONE task/node and go to mode scatter_cyclic !"
                 raise PlacementException(msg)
                 
         # Avoiding tasks straddling on several sockets ! 
         max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
         if self.cpus_per_task>1:
             if self.tasks>max_tasks and max_tasks>0:
-                msg = "OUPS - One task is straddling tow sockets ! Please lower the number of tasks/node, max is "
+                msg = "ERROR - One task is straddling two sockets ! Please lower the number of tasks/node, max is "
                 msg += str(max_tasks)
                 raise PlacementException(msg)
 
@@ -82,9 +81,9 @@ class ScatterGenMode(TasksBinding):
 class ScatterMode(ScatterGenMode):
     """Scatter cyclic distribution mode"""
 
-    def __init__(self,archi,cpus_per_task=0,tasks=0):
+    def __init__(self,archi,check=True,cpus_per_task=0,tasks=0):
         ScatterGenMode.__init__(self,archi,cpus_per_task,tasks)
-        self.distribTasks()
+        self.distribTasks(check)
         
     def distribTasks(self,check=True):
         """Return self.tasks_bound"""
@@ -198,9 +197,9 @@ class ScatterMode(ScatterGenMode):
 class ScatterBlockMode(ScatterGenMode):
     """Scatter block distribution mode"""
 
-    def __init__(self,archi,cpus_per_task=0,tasks=0):
+    def __init__(self,archi,check=True,cpus_per_task=0,tasks=0):
         ScatterGenMode.__init__(self,archi,cpus_per_task,tasks)
-        self.distribTasks()
+        self.distribTasks(check)
         
     def distribTasks(self,check=True):
         """Return self.tasks_bound"""
@@ -263,6 +262,7 @@ class ScatterBlockMode(ScatterGenMode):
             # TODO - ONLY TESTED WITH 2 THREADS/CORE ! (Xeon OK, KNL not tested)
             # nb of tasks x2, nb of threads /2 then recursive call
             tmp_task_distrib = ScatterBlockMode(self.archi,
+                                                check,
                                                 self.cpus_per_task/2,
                                                 self.tasks*2)
             tmp_tasks_bound= tmp_task_distrib.distribTasks(check=False)
