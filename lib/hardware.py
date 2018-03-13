@@ -47,6 +47,7 @@ class Hardware(object):
     HYPERTHREADING   = ''
     THREADS_PER_CORE = ''
     IS_SHARED        = ''
+    GPUS             = ''
 
     @staticmethod
     def catalog():
@@ -355,6 +356,10 @@ class SpecificHardware(Hardware):
             self.MEM_PER_SOCKET   = config.getint(archi_name,'MEM_PER_SOCKET')
             self.IS_SHARED        = config.getboolean(archi_name,'IS_SHARED')
             self.CORES_PER_NODE   = self.CORES_PER_SOCKET*self.SOCKETS_PER_NODE
+            try:
+                self.GPUS         = config.get(archi_name,'GPUS')
+            except Exception, e:
+                pass
 
         except Exception, e:
             msg = "ERROR - Something is wrong in the configuration - Please check " + conf_file

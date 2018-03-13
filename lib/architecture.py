@@ -82,6 +82,7 @@ class Architecture(object):
         self.tasks            = tasks
         self.cpus_per_task    = cpus_per_task
         self.threads_per_core = self.__activateHyper(hyper)
+        self.gpus             = self.hardware.GPUS
         #print self.sockets_per_node,self.cores_per_socket,self.cores_per_node,self.threads_per_core
 
     def __setattr__(self,name,value):

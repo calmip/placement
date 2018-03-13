@@ -96,6 +96,7 @@ class TextExpandNodeList(unittest.TestCase):
         self.assertEqual(expandNodeList('eosmesca1'),['eosmesca1'])
 
 class TestNum2Slice(unittest.TestCase):
+    '''OBSOLETE - NOT USED ANY MORE'''
     def test_normal(self):
         self.assertEqual(mem2Slice(5.0,1.0),5)
         self.assertEqual(mem2Slice(4.9,1.0),5)
@@ -106,6 +107,24 @@ class TestNum2Slice(unittest.TestCase):
         
     def test_limits(self):
         self.assertEqual(mem2Slice(5.0,0),0)
-        
+
+class TestgetGauge(unittest.TestCase):
+    def test_gauge(self):
+        self.assertEqual(getGauge(4,10,False),'..........')
+        self.assertEqual(getGauge(5,10,False),'*.........')
+        self.assertEqual(getGauge(10,10,False),'*.........')
+        self.assertEqual(getGauge(12,10,False),'*.........')
+        self.assertEqual(getGauge(15,10,False),'**........')
+        self.assertEqual(getGauge(100,10,False),'**********')
+        self.assertEqual(getGauge(50,8,False),'****....')
+        self.assertEqual(getGauge(50,8,False),'****....')
+        self.assertEqual(getGauge(33,8,False),'***.....')
+        self.assertEqual(getGauge(66,8,False),'*****...')
+
+    def test_gauge_outofbounds(self):
+        self.assertRaises(ValueError,getGauge,-1,8,False)
+        self.assertRaises(ValueError,getGauge,101,8,False)
+
+  
 if __name__ == '__main__':
     unittest.main()

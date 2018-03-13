@@ -118,7 +118,6 @@ class Matrix(object):
         """
         
         mem_pid_socket = self.__getMemPidSocket(sockets_mem,mem_proc)
-        space = "."
 
         h_header='  SOCKET MEMORY '
         if mem_proc:
@@ -128,56 +127,72 @@ class Matrix(object):
         
         rvl =  h_header
         rvl += "\n"
-        #rvl += str(sockets_mem)
-        #rvl += "\n"
-        #rvl += str(mem_pid_socket)
-        #return rvl
-        
-        
-        
-        
-        #sockets_mem_rel = self.__getMem2Slice(sockets_mem,mem_proc)
-        #rvl = h_header
-        #rvl += "\n"
-        #rvl += len(h_header)*' '+' '
-        #rvl += str(sockets_mem)
-        #rvl += "===================\n"
-        #rvl += len(h_header)*' '+' '
-        #rvl += str(sockets_mem_rel)
-        #return rvl
         
         tags = mem_pid_socket.keys()
         tags.sort()
         for tag in tags:
             val = mem_pid_socket[tag]
             rvl += tag
-            rvl += ' ' * 14;
-            for m in val:
+            rvl += ' ' * 15;
+            for v in val:
+                rvl += getGauge(v,self.__hard.CORES_PER_SOCKET)
                 rvl += ' '
-                p = self.__hard.CORES_PER_SOCKET - m
-
-                # Write m times the tag (ex: AAAA) in magenta
-                if m>0:
-                    rvl += mag_foreground()
-                    rvl += '*'*m
-                    rvl += normal()
-
-                # Write p time a space in normal
-                if p>0:
-                    rvl += space*p
             rvl += "\n"
 
+        rvl += "\n"
+
+        return rvl
+
+    def getGpuInfo(self,tasks_binding):
+        """ return a string, representing the status of the gpus connected to the sockets"""
+
+        rvl = ""
+        gpus_info = tasks_binding.gpus_info
+        #print (gpus_info)
+        
+        col_skipped = ''
+        for s in gpus_info:
+            for g in s:
+                rvl += '  '
+                rvl += 'GPU ' + str(g['id']) + "\n"
+                rvl += 'USE             ' + col_skipped + getGauge(g['U'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['U']) + "%\n"
+                rvl += 'MEMORY          ' + col_skipped + getGauge(g['M'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['M']) + "%\n"
+                rvl += 'POWER           ' + col_skipped + getGauge(g['P'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['P']) + "%\n"
+                rvl += "\n"
+            col_skipped += ' '*(self.__hard.CORES_PER_SOCKET+1)
+                
+        return rvl
+        
+        
+    def __getGpuInfo_S(self,tasks_binding):
+        """ return a string, representing the status of the gpus connected to the sockets"""
+        
+        gpus_info = tasks_binding.gpus_info
+        rvl    = "\nGPUS INFO:"
+        i = 0
+        j = tasks_binding.archi.cores_per_socket + 1
+        k = 0
+        for s in gpus_info:
+            for g in s:
+                if k==0:
+                    rvl += 6*' ' + j*i*' '
+                    k+=1
+                else:
+                    rvl += 16*' ' + j*i*' '
+                rvl += str(g['id'])+'-'+'U'+str(g['U'])+'%-M'+str(g['M'])+'%-C'+str(g['P'])+'%'+"\n"
+            i += 1
         return rvl
 
     def __getMemPidSocket(self,sockets_mem,mem_proc):
         """ Compute a NEW dict of arrays: 
                  - Key is a process tag
                  - Value is an array: 
-                         if mem_proc==False: the quantity of memory used per socket, counted in slices. 0 if permission problem
-                         if mem_proc==True:  the distribution of memory among sockets, counted in slices. 0 if permission problem """
-                                       
+                         if mem_proc==False: the quantity of memory used per socket, in %/memory atached to the socket. 
+                                            0 if permission problem
+                         if mem_proc==True:  the distribution of memory among sockets, in %. 
+                                            0 if permission problem """
 
-        # Create and fill the processes dictionary        
+        # Create and fill the processes dictionary with absolute values        
         processes = {}
         mem_p_proc= {} # key = tag, val = the total mem used by this process
         for sm in sockets_mem:
@@ -188,29 +203,15 @@ class Matrix(object):
                     mem_p_proc[tag] = 0
                 processes[tag].append(val)
                 mem_p_proc[tag] += val
-                
-        # Replace absolute values with "slices"
-        # mem_slice is the quantity of mem in a slice: 
-        # calculated from the mem by core, ...
-        if mem_proc == False:
-            mem_slice  = self.__hard.MEM_PER_SOCKET / self.__hard.CORES_PER_SOCKET
-
-        # ... or from the mem_by_proc (thus deferred)
-        else:
-            mem_slice  = 0
-
+         
         for tag,val in processes.iteritems():
-            slice_val = []
             if mem_proc:
-                mem_slice = mem_p_proc[tag] / self.__hard.CORES_PER_SOCKET
-                
-            for mem in val:
-                s = mem2Slice(mem,mem_slice)
-                slice_val.append(s)
-            processes[tag] = slice_val
-
+                processes[tag] = map(lambda x: int(100.0*x/mem_p_proc[tag]),val)
+            else:
+                processes[tag] = map(lambda x: int(100.0*x/self.__hard.MEM_PER_SOCKET),val)
+                    
         return processes
-        
+
     def getLine(self,pid,tid,ppsr,S,H,cpu=100,mem='-'):
         """ Return a line full of '.' and a letter on the psr coloumn, plus cpu occupation at end of line"""
 

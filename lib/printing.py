@@ -289,15 +289,18 @@ class PrintingForMatrixThreads(PrintingFor):
     def PrintNumamem(self,mem_proc):
         self.__print_numamem = True
         self.__mem_proc = mem_proc
+
     def __str__(self):
+        '''Convert to a string (-> print) '''
         if self._tasks_binding.tasks > 66:
-            return "ERROR - Threads representation is not supported if more thant 66 tasks !"
+            return "ERROR - Threads representation is not supported if more than 66 tasks !"
         else:
-            return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.threads_bound)
+            # Print cpu binding, memory info and gpu info
+            rvl = self.__getCpuBinding(self._tasks_binding)
+            
+            return rvl
 
-
-
-    def __getCpuBinding(self,archi,threads_bound):
+    def __getCpuBinding(self,tasks_binding):
         """ return a string, representing sets of threads and tasks in a matrix representation, used only for running tasks
 
         1 column/PHYSICAL core, 1 line/process
@@ -308,6 +311,10 @@ class PrintingForMatrixThreads(PrintingFor):
         threads_bound = A dictionary containing a lot of data about each running task, see running.py for details
         """
 
+        archi         = tasks_binding.archi
+        threads_bound = tasks_binding.threads_bound
+        gpus_info     = tasks_binding.gpus_info
+        
         # For each task in threads_bound, compute the ppsr_min and ppsr_max, ie the min and max physical cores
         ppsr_min = 999999
         ppsr_max = 0
@@ -326,8 +333,8 @@ class PrintingForMatrixThreads(PrintingFor):
                     
             threads_bound[pid]['ppsr_min'] = p_ppsr_min
 
-        # If memory printing, consider the whole machine
-        if self.__print_numamem:
+        # If memory printing, or gpu_info, consider the whole machine
+        if self.__print_numamem or gpus_info != None:
             ppsr_min = 0
             ppsr_max = archi.sockets_per_node * archi.cores_per_node - 1
 
@@ -374,7 +381,11 @@ class PrintingForMatrixThreads(PrintingFor):
             sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
             rvl += "\n"
             rvl += m.getNumamem(sockets_mem,self.__mem_proc)
-            
+ 
+        # If wanted, print info about the gpus
+        if self._tasks_binding.gpus_info != None:
+            rvl += m.getGpuInfo(self._tasks_binding)
+                  
         return rvl
 
 

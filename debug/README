@@ -1,0 +1,6 @@
+These files are useful for debugging placement
+----------------------------------------------
+
+Use with: 
+     ~/bin/placement --check=+ --memory --mem_proc
+

@@ -1,0 +1,10 @@
+
+Per-node process memory usage (in MBs) for PID 15768 (geany)
+                           Node 0           Total
+                  --------------- ---------------
+Huge                         0.00            0.00
+Heap                        18.96           18.96
+Stack                        0.14            0.14
+Private                     37.62           37.62
+----------------  --------------- ---------------
+Total                       56.71           56.71
