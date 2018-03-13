@@ -128,23 +128,6 @@ class Matrix(object):
         
         rvl =  h_header
         rvl += "\n"
-        #rvl += str(sockets_mem)
-        #rvl += "\n"
-        #rvl += str(mem_pid_socket)
-        #return rvl
-        
-        
-        
-        
-        #sockets_mem_rel = self.__getMem2Slice(sockets_mem,mem_proc)
-        #rvl = h_header
-        #rvl += "\n"
-        #rvl += len(h_header)*' '+' '
-        #rvl += str(sockets_mem)
-        #rvl += "===================\n"
-        #rvl += len(h_header)*' '+' '
-        #rvl += str(sockets_mem_rel)
-        #return rvl
         
         tags = mem_pid_socket.keys()
         tags.sort()
@@ -156,7 +139,7 @@ class Matrix(object):
                 rvl += ' '
                 p = self.__hard.CORES_PER_SOCKET - m
 
-                # Write m times the tag (ex: AAAA) in magenta
+                # Write m times * in magenta
                 if m>0:
                     rvl += mag_foreground()
                     rvl += '*'*m
@@ -169,6 +152,61 @@ class Matrix(object):
 
         return rvl
 
+    def getGpuInfo(self,tasks_binding):
+        """ return a string, representing the status of the gpus connected to the sockets"""
+
+        rvl = ""
+        gi  = 0
+        gpus_info = tasks_binding.gpus_info
+        for s in gpus_info:
+            for g in s:
+                rvl += 'GPU ' + str(gi)
+                rvl += '\n'
+                gi += 1
+        return rvl
+        
+        rvl    = "\nGPUs :"
+        i = 0
+        j = tasks_binding.archi.cores_per_socket + 1
+        k = 0
+        for s in gpus_info:
+            for g in s:
+                if k==0:
+                    rvl += 6*' ' + j*i*' '
+                    k+=1
+                else:
+                    rvl += 16*' ' + j*i*' '
+                rvl += str(g['id'])+'-'+'U'+str(g['U'])+'%-M'+str(g['M'])+'%-C'+str(g['P'])+'%'+"\n"
+            i += 1
+        return rvl
+        
+        
+    def __getGpuInfo_S(self,tasks_binding):
+        """ return a string, representing the status of the gpus connected to the sockets"""
+        
+        gpus_info = tasks_binding.gpus_info
+        rvl    = "\nGPUS INFO:"
+        i = 0
+        j = tasks_binding.archi.cores_per_socket + 1
+        k = 0
+        for s in gpus_info:
+            for g in s:
+                if k==0:
+                    rvl += 6*' ' + j*i*' '
+                    k+=1
+                else:
+                    rvl += 16*' ' + j*i*' '
+                rvl += str(g['id'])+'-'+'U'+str(g['U'])+'%-M'+str(g['M'])+'%-C'+str(g['P'])+'%'+"\n"
+            i += 1
+        return rvl
+
+
+
+ 
+ 
+ 
+ 
+        
     def __getMemPidSocket(self,sockets_mem,mem_proc):
         """ Compute a NEW dict of arrays: 
                  - Key is a process tag

@@ -289,34 +289,16 @@ class PrintingForMatrixThreads(PrintingFor):
     def PrintNumamem(self,mem_proc):
         self.__print_numamem = True
         self.__mem_proc = mem_proc
+
     def __str__(self):
+        '''Convert to a string (-> print) '''
         if self._tasks_binding.tasks > 66:
-            return "ERROR - Threads representation is not supported if more thant 66 tasks !"
+            return "ERROR - Threads representation is not supported if more than 66 tasks !"
         else:
+            # Print cpu binding, memory info and gpu info
             rvl = self.__getCpuBinding(self._tasks_binding)
-            if self._tasks_binding.gpus_info != None:
-                rvl += self.__getGpuInfo(self._tasks_binding)
+            
             return rvl
-
-    def __getGpuInfo(self,tasks_binding):
-        """ return a string, representing the status of the gpus connected to the sockets"""
-        
-        gpus_info = tasks_binding.gpus_info
-        rvl    = "\nGPUS INFO:"
-        i = 0
-        j = tasks_binding.archi.cores_per_socket + 1
-        k = 0
-        for s in gpus_info:
-            for g in s:
-                if k==0:
-                    rvl += 6*' ' + j*i*' '
-                    k+=1
-                else:
-                    rvl += 16*' ' + j*i*' '
-                rvl += str(g['id'])+'-'+'U'+str(g['U'])+'%-M'+str(g['M'])+'%-C'+str(g['P'])+'%'+"\n"
-            i += 1
-        return rvl
-
 
     def __getCpuBinding(self,tasks_binding):
         """ return a string, representing sets of threads and tasks in a matrix representation, used only for running tasks
@@ -399,7 +381,11 @@ class PrintingForMatrixThreads(PrintingFor):
             sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
             rvl += "\n"
             rvl += m.getNumamem(sockets_mem,self.__mem_proc)
-            
+ 
+        # If wanted, print info about the gpus
+        if self._tasks_binding.gpus_info != None:
+            rvl += m.getGpuInfo(self._tasks_binding)
+                  
         return rvl
 
 

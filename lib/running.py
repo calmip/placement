@@ -26,6 +26,7 @@
 
 import os
 import re
+import xml.etree.ElementTree as et
 from exception import *
 from tasksbinding import *
 from utilities import *
@@ -85,7 +86,10 @@ class RunningMode(TasksBinding):
             return
             
         # provisoire
-        tree = et.parse('/users/sysadmin/manu/TMP/gpu.xml')
+        try:
+            tree = et.parse('gpu.xml')
+        except:
+            return
         
         # '0-1,2-3' ==> ['0-1','2-3'] ==> [[0,1],[2,3]]
         gpus_bound_tmp = []
@@ -120,18 +124,25 @@ class RunningMode(TasksBinding):
             gpus_bound.append(sg)
 
         self.gpus_info = gpus_bound                
-        #print ("coucoucou " + str(self.gpus_info))
+        print ("gpus_info =  " + str(self.gpus_info))
                 
     def __identNumaMem(self):
         """ Call numastat for each pid of threads_bound, and keep the returned info inside threads_bound"""
                 
         for pid in self.threads_bound:
-            cmd = 'numastat ' + str(pid)
-            tmp = subprocess.check_output(cmd.split(' ')).split('\n')
+            # --check='+' ==> Just using the file called PROCESSES.txt in the current directory, used ONLY for debugging 
+            if self.path == '+':
+                fh_numastat = open(str(pid)+'.NUMASTAT.txt','r')
+                tmp = fh_numastat.readlines()
+                tmp = map(lambda x: x.replace('\n',''),tmp)
+            else:
+                cmd = 'numastat ' + str(pid)
+                tmp = subprocess.check_output(cmd.split(' ')).split('\n')
+                tmp.pop()
             #print '\n'.join(tmp)
 
             # Keep only last line (Total=)
-            ttl = tmp[-2].split()
+            ttl = tmp[-1].split()
 
             # remove first and last columns
             ttl.pop()
@@ -140,7 +151,7 @@ class RunningMode(TasksBinding):
 
             # We must have same number of numbers / sockets !
             if self.hardware.SOCKETS_PER_NODE != len(ttl):
-                raise PlacementException("INTERNAL ERROR - numastat returns " + len(ttl) + " columns, but we have " + SOCKETS_PER_NODE + " sockets !")
+                raise PlacementException("INTERNAL ERROR - numastat returns " + str(len(ttl)) + " columns, but we have " + SOCKETS_PER_NODE + " sockets !")
             self.threads_bound[pid]['numamem']=ttl
 
     def __identProcesses(self):
