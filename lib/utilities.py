@@ -207,7 +207,11 @@ def computeCpusTasksFromEnv(options,args):
 
 def mem2Slice(mem,mem_slice):
     """Compute a slice number from mem and mem per slice (two floats) - 
-       Do not use integer arithmetic because we have sometimes little numbers"""
+       Do not use integer arithmetic because we have sometimes little numbers
+       
+        OBSOLETE - NOT USED ANY MORE'''
+
+       """
        
     if mem_slice == 0:
         return 0
@@ -217,7 +221,34 @@ def mem2Slice(mem,mem_slice):
         s += 1
     return s
                         
+def getGauge(value,size,color=True):
+    '''Return a string with *** or ..., the number depends of value (0-100) and size
+       For size=10, value = 50, return *****.....'''
 
+    if value<0 or value>100:
+        raise ValueError( "INTERNAL ERROR - " + str(value) +" should be in the interval [0-100]")
+            
+    m = 0.01 * value * size
+    if int(m*10) % 10 < 5:
+        m = int(m)
+    else:
+        m = int(m) + 1
+    p = size - m
+    rvl = ''
+    point = '.'
+    if color:
+        if m>0:
+            rvl = mag_foreground() + '*'*m + normal()
+        if p>0:
+            rvl += point*p
+    else:
+        if m>0:
+            rvl = '*'*m
+        if p>0:
+            rvl += point*p
+    return rvl       
+    
+    
 def bold():
     return '\033[1m'
 
