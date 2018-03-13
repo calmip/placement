@@ -86,11 +86,24 @@ class RunningMode(TasksBinding):
             return
             
         # provisoire
-        try:
-            tree = et.parse('gpu.xml')
-        except:
-            return
-        
+        # --check='+' ==> Just using the file called gpu.xml in the current directory, used ONLY for debugging 
+        if self.path == '+':
+            try:
+                tree = et.parse('gpu.xml')
+            except:
+                return
+        else:
+            cmd = 'nvidia-smi -q -x'
+            tmp = ''            
+            try:
+                tmp    = subprocess.check_output(cmd.split(' '))
+
+            except subprocess.CalledProcessError,e:
+                msg = "ERROR " + cmd + " returned an error: " + str(e.returncode) + "\noutput: " + e.output
+                raise PlacementException(msg)
+            
+            tree = et.fromstring(tmp)
+
         # '0-1,2-3' ==> ['0-1','2-3'] ==> [[0,1],[2,3]]
         gpus_bound_tmp = []
         for s in gpus.split(','):
@@ -124,7 +137,7 @@ class RunningMode(TasksBinding):
             gpus_bound.append(sg)
 
         self.gpus_info = gpus_bound                
-        print ("gpus_info =  " + str(self.gpus_info))
+        #print ("gpus_info =  " + str(self.gpus_info))
                 
     def __identNumaMem(self):
         """ Call numastat for each pid of threads_bound, and keep the returned info inside threads_bound"""

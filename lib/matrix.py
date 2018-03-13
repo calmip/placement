@@ -147,28 +147,20 @@ class Matrix(object):
         """ return a string, representing the status of the gpus connected to the sockets"""
 
         rvl = ""
-        gi  = 0
         gpus_info = tasks_binding.gpus_info
-        for s in gpus_info:
-            for g in s:
-                rvl += 'GPU ' + str(gi)
-                rvl += '\n'
-                gi += 1
-        return rvl
+        #print (gpus_info)
         
-        rvl    = "\nGPUs :"
-        i = 0
-        j = tasks_binding.archi.cores_per_socket + 1
-        k = 0
+        col_skipped = ''
         for s in gpus_info:
             for g in s:
-                if k==0:
-                    rvl += 6*' ' + j*i*' '
-                    k+=1
-                else:
-                    rvl += 16*' ' + j*i*' '
-                rvl += str(g['id'])+'-'+'U'+str(g['U'])+'%-M'+str(g['M'])+'%-C'+str(g['P'])+'%'+"\n"
-            i += 1
+                rvl += '  '
+                rvl += 'GPU ' + str(g['id']) + "\n"
+                rvl += 'USE             ' + col_skipped + getGauge(g['U'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['U']) + "%\n"
+                rvl += 'MEMORY          ' + col_skipped + getGauge(g['M'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['M']) + "%\n"
+                rvl += 'POWER           ' + col_skipped + getGauge(g['P'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['P']) + "%\n"
+                rvl += "\n"
+            col_skipped += ' '*(self.__hard.CORES_PER_SOCKET+1)
+                
         return rvl
         
         
