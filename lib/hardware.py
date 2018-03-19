@@ -338,6 +338,16 @@ class Hardware(object):
         """
 
         return s * self.CORES_PER_SOCKET
+        
+    def isHyperThreadingUsed(self,l):
+        """ Given a list of cores (l) used by some threads, is hypertheading used ? """
+        
+        pcores =[]
+        for c in l:
+            pcores.append(self.getCore2PhysCore(c))
+
+        return len(pcores) > len(set(pcores))
+        
 
 class SpecificHardware(Hardware):
     """ Class deriving from Hardware, uses the configuration """

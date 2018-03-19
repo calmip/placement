@@ -33,7 +33,7 @@ class TasksBinding(object):
     This is an abstract class, the real derived class depends on the chosen algorithm
 
     DATA STRUCTURES:
-    threads_bound = Only built in running mode: see running.py, L 135
+    threads_bound = Only built in running mode: see running.py, functions __identProcesses, __identNumaMem
     tasks_bound   = A list of lists, describing the list of cores(inner lists) used by the tasks (outer list)
     over_cores    = A list of cores bound to 2 or more tasks (overlapping tasks, should not happen)
     """
