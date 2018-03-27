@@ -25,6 +25,7 @@
 #
 
 import os
+from decimal import Decimal
 from running import *
 from matrix import *
 from utilities import *
@@ -468,9 +469,12 @@ class PrintingForSummary(PrintingFor):
         hyper   = self.__isHyperUsed()
         use     = self.__getUse(hyper)
 
-        warning = overlap or use[0] < 50 or use[1] < 20
+        warning = overlap or use[0] < 50 or use[1] < 20 or self._tasks_binding.duration > 10.0
         if warning:
             summary += red_foreground()
+
+        summary += str(round(Decimal(str(self._tasks_binding.duration)),1))
+        summary += ' '
         
         if overlap:
             summary += 'O'

@@ -51,6 +51,7 @@ class TasksBinding(object):
         self.tasks_bound   = None
         self.threads_bound = None
         self.over_cores    = None
+        self.duration      = 0 # cf. RunningMode.__initTasksThreadsBound
 
     def checkParameters(self):
         """ Check the parameters, raise an exception if anything wrong"""
