@@ -110,7 +110,7 @@ class Matrix(object):
         rvl += '\n'
         return rvl
 
-    def getNumamem(self,sockets_mem,mem_proc):
+    def getNumamem(self,sockets_mem,mem_proc=True):
         """ Return a line describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket 
             if mem_dist==False we show the memory occupation relative to each memory socket
             if mem_dist==True  we show the %age memory occupation on each socket, related to the process memory
@@ -119,14 +119,13 @@ class Matrix(object):
         
         mem_pid_socket = self.__getMemPidSocket(sockets_mem,mem_proc)
 
-        h_header='  SOCKET MEMORY '
-        if mem_proc:
-            h_header += "relative to the process memory"
-        else:
-            h_header += "relative to the socket memory"
+        h_header='   DISTRIBUTION of the MEMORY among the sockets '
         
         rvl =  h_header
         rvl += "\n"
+        #rvl += "                ";
+        #rvl += self.__hard.SOCKETS_PER_NODE*(self.__hard.CORES_PER_SOCKET+1)*' '
+        #rvl += "  DISTRIBUTION\n"
         
         tags = mem_pid_socket.keys()
         tags.sort()
@@ -137,6 +136,11 @@ class Matrix(object):
             for v in val:
                 rvl += getGauge(v,self.__hard.CORES_PER_SOCKET)
                 rvl += ' '
+            rvl += '  '
+            for v in val:
+                rvl += str(v)
+                rvl += '%  '
+            
             rvl += "\n"
 
         rvl += "\n"

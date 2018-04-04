@@ -284,9 +284,10 @@ class PrintingForMatrixThreads(PrintingFor):
         self.__sorted_processes_cores = True
     def ShowIdleThreads(self):
         self.__show_idle = True
+
     # mem_proc if True, display memory occupation/sockets relative to the process memory
     #          if False, display memory occupation/sockets relative to the socket memory
-    def PrintNumamem(self,mem_proc):
+    def PrintNumamem(self,mem_proc=True):
         self.__print_numamem = True
         self.__mem_proc = mem_proc
 
@@ -380,7 +381,7 @@ class PrintingForMatrixThreads(PrintingFor):
         if self.__print_numamem:
             sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
             rvl += "\n"
-            rvl += m.getNumamem(sockets_mem,self.__mem_proc)
+            rvl += m.getNumamem(sockets_mem)
  
         # If wanted, print info about the gpus
         if self._tasks_binding.gpus_info != None:
