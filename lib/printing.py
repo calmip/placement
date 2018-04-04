@@ -494,6 +494,7 @@ class PrintingForSummary(PrintingFor):
         summary += str(use[1])
 
         if warning:
+            summary += ' W'
             summary += normal()
         
         return summary
