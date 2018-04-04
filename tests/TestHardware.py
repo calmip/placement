@@ -152,6 +152,11 @@ class TestHardwareBullDlc(unittest.TestCase):
         self.assertEqual(self.hardware.getCore2PhysCore(36),16)
         self.assertEqual(self.hardware.getCore2PhysCore(39),19)
 
+    def test_isHyperThreadingUsed(self):
+        self.assertEqual(self.hardware.isHyperThreadingUsed([0,1,2,20,21,22]),True)
+        self.assertEqual(self.hardware.isHyperThreadingUsed([0,1,2,23,24,25]),False)
+
+
 # bien qu'on teste ici une architecture Shared, on considère qu'elle est Exclusive
 class TestHardwareMesca2(unittest.TestCase):
     def setUp(self):
@@ -239,6 +244,6 @@ class TestHardwareMesca2(unittest.TestCase):
         self.assertEqual(self.hardware.getCore2PhysCore(112),112)
         self.assertEqual(self.hardware.getCore2PhysCore(118),118)
         self.assertEqual(self.hardware.getCore2PhysCore(127),127)
-
+        
 if __name__ == '__main__':
     unittest.main()

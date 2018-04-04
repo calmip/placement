@@ -104,7 +104,7 @@ from utilities import *
 from printing import *
 
 # If we run an a remote machine via ssh, not sure the HOSTNAME environment variable is available !
-from socket import gethostname
+#####################"from socket import gethostname
 
 def main():
 
@@ -142,12 +142,13 @@ def main():
     parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - EXPERIMENTAL")
     parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, should be used with --numactl. EXPERIMENTAL")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
-#    FOR THE DEV: --check=+ ==> look for a file called 
-    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus (default if check specified)")
+#    FOR THE DEV: --check=+ ==> look for files called PROCESSES.txt, *.NUMASTAT.txt, gpu.xml
+    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus on a running process (default if check specified)")
+    parser.add_argument("--summary","--summary",action="store_true",default=False,help="With --check: show summary of core and gpus utilization in a running process")
     parser.add_argument("-i","--show_idle",action="store_true",default=False,help="With --threads: show idle threads, not only running")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
-    parser.add_argument("-Y","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
+    parser.add_argument("--memory","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
 #    parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
     parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
     parser.set_defaults(output_mode="srun")
@@ -184,7 +185,10 @@ def main():
         print e
         exit(1)
 
-    # Main program
+# ----------------------------------------------------------------------
+#                                Main program
+# ----------------------------------------------------------------------
+
     try:
         if options.show_hard==True:
             show_hard(hard)
@@ -216,9 +220,10 @@ def main():
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
             print "OUPS, No output specified !"
-        else:
-            if options.check != None:
-                print gethostname()
+#        else:
+#            if options.check != None:
+#                print gethostname()
+                
         for o in outputs:
             print o
             
@@ -261,7 +266,7 @@ def buildOutputs(options,tasks_binding):
             return outputs
 
     # If check, the output default is --threads
-    if options.check!=None and (options.asciiart==False and options.human==False):
+    if options.check!=None and (options.asciiart==False and options.human==False and options.summary==False):
         options.threads = True
         
     # Print for human beings
@@ -285,6 +290,11 @@ def buildOutputs(options,tasks_binding):
             o.SortedProcessesCores()
         outputs.append(o)
 
+    # Only with --check: print a summary
+    if options.check!=None and options.summary==True:
+        o = PrintingForSummary(tasks_binding)
+        outputs.append(o)
+        
     return outputs
         
 

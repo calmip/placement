@@ -25,11 +25,13 @@
 #
 
 import os
+from decimal import Decimal
 from running import *
 from matrix import *
 from utilities import *
 from exception import *
-from itertools import chain,product
+import itertools
+from socket import gethostname
 
 class PrintingFor(object):
     """ Base class, all PrintingFor classes extend this class
@@ -296,8 +298,10 @@ class PrintingForMatrixThreads(PrintingFor):
         if self._tasks_binding.tasks > 66:
             return "ERROR - Threads representation is not supported if more than 66 tasks !"
         else:
+            rvl = gethostname()
+            rvl += '\n'
             # Print cpu binding, memory info and gpu info
-            rvl = self.__getCpuBinding(self._tasks_binding)
+            rvl += self.__getCpuBinding(self._tasks_binding)
             
             return rvl
 
@@ -417,7 +421,83 @@ class PrintingForMatrixThreads(PrintingFor):
 
         return sockets_mem
 
+class PrintingForSummary(PrintingFor):
+    def __isOverlap(self):
+        '''return True if two threads are overlapping (same logical core)'''
+        return len(self._tasks_binding.overlap) > 0
+        
+    def __isHyperUsed(self):
+        '''return true if this job uses hyperthreading'''
+        flat_cores = list(itertools.chain.from_iterable(self._tasks_binding.tasks_bound))
+        
+        return self._tasks_binding.hardware.isHyperThreadingUsed(flat_cores)
 
+    def __getUse(self,hyper):
+        '''return sum(cpu-usages) / nb_of_cores
+           nb_of_cores depends of hyper status'''
+        #processes = self._tasks_binding.pid
+        threads   = self._tasks_binding.threads_bound
+        
+        cpu      = 0.0
+        running  = 0
+        total    = 0
+        
+        for pid,p in threads.iteritems():
+            if p['R']:    # If the process is running
+                for tid,t in p['threads'].iteritems():
+                    cpu += float(t['cpu'])
+                    if t['state'] == 'R':
+                        running += 1
+                    total += 1
+                            
+        if hyper:
+            nb_of_cores = self._tasks_binding.hardware.CORES_PER_NODE * self._tasks_binding.hardware.THREADS_PER_CORE
+        else:
+            nb_of_cores = self._tasks_binding.hardware.CORES_PER_NODE
+
+        cpu = int(cpu / nb_of_cores)
+        run = int( (100 * running) / total )
+        return [ cpu, run ]
+        
+    def __str__(self):
+        if not isinstance(self._tasks_binding,RunningMode):
+            return "ERROR - The switch --summary can be used ONLY with --check"
+        
+        summary = gethostname()
+        summary += ' '
+
+        overlap = self.__isOverlap()
+        hyper   = self.__isHyperUsed()
+        use     = self.__getUse(hyper)
+
+        warning = overlap or use[0] < 50 or use[1] < 20 or self._tasks_binding.duration > 10.0
+        if warning:
+            summary += red_foreground()
+
+        summary += str(round(Decimal(str(self._tasks_binding.duration)),1))
+        summary += ' '
+        
+        if overlap:
+            summary += 'O'
+        else:
+            summary += 'N'
+        summary += ':'
+        
+        if hyper:
+            summary += 'H'
+        else:
+                summary += 'N'
+        summary += ':'
+
+        summary += str(use[0])
+        summary += ':'
+        summary += str(use[1])
+
+        if warning:
+            summary += normal()
+        
+        return summary
+        
 class PrintingForVerbose(PrintingFor):
     """ Printing more information ! """
 

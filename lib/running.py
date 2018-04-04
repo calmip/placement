@@ -26,6 +26,7 @@
 
 import os
 import re
+import time
 import xml.etree.ElementTree as et
 from exception import *
 from tasksbinding import *
@@ -85,7 +86,6 @@ class RunningMode(TasksBinding):
         if gpus == '':
             return
             
-        # provisoire
         # --check='+' ==> Just using the file called gpu.xml in the current directory, used ONLY for debugging 
         if self.path == '+':
             try:
@@ -303,12 +303,12 @@ class RunningMode(TasksBinding):
                 psr   = int(mt.group(2))
                 cpu   = float(mt.group(4))
                 thread_courant        = {}
-                thread_courant['tid'] = tid
-                thread_courant['psr'] = psr
-                thread_courant['ppsr']= self.hardware.getCore2PhysCore(psr)
-                thread_courant['cpu'] = cpu
-                thread_courant['state'] = state
-                thread_courant['mem'] = processus_courant['mem']
+                thread_courant['tid'] = tid                                     # thread id
+                thread_courant['psr'] = psr                                     # core number
+                thread_courant['ppsr']= self.hardware.getCore2PhysCore(psr)     # physical code number (in case of hyperthreading) 
+                thread_courant['cpu'] = cpu                                     # % cpu use
+                thread_courant['state'] = state                                 # State of the thrad (running etc)
+                thread_courant['mem'] = processus_courant['mem']                # % mem use
 
                 if processus_courant.has_key('threads')== False:
                     processus_courant['threads'] = {}
@@ -344,6 +344,9 @@ class RunningMode(TasksBinding):
     def __initTasksThreadsBound(self):
         """ Call __identProcesses then __buildTasksBound and other things """
 
+        # Measure time
+        begin = time.time()
+        
         # Retrieve the list of processes
         self.__identProcesses()
 
@@ -368,6 +371,9 @@ class RunningMode(TasksBinding):
             
         # Call the gpu information
         self.__identGpus()
+
+        # Measure duration
+        self.duration = time.time() - begin
 
     def PrintingForVerbose(self):
         """Return some verbose information"""
