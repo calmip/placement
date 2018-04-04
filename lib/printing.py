@@ -426,13 +426,13 @@ class PrintingForSummary(PrintingFor):
         '''return True if two threads are overlapping (same logical core)'''
         return len(self._tasks_binding.overlap) > 0
         
-    def __isHyperUsed(self):
+    def _isHyperUsed(self):
         '''return true if this job uses hyperthreading'''
         flat_cores = list(itertools.chain.from_iterable(self._tasks_binding.tasks_bound))
         
         return self._tasks_binding.hardware.isHyperThreadingUsed(flat_cores)
 
-    def __getUse(self,hyper):
+    def _getUse(self,hyper):
         '''return sum(cpu-usages) / nb_of_cores
            nb_of_cores depends of hyper status'''
         #processes = self._tasks_binding.pid
@@ -467,8 +467,8 @@ class PrintingForSummary(PrintingFor):
         summary += ' '
 
         overlap = self.__isOverlap()
-        hyper   = self.__isHyperUsed()
-        use     = self.__getUse(hyper)
+        hyper   = self._isHyperUsed()
+        use     = self._getUse(hyper)
 
         warning = overlap or use[0] < 50 or use[1] < 20 or self._tasks_binding.duration > 10.0
         if warning:
@@ -493,11 +493,41 @@ class PrintingForSummary(PrintingFor):
         summary += ':'
         summary += str(use[1])
 
+        gpus_info = self._tasks_binding.gpus_info
+        if gpus_info != None:
+            for s in gpus_info:
+                for g in s:
+                    summary += ':'
+                    summary += str(g['U']) + ':'
+                    summary += str(g['M']) + ':'
+                    summary += str(g['P'])
+
         if warning:
             summary += ' W'
             summary += normal()
         
         return summary
+
+class PrintingForCsv(PrintingForSummary):
+    def __str__(self):
+        if not isinstance(self._tasks_binding,RunningMode):
+            return "ERROR - The switch --summary can be used ONLY with --check"
+
+        hyper   = self._isHyperUsed()
+        use     = self._getUse(hyper)
+
+        csv = str(use[0])
+        csv += '\t'
+
+        gpus_info = self._tasks_binding.gpus_info
+        if gpus_info != None:
+            for s in gpus_info:
+                for g in s:
+                    csv += str(g['U']) + '\t'
+                    csv += str(g['M']) + '\t'
+                    csv += str(g['P']) + '\t'
+
+        return csv
         
 class PrintingForVerbose(PrintingFor):
     """ Printing more information ! """

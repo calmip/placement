@@ -145,6 +145,7 @@ def main():
 #    FOR THE DEV: --check=+ ==> look for files called PROCESSES.txt, *.NUMASTAT.txt, gpu.xml
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus on a running process (default if check specified)")
     parser.add_argument("--summary","--summary",action="store_true",default=False,help="With --check: show summary of core and gpus utilization in a running process")
+    parser.add_argument("--csv","--csv",action="store_true",default=False,help="With --check: same infos as --summary, but csv formatted")
     parser.add_argument("-i","--show_idle",action="store_true",default=False,help="With --threads: show idle threads, not only running")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
@@ -266,7 +267,7 @@ def buildOutputs(options,tasks_binding):
             return outputs
 
     # If check, the output default is --threads
-    if options.check!=None and (options.asciiart==False and options.human==False and options.summary==False):
+    if options.check!=None and (options.asciiart==False and options.human==False and options.summary==False and options.csv==False):
         options.threads = True
         
     # Print for human beings
@@ -293,6 +294,11 @@ def buildOutputs(options,tasks_binding):
     # Only with --check: print a summary
     if options.check!=None and options.summary==True:
         o = PrintingForSummary(tasks_binding)
+        outputs.append(o)
+
+    # Only with --csv: print a summary in csv format
+    if options.check!=None and options.csv==True:
+        o = PrintingForCsv(tasks_binding)
         outputs.append(o)
         
     return outputs
