@@ -37,7 +37,7 @@ echo "Now installing placement..."
 [ ! -d $LIB ] && (mkdir -p $LIB || exit 1)
 [ ! -d $ETC ] && (mkdir -p $ETC || exit 1)
 
-for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py placement-cont.py
 do
   cp $SRC/lib/$f $LIB
 done
@@ -49,10 +49,10 @@ done
 
 cp $SRC/bin/placement-dist $BIN
 chmod -R a=rX,u+w $LIB $BIN $ETC
-chmod a+rx $BIN/placement-dist $LIB/placement.py
+chmod a+rx $BIN/placement-dist $LIB/placement.py $LIB/placement-cont.py
 
 # edit placement-dist 
-sed -i -e "s!PROOT!$PLACEMENT_ROOT!" $BIN/placement-dist
+sed -i -e "s!PROOT!$PLACEMENT_ROOT!" $BIN/placement-dist 
 
 echo
 # Do we have numastat ?

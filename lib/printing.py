@@ -508,24 +508,52 @@ class PrintingForSummary(PrintingFor):
         
         return summary
 
-class PrintingForCsv(PrintingForSummary):
+class PrintingForCsv(PrintingFor):
+    def _getUse(self,hyper=True):
+        '''return cpu use for each physical core - Return an array, sorted in core number'''
+
+        threads   = self._tasks_binding.threads_bound
+        cores={}
+        for pid,p in threads.iteritems():
+            if p['R']:    # If the process is running
+                for tid,t in p['threads'].iteritems():
+                    use  = float(t['cpu'])
+                    core = int(t['ppsr'])              # Using physical psr, ie cumulating core threads (hyperthreading)
+                    if t['state'] == 'R':
+                        cpu  = float(t['cpu'])
+                    else:
+                        cpu = 0.0
+                    if cores.has_key(core):
+                        cores[core] += cpu
+                    else:
+                        cores[core] = cpu
+        
+        core_use=[]
+        nb_of_cores = self._tasks_binding.hardware.CORES_PER_NODE
+        for c in range(nb_of_cores):
+            if cores.has_key(c):
+                core_use.append(cores[c])
+            else:
+                core_use.append(0)
+        
+        return core_use
+
     def __str__(self):
         if not isinstance(self._tasks_binding,RunningMode):
-            return "ERROR - The switch --summary can be used ONLY with --check"
+            return "ERROR - The switch --csv can be used ONLY with --check"
 
-        hyper   = self._isHyperUsed()
-        use     = self._getUse(hyper)
+        core_use = self._getUse()
 
-        csv = str(use[0])
-        csv += '\t'
+        csv = ','.join(map(str,core_use))
+        csv += ','
 
         gpus_info = self._tasks_binding.gpus_info
         if gpus_info != None:
             for s in gpus_info:
                 for g in s:
-                    csv += str(g['U']) + '\t'
-                    csv += str(g['M']) + '\t'
-                    csv += str(g['P']) + '\t'
+                    csv += str(g['U']) + ','
+                    csv += str(g['M']) + ','
+                    csv += str(g['P']) + ','
 
         return csv
         
