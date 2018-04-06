@@ -505,7 +505,7 @@ class PrintingForSummary(PrintingFor):
 
         warning = overlap or use[0] < 50 or use[1] < 20 or self._tasks_binding.duration > 10.0
         if warning:
-            summary += red_foreground()
+            summary += AnsiCodes.red_foreground()
 
         summary += str(round(Decimal(str(self._tasks_binding.duration)),1))
         summary += ' '
@@ -537,7 +537,7 @@ class PrintingForSummary(PrintingFor):
 
         if warning:
             summary += ' W'
-            summary += normal()
+            summary += AnsiCodes.normal()
         
         return summary
 

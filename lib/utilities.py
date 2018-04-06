@@ -238,7 +238,7 @@ def getGauge(value,size,color=True):
     point = '.'
     if color:
         if m>0:
-            rvl = mag_foreground() + '*'*m + normal()
+            rvl = AnsiCodes.mag_foreground() + '*'*m + AnsiCodes.normal()
         if p>0:
             rvl += point*p
     else:
@@ -248,26 +248,51 @@ def getGauge(value,size,color=True):
             rvl += point*p
     return rvl       
     
+class AnsiCodes(object):
+
+    # static variable
+    __using_ansi= True
     
-def bold():
-    return '\033[1m'
-
-def underline():
-    return '\033[41m'
-
-def boldunderline():
-    return '\033[1;4m'
-
-def white_background():
-    return '\033[47m'
-
-def red_foreground():
-    return '\033[1;31m'
-
-def mag_foreground():
-    return '\033[1;35m'
-
-# Back to "normal"
-def normal():
-    return '\033[0m'
+    @staticmethod
+    def noAnsi():
+        AnsiCodes.__using_ansi = False
+    @staticmethod
+    def Ansi():
+        AnsiCodes.__using_ansi = False
+        
+    @staticmethod
+    def __returnCode(code):
+        if AnsiCodes.__using_ansi:
+            return code
+        else:
+            return ''
+    
+    @staticmethod
+    def bold():
+        return AnsiCodes.__returnCode('\033[1m')
+    
+    @staticmethod
+    def underline():
+        return AnsiCodes.__returnCode('\033[41m')
+    
+    @staticmethod
+    def boldunderline():
+        return AnsiCodes.__returnCode('\033[1;4m')
+    
+    @staticmethod
+    def white_background():
+        return AnsiCodes.__returnCode('\033[47m')
+    
+    @staticmethod
+    def red_foreground():
+        return AnsiCodes.__returnCode('\033[1;31m')
+    
+    @staticmethod
+    def mag_foreground():
+        return AnsiCodes.__returnCode('\033[1;35m')
+    
+    # Back to "normal"    
+    @staticmethod
+    def normal():
+        return AnsiCodes.__returnCode('\033[0m')
 
