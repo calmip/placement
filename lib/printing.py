@@ -39,9 +39,37 @@ class PrintingFor(object):
     o = PrintingForxxx(tasks_binding)
     print o
 """
-
+    # This is a STATIC property, use it with PrintingFor.__warn_printed !
+    # Avoid printing the warning several times, even if we use several PrintingFor objects !
+    __warn_printed = False
+    
     def __init__(self,tasks_binding):
         self._tasks_binding = tasks_binding
+        
+    # If self._tasks_binding is an instance of Running, warn if there is overlap
+    def _warnOverlap(self):
+        warn = ""
+        if PrintingFor.__warn_printed:
+            return warn
+
+        if not isinstance(self._tasks_binding,RunningMode):
+            return warn
+
+        # If overlap, print a warning !
+        try:
+            overlap = self._tasks_binding.overlap
+            if len(overlap)>0:
+                warn += "WARNING - FOLLOWING TASKS ARE OVERLAPPING !\n"
+                warn += "===========================================\n"
+                warn += str(overlap)
+                warn += "\n\n"
+            PrintingFor.__warn_printed = True
+            
+        except AttributeError:
+            pass
+        
+        return warn
+
     def __str__(self):
         return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
 
@@ -131,10 +159,13 @@ class PrintingForAsciiArt(PrintingFor):
     """
 
     def __str__(self):
+        rvl = self._warnOverlap()
+
         if self._tasks_binding.tasks > 66:
-            return "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
+            rvl += "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
         else:
-            return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
+            rvl += self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
+        return rvl
 
 
     def __getCpuBinding(self,archi,tasks_bound,over_cores=None):
@@ -295,15 +326,17 @@ class PrintingForMatrixThreads(PrintingFor):
 
     def __str__(self):
         '''Convert to a string (-> print) '''
+        
+        rvl = self._warnOverlap()
         if self._tasks_binding.tasks > 66:
-            return "ERROR - Threads representation is not supported if more than 66 tasks !"
+            rvl += "ERROR - Threads representation is not supported if more than 66 tasks !"
         else:
-            rvl = gethostname()
+            rvl += gethostname()
             rvl += '\n'
             # Print cpu binding, memory info and gpu info
             rvl += self.__getCpuBinding(self._tasks_binding)
             
-            return rvl
+        return rvl
 
     def __getCpuBinding(self,tasks_binding):
         """ return a string, representing sets of threads and tasks in a matrix representation, used only for running tasks
@@ -426,13 +459,13 @@ class PrintingForSummary(PrintingFor):
         '''return True if two threads are overlapping (same logical core)'''
         return len(self._tasks_binding.overlap) > 0
         
-    def __isHyperUsed(self):
+    def _isHyperUsed(self):
         '''return true if this job uses hyperthreading'''
         flat_cores = list(itertools.chain.from_iterable(self._tasks_binding.tasks_bound))
         
         return self._tasks_binding.hardware.isHyperThreadingUsed(flat_cores)
 
-    def __getUse(self,hyper):
+    def _getUse(self,hyper):
         '''return sum(cpu-usages) / nb_of_cores
            nb_of_cores depends of hyper status'''
         #processes = self._tasks_binding.pid
@@ -467,8 +500,8 @@ class PrintingForSummary(PrintingFor):
         summary += ' '
 
         overlap = self.__isOverlap()
-        hyper   = self.__isHyperUsed()
-        use     = self.__getUse(hyper)
+        hyper   = self._isHyperUsed()
+        use     = self._getUse(hyper)
 
         warning = overlap or use[0] < 50 or use[1] < 20 or self._tasks_binding.duration > 10.0
         if warning:
@@ -493,16 +526,79 @@ class PrintingForSummary(PrintingFor):
         summary += ':'
         summary += str(use[1])
 
+        gpus_info = self._tasks_binding.gpus_info
+        if gpus_info != None:
+            for s in gpus_info:
+                for g in s:
+                    summary += ':'
+                    summary += str(g['U']) + ':'
+                    summary += str(g['M']) + ':'
+                    summary += str(g['P'])
+
         if warning:
+            summary += ' W'
             summary += normal()
         
         return summary
+
+class PrintingForCsv(PrintingFor):
+    def __getUse(self,hyper=True):
+        '''return cpu use for each physical core - Return an array, sorted in core number'''
+
+        threads   = self._tasks_binding.threads_bound
+
+        cores={}
+        mem=0.0
+        for pid,p in threads.iteritems():
+            mem += float(p['mem'])
+            if p['R']:    # If the process is running
+                for tid,t in p['threads'].iteritems():
+                    use  = float(t['cpu'])
+                    core = int(t['ppsr'])              # Using physical psr, ie cumulating core threads (hyperthreading)
+                    if t['state'] == 'R':
+                        cpu  = float(t['cpu'])
+                    else:
+                        cpu = 0.0
+                    if cores.has_key(core):
+                        cores[core] += cpu
+                    else:
+                        cores[core] = cpu
         
-class PrintingForVerbose(PrintingFor):
-    """ Printing more information ! """
+        core_use=[]
+        nb_of_cores = self._tasks_binding.hardware.CORES_PER_NODE
+        for c in range(nb_of_cores):
+            if cores.has_key(c):
+                core_use.append(cores[c])
+            else:
+                core_use.append(0)
+        core_use.append(mem)
+        
+        return core_use
 
     def __str__(self):
         if not isinstance(self._tasks_binding,RunningMode):
-            return "ERROR - The switch --verbose can be used ONLY with --check"
-        else:
-            return self._tasks_binding.PrintingForVerbose()
+            return "ERROR - The switch --csv can be used ONLY with --check"
+
+        core_use = self.__getUse()
+
+        csv = ','.join(map(str,core_use))
+        csv += ','
+
+        gpus_info = self._tasks_binding.gpus_info
+        if gpus_info != None:
+            for s in gpus_info:
+                for g in s:
+                    csv += str(g['U']) + ','
+                    csv += str(g['M']) + ','
+                    csv += str(g['P']) + ','
+
+        return csv
+        
+#class PrintingForVerbose(PrintingFor):
+#    """ Printing more information ! """
+#
+#    def __str__(self):
+#        if not isinstance(self._tasks_binding,RunningMode):
+#            return "ERROR - The switch --verbose can be used ONLY with --check"
+#        else:
+#            return self._tasks_binding.PrintingForVerbose()
