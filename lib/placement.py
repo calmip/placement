@@ -196,6 +196,7 @@ def main():
             exit(0)
 
         # First stage: Compute data and store them inside tasks_binding
+        
         # If --check specified, data are computed from the running job(s)
         if options.check != None:
             #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
@@ -206,30 +207,17 @@ def main():
             #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
             tasks_binding = compute_data_from_parameters(options,args,hard)
 
-        # If overlap, print a warning !
-        try:
-            overlap = tasks_binding.overlap
-            if len(overlap)>0:
-                print "WARNING - FOLLOWING TASKS ARE OVERLAPPING !"
-                print "==========================================="
-                print overlap
-                print
-        except AttributeError:
-            pass
-
         # Second stage - Print data, may be using several formats
+        # outputs is an array of objects extending PrintingFor
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
-            print "OUPS, No output specified !"
-#        else:
-#            if options.check != None:
-#                print gethostname()
-                
+            print ("OUPS, No output specified !")
+
         for o in outputs:
-            print o
+            print (o)
             
     except PlacementException, e:
-        print e
+        print (e)
         exit(1)
 
 

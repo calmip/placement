@@ -39,9 +39,37 @@ class PrintingFor(object):
     o = PrintingForxxx(tasks_binding)
     print o
 """
-
+    # This is a STATIC property, use it with PrintingFor.__warn_printed !
+    # Avoid printing the warning several times, even if we use several PrintingFor objects !
+    __warn_printed = False
+    
     def __init__(self,tasks_binding):
         self._tasks_binding = tasks_binding
+        
+    # If self._tasks_binding is an instance of Running, warn if there is overlap
+    def _warnOverlap(self):
+        warn = ""
+        if PrintingFor.__warn_printed:
+            return warn
+
+        if not isinstance(self._tasks_binding,RunningMode):
+            return warn
+
+        # If overlap, print a warning !
+        try:
+            overlap = self._tasks_binding.overlap
+            if len(overlap)>0:
+                warn += "WARNING - FOLLOWING TASKS ARE OVERLAPPING !\n"
+                warn += "===========================================\n"
+                warn += str(overlap)
+                warn += "\n\n"
+            PrintingFor.__warn_printed = True
+            
+        except AttributeError:
+            pass
+        
+        return warn
+
     def __str__(self):
         return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
 
@@ -131,10 +159,13 @@ class PrintingForAsciiArt(PrintingFor):
     """
 
     def __str__(self):
+        rvl = self._warnOverlap()
+
         if self._tasks_binding.tasks > 66:
-            return "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
+            rvl += "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
         else:
-            return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
+            rvl += self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
+        return rvl
 
 
     def __getCpuBinding(self,archi,tasks_bound,over_cores=None):
@@ -295,15 +326,17 @@ class PrintingForMatrixThreads(PrintingFor):
 
     def __str__(self):
         '''Convert to a string (-> print) '''
+        
+        rvl = self._warnOverlap()
         if self._tasks_binding.tasks > 66:
-            return "ERROR - Threads representation is not supported if more than 66 tasks !"
+            rvl += "ERROR - Threads representation is not supported if more than 66 tasks !"
         else:
-            rvl = gethostname()
+            rvl += gethostname()
             rvl += '\n'
             # Print cpu binding, memory info and gpu info
             rvl += self.__getCpuBinding(self._tasks_binding)
             
-            return rvl
+        return rvl
 
     def __getCpuBinding(self,tasks_binding):
         """ return a string, representing sets of threads and tasks in a matrix representation, used only for running tasks
@@ -561,11 +594,11 @@ class PrintingForCsv(PrintingFor):
 
         return csv
         
-class PrintingForVerbose(PrintingFor):
-    """ Printing more information ! """
-
-    def __str__(self):
-        if not isinstance(self._tasks_binding,RunningMode):
-            return "ERROR - The switch --verbose can be used ONLY with --check"
-        else:
-            return self._tasks_binding.PrintingForVerbose()
+#class PrintingForVerbose(PrintingFor):
+#    """ Printing more information ! """
+#
+#    def __str__(self):
+#        if not isinstance(self._tasks_binding,RunningMode):
+#            return "ERROR - The switch --verbose can be used ONLY with --check"
+#        else:
+#            return self._tasks_binding.PrintingForVerbose()
