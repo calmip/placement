@@ -126,6 +126,7 @@ def printHeaders():
 		h += 'CPU'
 		h += str(c)
 		h += ','
+	h += 'MEM,'
 	
 	gpus=hard.GPUS
 	if gpus != None:

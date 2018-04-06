@@ -509,12 +509,15 @@ class PrintingForSummary(PrintingFor):
         return summary
 
 class PrintingForCsv(PrintingFor):
-    def _getUse(self,hyper=True):
+    def __getUse(self,hyper=True):
         '''return cpu use for each physical core - Return an array, sorted in core number'''
 
         threads   = self._tasks_binding.threads_bound
+
         cores={}
+        mem=0.0
         for pid,p in threads.iteritems():
+            mem += float(p['mem'])
             if p['R']:    # If the process is running
                 for tid,t in p['threads'].iteritems():
                     use  = float(t['cpu'])
@@ -535,6 +538,7 @@ class PrintingForCsv(PrintingFor):
                 core_use.append(cores[c])
             else:
                 core_use.append(0)
+        core_use.append(mem)
         
         return core_use
 
@@ -542,7 +546,7 @@ class PrintingForCsv(PrintingFor):
         if not isinstance(self._tasks_binding,RunningMode):
             return "ERROR - The switch --csv can be used ONLY with --check"
 
-        core_use = self._getUse()
+        core_use = self.__getUse()
 
         csv = ','.join(map(str,core_use))
         csv += ','
