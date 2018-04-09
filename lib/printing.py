@@ -456,10 +456,16 @@ class PrintingForMatrixThreads(PrintingFor):
 
 class PrintingForSummary(PrintingFor):
 
-    __show_depop          = False
+    __show_depop = False
+    __cpu_thr    = 50      # cpu use default threshold
+    __mem_thr    = 80      # mem threshold     
 
     def ShowDepopulated(self):
         self.__show_depop = True
+    def SetCpuThreshold(self,thr):
+        self.__cpu_thr = thr
+    def SetMemThreshold(self,thr):
+        self.__mem_thr = thr
 
     def __isOverlap(self):
         '''return True if two threads are overlapping (same logical core)'''
@@ -512,14 +518,14 @@ class PrintingForSummary(PrintingFor):
         use     = self._getUse(hyper)
 
         #warning = overlap or use[0] < 50 or use[1] < 20 or use[2] > 80.0 or self._tasks_binding.duration > 10.0
-        warning = overlap or self._tasks_binding.duration > 10.0 or use[1] < 20
-        
+        warning = overlap or self._tasks_binding.duration > 10.0
+
         if self.__show_depop:
-            warning = warning or use[0]<70 or use[2]>80.0
+            warning = warning or use[0]<self.__cpu_thr or use[2]>self.__mem_thr
         
         # Hide jobs for which we have LOW cpu use but HIGH memory allocation: this is not a pathological case, this is just a depopulated job
         else:
-            warning = warning or ((use[0]<70) ^ (use[2]>80.0))  # If cpu use low AND memory high, it is NOT pathological, no warning
+            warning = warning or ((use[0]<self.__cpu_thr) ^ (use[2]>self.__mem_thr))  # If cpu use low AND memory high, it is NOT pathological, no warning
 
         if warning:
             summary += AnsiCodes.red_foreground()
@@ -543,7 +549,7 @@ class PrintingForSummary(PrintingFor):
         summary += ':'
         summary += str(use[1])
         summary += ':'
-        summary += str(use[2])
+        summary += str(int(round(Decimal(str(use[2])),0)))
 
         gpus_info = self._tasks_binding.gpus_info
         if gpus_info != None:

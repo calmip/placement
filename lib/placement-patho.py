@@ -63,6 +63,11 @@ def main():
 	group = parser.add_argument_group('detecting pathological jobs on compute nodes')
 	group.add_argument("--pathological",dest='patho',action="store_true",help="required")
 	group.add_argument("--time",dest='time',action='store',type=int,default=SLEEPTIMEMIN,help="Sleeping time between two measures")
+	group.add_argument("--oneshot",dest='oneshot',action='store_true',help="Check one time and leave")
+	parser.add_argument("--cpu_threshold",dest="cpu_thr",action="store",type=int,default=50,help="Threshold to consider the cpu use as \"low\" ")
+	parser.add_argument("--mem_threshold",dest="mem_thr",action="store",type=int,default=80,help="Threshold to consider the mem allocated as \"high\" ")
+	parser.add_argument("--show_depop","--show_depop",action="store_true",default=False,help="Show as pathological the depopulated jobs, ie jobs with low cpu use and high memory allocation")
+
 	
 	options=parser.parse_args()
 
@@ -88,11 +93,24 @@ def main():
 	# NOTE - We are looking for jobs remaining pathological for the 5 iterations
 	#        So we do not consider jobs starting after the first iteration, 
 	#        as well as jobs finishing after the last iteration
-	N = 5
+	if options.oneshot:
+		N = 1
+	else:
+		N = 5
+		
 	results = []
+	sys.stderr.write("Detection of pathological jobs, ie jobs with:\n")
+	sys.stderr.write("several tasks sharing the same logical core (Overlap)\n")
+	sys.stderr.write("   OR execution time > 10.0 s\n")
+	sys.stderr.write("   OR cpu use < " + str(options.cpu_thr) + "%\n")
+	sys.stderr.write("   OR mem use > " + str(options.mem_thr) + "%\n")
+
+	if not options.show_depop:
+		sys.stderr.write("   but NOT both (it is not pathological running a depopulated job when using a lot of memory)\n")
+	sys.stderr.write("\n")
 	sys.stderr.write("Now checking " + str(len(running_jobs)) + " running jobs. Please be patient\n")
 	for i in range(N):
-		res = callPlacementSummary(running_jobs)
+		res = callPlacementSummary(running_jobs,options)
 		results.append(res)
 		if i < N-1:
 			sys.stderr.write("Found " + str(len(res)) + " pathological jobs, now waiting a while\n")
@@ -133,7 +151,7 @@ def main():
 #               A pathological running job is a job whose summary ends with the letter W
 #				The nonpathological running jobs are filtered out
 #
-def callPlacementSummary(jobids):
+def callPlacementSummary(jobids,options):
 	output = {}
 #	for j in jobids[0:10]:
 	for j in jobids:
@@ -141,6 +159,16 @@ def callPlacementSummary(jobids):
 		# Ignore errors in placement --summary, they are probably due to a finished job
 		try:
 			cmd = [PLACEMENT,'--jobid',j,'--summary','--no_ansi']
+			if options.cpu_thr != None:
+				cmd.append('--cpu_threshold')
+				cmd.append(str(options.cpu_thr))
+			if options.mem_thr != None:
+				cmd.append('--mem_threshold')
+				cmd.append(str(options.mem_thr))
+			if options.show_depop != None:
+				cmd.append('--show_depop')
+
+			#print(cmd)				
 			out=subprocess.check_output(cmd).rstrip('\n')
 		except subprocess.CalledProcessError:
 			pass
