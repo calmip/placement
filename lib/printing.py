@@ -455,6 +455,12 @@ class PrintingForMatrixThreads(PrintingFor):
         return sockets_mem
 
 class PrintingForSummary(PrintingFor):
+
+    __show_depop          = False
+
+    def ShowDepopulated(self):
+        self.__show_depop = True
+
     def __isOverlap(self):
         '''return True if two threads are overlapping (same logical core)'''
         return len(self._tasks_binding.overlap) > 0
@@ -474,8 +480,10 @@ class PrintingForSummary(PrintingFor):
         cpu      = 0.0
         running  = 0
         total    = 0
+        mem=0.0
         
         for pid,p in threads.iteritems():
+            mem += float(p['mem'])
             if p['R']:    # If the process is running
                 for tid,t in p['threads'].iteritems():
                     cpu += float(t['cpu'])
@@ -490,7 +498,7 @@ class PrintingForSummary(PrintingFor):
 
         cpu = int(cpu / nb_of_cores)
         run = int( (100 * running) / total )
-        return [ cpu, run ]
+        return [ cpu, run, mem ]
         
     def __str__(self):
         if not isinstance(self._tasks_binding,RunningMode):
@@ -503,7 +511,16 @@ class PrintingForSummary(PrintingFor):
         hyper   = self._isHyperUsed()
         use     = self._getUse(hyper)
 
-        warning = overlap or use[0] < 50 or use[1] < 20 or self._tasks_binding.duration > 10.0
+        #warning = overlap or use[0] < 50 or use[1] < 20 or use[2] > 80.0 or self._tasks_binding.duration > 10.0
+        warning = overlap or self._tasks_binding.duration > 10.0 or use[1] < 20
+        
+        if self.__show_depop:
+            warning = warning or use[0]<70 or use[2]>80.0
+        
+        # Hide jobs for which we have LOW cpu use but HIGH memory allocation: this is not a pathological case, this is just a depopulated job
+        else:
+            warning = warning or ((use[0]<70) ^ (use[2]>80.0))  # If cpu use low AND memory high, it is NOT pathological, no warning
+
         if warning:
             summary += AnsiCodes.red_foreground()
 
@@ -519,12 +536,14 @@ class PrintingForSummary(PrintingFor):
         if hyper:
             summary += 'H'
         else:
-                summary += 'N'
+            summary += 'N'
         summary += ':'
 
         summary += str(use[0])
         summary += ':'
         summary += str(use[1])
+        summary += ':'
+        summary += str(use[2])
 
         gpus_info = self._tasks_binding.gpus_info
         if gpus_info != None:
