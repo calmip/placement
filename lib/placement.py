@@ -130,22 +130,22 @@ def main():
     parser.add_argument("-T","--hyper",action="store_true",default=False,dest="hyper",help='Force use of hyperthreading (False)')
     parser.add_argument("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (False)")
     parser.add_argument("-M","--mode",choices=["compact","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter_cyclic,scatter_block, compact (scatter_cyclic)")
-#    parser.add_argument("--relax",action="store_true",default=False,help="DO NOT USE unless you know what you are doing")
     parser.add_argument("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable")
     parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
     parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
     parser.add_argument("-Z","--intel_affinity",action="store_const",dest="output_mode",const="kmp",help="Output for intel openmp compiler, try also --verbose")
     parser.add_argument("-G","--gnu_affinity",action="store_const",dest="output_mode",const="gomp",help="Output for gnu openmp compiler")
-#    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
-#    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
     parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - EXPERIMENTAL")
     parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, should be used with --numactl. EXPERIMENTAL")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
 #    FOR THE DEV: --check=+ ==> look for files called PROCESSES.txt, *.NUMASTAT.txt, gpu.xml
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus on a running process (default if check specified)")
-    parser.add_argument("--summary","--summary",action="store_true",default=False,help="With --check: show summary of core and gpus utilization in a running process")
-    parser.add_argument("--csv","--csv",action="store_true",default=False,help="With --check: same infos as --summary, but csv formatted")
+    parser.add_argument("--summary","--summary",action="store_true",default=False,help="With --check: show summary of core and gpus utilization in a running process, with a warning for pathological cases")
+    parser.add_argument("--show_depop","--show_depop",action="store_true",default=False,help="With --check --summary: show as pathological jobs the depopulated jobs, ie jobs with low cpu use and high memory allocation")
+    parser.add_argument("--cpu_threshold",dest="cpu_thr",action="store",type=int,help="With --check --summary: threshold to consider the cpu use as \"low\" ")
+    parser.add_argument("--mem_threshold",dest="mem_thr",action="store",type=int,help="With --check --summary: threshold to consider the mem allocated as \"high\" ")
+    parser.add_argument("--csv","--csv",action="store_true",default=False,help="With --check: same infos as --summary, but csv formatted and no warning indicators")
     parser.add_argument("-i","--show_idle",action="store_true",default=False,help="With --threads: show idle threads, not only running")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
@@ -265,7 +265,7 @@ def buildOutputs(options,tasks_binding):
     # Print for human beings
     if options.human==True:
         outputs.append(PrintingForHuman(tasks_binding))
-    
+        
     # Print for artists (!)
     if options.asciiart==True:
         outputs.append(PrintingForAsciiArt(tasks_binding))
@@ -286,6 +286,14 @@ def buildOutputs(options,tasks_binding):
     # Only with --check: print a summary
     if options.check!=None and options.summary==True:
         o = PrintingForSummary(tasks_binding)
+        if options.verbose == True:
+            o.setVerbose()
+        if options.show_depop == True:
+            o.ShowDepopulated()
+        if options.cpu_thr != None:
+            o.SetCpuThreshold(options.cpu_thr)
+        if options.mem_thr != None:
+            o.SetMemThreshold(options.mem_thr)
         outputs.append(o)
 
     # Only with --csv: print a summary in csv format
