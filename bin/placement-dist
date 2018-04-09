@@ -45,9 +45,9 @@ export PYTHONPATH=$PLACEMENT_ROOT/lib:$PYTHONPATH
 # Path to the placement.py python program
 PLACEMENTPY=$PLACEMENT_ROOT/lib/placement.py
 
-# Path to the placement-cont.py and placement-mon.py python programs
+# Path to the placement-cont.py and placement-patho.py python programs
 PLACEMENTCONTPY=$PLACEMENT_ROOT/lib/placement-cont.py
-PLACEMENTMONPY=$PLACEMENT_ROOT/lib/placement-mon.py
+PLACEMENTPATHOPY=$PLACEMENT_ROOT/lib/placement-patho.py
 
 # ================ The following should not be changed =====================
 
@@ -58,10 +58,10 @@ then
 	exit 0
 fi
 
-# the monitor mode
-if [[ "$*" =~ "--monitor" ]]
+# the pathological mode
+if [[ "$*" =~ "--patho" ]]
 then
-	exec $PLACEMENTMONPY $*
+	exec $PLACEMENTPATHOPY $*
 	exit 0
 fi
 

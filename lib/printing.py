@@ -594,11 +594,11 @@ class PrintingForCsv(PrintingFor):
 
         return csv
         
-#class PrintingForVerbose(PrintingFor):
-#    """ Printing more information ! """
-#
-#    def __str__(self):
-#        if not isinstance(self._tasks_binding,RunningMode):
-#            return "ERROR - The switch --verbose can be used ONLY with --check"
-#        else:
-#            return self._tasks_binding.PrintingForVerbose()
+class PrintingForVerbose(PrintingFor):
+    """ Printing more information ! """
+
+    def __str__(self):
+        if not isinstance(self._tasks_binding,RunningMode):
+            return "ERROR - The switch --verbose can be used ONLY with --check"
+        else:
+            return self._tasks_binding.PrintingForVerbose()

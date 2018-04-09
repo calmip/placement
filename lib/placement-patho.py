@@ -37,15 +37,15 @@ import datetime
 SLEEPTIMEMIN=3                                                          # Minimum sleep time you can specify (in s)
 SQUEUECMD   =['squeue','-t','R','-p','exclusive','-o','%i','-h']        # The command to send for finding the jobs 
 #
-# placement-mon is automatically launched by the bash call script when the switch --monitor is detected
+# placement-patho is automatically launched by the bash call script when the switch --pathological is detected
 #
 # It uses squeue to get the list of running jobs, then for each job it runs placement --summary.
-# It detects the pathologicalal jobs 
+# It detects the pathological jobs 
 # This is done 5 times, sleeping a while between launches
-# Then the jobs which were EACH TIME detected as pathologicalal are printed with the summary message
+# The jobs which were detected EACH TIME  as pathological are printed with the summary message
 #
-# It may be a good idea then to have a look to theses jobs, with placement --threads, or placement --continuous to understand
-# what happens with theses jobs
+# It may be a good idea then to have a look to these jobs, with placement --threads, or placement --continuous to understand
+# what happens with them
 #
 
 # The PLACEMENT_ROOT env variable (should be correctly set by the install script)
@@ -60,13 +60,13 @@ def main():
 	#epilog = ""
 	ver="1.5.0-dev"
 	parser = argparse.ArgumentParser(version=ver,description="placement-mon " + ver)
-	group = parser.add_argument_group('continuously checking jobs running on compute nodes')
-	group.add_argument("--monitoring",dest='mon',action="store_true",help="required")
+	group = parser.add_argument_group('detecting pathological jobs on compute nodes')
+	group.add_argument("--pathological",dest='patho',action="store_true",help="required")
 	group.add_argument("--time",dest='time',action='store',type=int,default=SLEEPTIMEMIN,help="Sleeping time between two measures")
 	
 	options=parser.parse_args()
 
-	if options.mon==False:
+	if options.patho==False:
 		sys.stderr.write ("INTERNAL ERROR - --monitoring missing !\n")
 		exit(1)
 		
