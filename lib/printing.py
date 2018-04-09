@@ -459,14 +459,16 @@ class PrintingForSummary(PrintingFor):
     __show_depop = False
     __cpu_thr    = 50      # cpu use default threshold
     __mem_thr    = 80      # mem threshold     
-
+    __verbose    = False
+    
     def ShowDepopulated(self):
         self.__show_depop = True
     def SetCpuThreshold(self,thr):
         self.__cpu_thr = thr
     def SetMemThreshold(self,thr):
         self.__mem_thr = thr
-
+    def setVerbose(self):
+        self.__verbose = True
     def __isOverlap(self):
         '''return True if two threads are overlapping (same logical core)'''
         return len(self._tasks_binding.overlap) > 0
@@ -510,7 +512,18 @@ class PrintingForSummary(PrintingFor):
         if not isinstance(self._tasks_binding,RunningMode):
             return "ERROR - The switch --summary can be used ONLY with --check"
         
-        summary = gethostname()
+        summary = ""
+        if self.__verbose:
+            summary += "Pathological status of the job:\n"
+            summary += "0.1:N:N:80:50:90 \n"
+            summary += "  | | |  |  |  \_ Memory allocated by the tasks (max = 100%)\n"
+            summary += "  | | |  |  \____ Part of the threads in state Running at poll time % (max = 100%)\n"
+            summary += "  | | |  \_______ Total cpu used by the threads since start of job (max = 100%)\n"
+            summary += "  | | \__________ Hyper threading used ? N = no, H = yes\n"
+            summary += "  | \____________ Overlap status N = normal, O = Overlap\n"
+            summary += "  \______________ Time to poll the node (s)\n\n"
+
+        summary += gethostname()
         summary += ' '
 
         overlap = self.__isOverlap()
@@ -531,7 +544,7 @@ class PrintingForSummary(PrintingFor):
             summary += AnsiCodes.red_foreground()
 
         summary += str(round(Decimal(str(self._tasks_binding.duration)),1))
-        summary += ' '
+        summary += ':'
         
         if overlap:
             summary += 'O'

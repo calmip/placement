@@ -108,12 +108,21 @@ def main():
 	if not options.show_depop:
 		sys.stderr.write("   but NOT both (it is not pathological running a depopulated job when using a lot of memory)\n")
 	sys.stderr.write("\n")
-	sys.stderr.write("Now checking " + str(len(running_jobs)) + " running jobs. Please be patient\n")
+	sys.stderr.write("Pathological jobs status will be printed:\n")
+	sys.stderr.write("0.1:N:N:80:50:90 \n")
+	sys.stderr.write("  | | |  |  |  \_ Memory allocated by the tasks (max = 100%)\n")
+	sys.stderr.write("  | | |  |  \____ Part of the threads in state Running at poll time % (max = 100%)\n")
+	sys.stderr.write("  | | |  \_______ Total cpu used by the threads since start of job (max = 100%)\n")
+	sys.stderr.write("  | | \__________ Hyper threading used ? N = no, H = yes\n")
+	sys.stderr.write("  | \____________ Overlap status N = normal, O = Overlap\n")
+	sys.stderr.write("  \______________ Time to poll the node (s)\n")
+
+	sys.stderr.write("\nNow checking " + str(len(running_jobs)) + " running jobs. Please be patient\n")
 	for i in range(N):
 		res = callPlacementSummary(running_jobs,options)
 		results.append(res)
 		if i < N-1:
-			sys.stderr.write("Found " + str(len(res)) + " pathological jobs, now waiting a while\n")
+			sys.stderr.write("Found " + str(len(res)) + " pathological jobs, now waiting for a while\n")
 			time.sleep(options.time)
 		else:
 			sys.stderr.write("Found " + str(len(res)) + " pathological jobs, continuing\n\n")
@@ -129,18 +138,42 @@ def main():
 	inter = reskeys[0]
 	for r in reskeys[1:]:
 		inter = inter & r
-	
+
 	#
 	# Print the remaining pathological jobs
 	#
 	if len(inter) > 0:
 		print str(len(inter)) + " PATHOLOGICAL JOBS FOUND ON " + gethostname() + " at " + str(datetime.datetime.today())
+		printHeaders(N)
 		for j in inter:
-			print j + ' |',
-			for r in results:
-				print r[j] + ' | ',
-			print
+			printResults(j,results)
 
+#
+# printResults
+#
+def printResults(j,results):
+	print j,
+	first = True
+	for r in results:
+		r1=r[j].split(' ')
+		if first:
+			print r1[0],
+			first = False
+		print r1[1],
+	print 
+
+#
+# printHeaders
+#
+def printHeaders(N):
+	print 'jobid',
+	print 'node',
+	for i in range(N):
+		print 'summary'+str(i+1),
+	print
+	
+	
+		
 #
 # callPlacementSummary
 #

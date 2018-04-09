@@ -286,6 +286,8 @@ def buildOutputs(options,tasks_binding):
     # Only with --check: print a summary
     if options.check!=None and options.summary==True:
         o = PrintingForSummary(tasks_binding)
+        if options.verbose == True:
+            o.setVerbose()
         if options.show_depop == True:
             o.ShowDepopulated()
         if options.cpu_thr != None:
