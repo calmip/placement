@@ -45,8 +45,9 @@ export PYTHONPATH=$PLACEMENT_ROOT/lib:$PYTHONPATH
 # Path to the placement.py python program
 PLACEMENTPY=$PLACEMENT_ROOT/lib/placement.py
 
-# Path to the placment-cont.py python program
+# Path to the placement-cont.py and placement-patho.py python programs
 PLACEMENTCONTPY=$PLACEMENT_ROOT/lib/placement-cont.py
+PLACEMENTPATHOPY=$PLACEMENT_ROOT/lib/placement-patho.py
 
 # ================ The following should not be changed =====================
 
@@ -54,6 +55,13 @@ PLACEMENTCONTPY=$PLACEMENT_ROOT/lib/placement-cont.py
 if [[ "$*" =~ "--continuous" ]]
 then
 	exec $PLACEMENTCONTPY $*
+	exit 0
+fi
+
+# the pathological mode
+if [[ "$*" =~ "--patho" ]]
+then
+	exec $PLACEMENTPATHOPY $*
 	exit 0
 fi
 

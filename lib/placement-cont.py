@@ -32,10 +32,18 @@ import time
 from utilities import *
 import hardware
 
-SLEEPTIMEMIN=30               # Minimum sleep time you can specify (in s)
+#
+# placement-cont is automatically launched by the bash call script when the switch --continuous is detected
+#
+# It must be used with the --jobid switch
+# The list of compute hosts is detected with squeue, then placement --csv is launched on the hosts (using clush),
+# The program sleeps a while, the launches placement --csv again
+# The program stops when squeue returns an error (because the job is finished), OR when the user sends SIGINT (ctrl-c)
+# 
+# You can start this program BEFORE the job is running: it will squeue the jobid until its state goes to R
+#
 
-# The python executable
-# PYTHON="python"
+SLEEPTIMEMIN=30               # Minimum sleep time you can specify (in s)
 
 # The PLACEMENT_ROOT env variable (should be correctly set by the install script)
 placement_root = os.environ['PLACEMENT_ROOT']

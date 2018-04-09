@@ -152,10 +152,14 @@ def main():
     parser.add_argument("--memory","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
 #    parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
     parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
+    parser.add_argument("--no_ansi",action="store_true",default=False,dest="noansi",help="Do not use ansi sequences")
     parser.set_defaults(output_mode="srun")
     options=parser.parse_args()
     args=(options.tasks,options.nbthreads)
 
+    if options.noansi:
+        AnsiCodes.noAnsi()
+        
     if options.documentation!=0:
         documentation(options.documentation)
         exit(0)
@@ -407,9 +411,9 @@ def show_env():
         try:
             msg += v
             msg += ' = '
-            msg += bold() + os.environ[v] + normal()
+            msg += AnsiCodes.bold() + os.environ[v] + AnsiCodes.normal()
             if v=='PLACEMENT_DEBUG':
-                msg += red_foreground() + bold() + ' - SHOULD NOT BE SET IN PRODUCTION !' + normal()
+                msg += AnsiCodes.red_foreground() + AnsiCodes.bold() + ' - SHOULD NOT BE SET IN PRODUCTION !' + AnsiCodes.normal()
         except KeyError:
             msg += '<not specified>'
         if v=='PLACEMENT_ARCHI':

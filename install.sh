@@ -37,7 +37,7 @@ echo "Now installing placement..."
 [ ! -d $LIB ] && (mkdir -p $LIB || exit 1)
 [ ! -d $ETC ] && (mkdir -p $ETC || exit 1)
 
-for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py placement-cont.py
+for f in hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py placement-cont.py placement-patho.py
 do
   cp $SRC/lib/$f $LIB
 done
@@ -49,7 +49,7 @@ done
 
 cp $SRC/bin/placement-dist $BIN
 chmod -R a=rX,u+w $LIB $BIN $ETC
-chmod a+rx $BIN/placement-dist $LIB/placement.py $LIB/placement-cont.py
+chmod a+rx $BIN/placement-dist $LIB/placement.py $LIB/placement-cont.py $LIB/placement-patho.py
 
 # edit placement-dist 
 sed -i -e "s!PROOT!$PLACEMENT_ROOT!" $BIN/placement-dist 
@@ -79,8 +79,18 @@ if [ "$NODESET" = "" ]
 then
     echo "nodeset is NOT installed on this machine. The switch --check, --checkme will NOT be available"
 else
-    echo "Found nodeset = $NODESET"
+    echo "Found nodeset  = $NODESET"
 fi
+
+# Do we have clush ?
+CLUSH=$(which clush)
+if [ "$CLUSH" = "" ]
+then
+    echo "clush is NOT installed on this machine. The switches --continuous, --pathological will NOT be available"
+else
+    echo "Found clush    = $CLUSH"
+fi
+
 echo
 echo "==========================="   
 echo "That's all for me, folks ! "

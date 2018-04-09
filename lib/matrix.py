@@ -248,7 +248,7 @@ class Matrix(object):
         else:
             cpumem += fmt2.format(mem)
 
-        return pre + ' ' + debut + red_foreground() + S[0] + normal() + fin + cpumem + '\n'
+        return pre + ' ' + debut + AnsiCodes.red_foreground() + S[0] + AnsiCodes.normal() + fin + cpumem + '\n'
 
     def __blankBeforeCore(self,socket,core):
         space = '.'
