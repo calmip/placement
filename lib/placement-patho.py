@@ -58,7 +58,7 @@ def main():
 	
 	# Analysing the command line arguments
 	#epilog = ""
-	ver="1.5.0-dev"
+	ver="1.5.0"
 	parser = argparse.ArgumentParser(version=ver,description="placement-mon " + ver)
 	group = parser.add_argument_group('detecting pathological jobs on compute nodes')
 	group.add_argument("--pathological",dest='patho',action="store_true",help="required")

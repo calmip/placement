@@ -54,7 +54,7 @@ PLACEMENT=placement_root + '/bin/placement'
 def main():
 	# Analysing the command line arguments
 	#epilog = ""
-	ver="1.5.0-dev"
+	ver="1.5.0"
 	parser = argparse.ArgumentParser(version=ver,description="placement-cont " + ver)
 	group = parser.add_argument_group('continuously checking jobs running on compute nodes')
 	group.add_argument("--continuous",dest='cont',action="store_true",help="required")
