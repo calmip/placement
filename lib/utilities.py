@@ -108,7 +108,8 @@ def expandNodeList(nodelist):
 def getHostname():
     """ Return the environment HOSTNAME if set, else call /bin/hostname -s"""
     if 'HOSTNAME' in os.environ:
-        return os.environ['HOSTNAME']
+        return os.environ['HOSTNAME'].partition('.')[0]  # striping after '.' = same as -s above !
+
     else:
         cmd = "/bin/hostname -s"
         p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
