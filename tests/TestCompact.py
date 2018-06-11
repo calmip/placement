@@ -76,7 +76,8 @@ class TestCompactExclusive(unittest.TestCase):
         self.compact_ok9      = CompactMode(self.exclu_ok9)
 
         # Si hyperthreading activé, seulement nombre PAIR de threads !
-        self.exclu_ko10 = Exclusive(self.hardware,1,5,True)
+        # TODO - Same remark as in TestScatter.py, L 72 and 206 
+        self.exclu_ko10 = Exclusive(self.hardware,11,3,True)
 
         self.exclu_ok11 = Exclusive(self.hardware,2,5,True)
         self.compact_phys_ok11 = CompactPhysicalMode(self.exclu_ok11)
