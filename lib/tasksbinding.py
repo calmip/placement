@@ -33,7 +33,7 @@ class TasksBinding(object):
     This is an abstract class, the real derived class depends on the chosen algorithm
 
     DATA STRUCTURES:
-    threads_bound = Only built in running mode: see running.py, L 135
+    threads_bound = Only built in running mode: see running.py, functions __identProcesses, __identNumaMem
     tasks_bound   = A list of lists, describing the list of cores(inner lists) used by the tasks (outer list)
     over_cores    = A list of cores bound to 2 or more tasks (overlapping tasks, should not happen)
     """
@@ -51,6 +51,7 @@ class TasksBinding(object):
         self.tasks_bound   = None
         self.threads_bound = None
         self.over_cores    = None
+        self.duration      = 0 # cf. RunningMode.__initTasksThreadsBound
 
     def checkParameters(self):
         """ Check the parameters, raise an exception if anything wrong"""
@@ -74,8 +75,9 @@ class TasksBinding(object):
         Raise of exception in case of a problem
         """
 
-        if (self.cpus_per_task<0 or self.tasks<0 ):
-            raise PlacementException("ERROR - Every parameter should be an integer >= 0")
+        if (self.cpus_per_task<=0 or self.tasks<=0 ):
+            raise PlacementException("ERROR - tasks and cpus_per_task should be > 0")
+            
         if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_reserved:
             msg = "ERROR - Not enough cores ! Please lower cpus_per_task (";
             msg += str(self.cpus_per_task)

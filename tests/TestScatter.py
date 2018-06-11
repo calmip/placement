@@ -69,7 +69,8 @@ class TestScatterExclusive(unittest.TestCase):
         self.scatter_ok9 = ScatterMode(self.exclu_ok9)
 
         # Si hyperthreading activé, seulement nombre PAIR de threads !
-        self.exclu_ko10 = Exclusive(self.hardware,1,5,True)
+        # TODO - Something wrong here, 11,3 there is an exception, 12,3 no exception !!!
+        self.exclu_ko10 = Exclusive(self.hardware,11,3,True)
 
         self.exclu_ok11 = Exclusive(self.hardware,2,5,True)
         self.scatter_ok11 = ScatterMode(self.exclu_ok11)
@@ -201,8 +202,9 @@ class TestScatterBlockExclusive(unittest.TestCase):
         self.exclu_ok9   = Exclusive(self.hardware,2,5,False)
         self.scatter_block_ok9 = ScatterBlockMode(self.exclu_ok9)
 
-        # Si hyperthreading activé, seulement nombre PAIR de threads !
-        self.exclu_ko10 = Exclusive(self.hardware,1,5,True)
+        # Si hyperthreading activé, et nb de taches>1, seulement nombre PAIR de threads !
+        # TODO - Something wrong here, 11,3 there is an exception, 12,3 no exception !!!
+        self.exclu_ko10 = Exclusive(self.hardware,11,3,True)
 
         self.exclu_ok11 = Exclusive(self.hardware,2,5,True)
         self.scatter_block_ok11 = ScatterBlockMode(self.exclu_ok11)
@@ -223,6 +225,7 @@ class TestScatterBlockExclusive(unittest.TestCase):
 
     def test_exclusive_check(self):
         ok = [self.scatter_block_ok1,self.scatter_block_ok2,self.scatter_block_ok3,self.scatter_block_ok4,self.scatter_block_ok6,self.scatter_block_ok8,self.scatter_block_ok9,self.scatter_block_ok11,self.scatter_block_ok12]
+        ko = []
         ko = [self.exclu_ko5,self.exclu_ko7,self.exclu_ko10,self.exclu_ko15]
         i=0
         for s in ok:

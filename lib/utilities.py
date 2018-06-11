@@ -108,7 +108,8 @@ def expandNodeList(nodelist):
 def getHostname():
     """ Return the environment HOSTNAME if set, else call /bin/hostname -s"""
     if 'HOSTNAME' in os.environ:
-        return os.environ['HOSTNAME']
+        return os.environ['HOSTNAME'].partition('.')[0]  # striping after '.' = same as -s above !
+
     else:
         cmd = "/bin/hostname -s"
         p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -207,7 +208,11 @@ def computeCpusTasksFromEnv(options,args):
 
 def mem2Slice(mem,mem_slice):
     """Compute a slice number from mem and mem per slice (two floats) - 
-       Do not use integer arithmetic because we have sometimes little numbers"""
+       Do not use integer arithmetic because we have sometimes little numbers
+       
+        OBSOLETE - NOT USED ANY MORE'''
+
+       """
        
     if mem_slice == 0:
         return 0
@@ -217,26 +222,78 @@ def mem2Slice(mem,mem_slice):
         s += 1
     return s
                         
+def getGauge(value,size,color=True):
+    '''Return a string with *** or ..., the number depends of value (0-100) and size
+       For size=10, value = 50, return *****.....'''
 
-def bold():
-    return '\033[1m'
+    if value<0 or value>100:
+        raise ValueError( "INTERNAL ERROR - " + str(value) +" should be in the interval [0-100]")
+            
+    m = 0.01 * value * size
+    if int(m*10) % 10 < 5:
+        m = int(m)
+    else:
+        m = int(m) + 1
+    p = size - m
+    rvl = ''
+    point = '.'
+    if color:
+        if m>0:
+            rvl = AnsiCodes.mag_foreground() + '*'*m + AnsiCodes.normal()
+        if p>0:
+            rvl += point*p
+    else:
+        if m>0:
+            rvl = '*'*m
+        if p>0:
+            rvl += point*p
+    return rvl       
+    
+class AnsiCodes(object):
 
-def underline():
-    return '\033[41m'
-
-def boldunderline():
-    return '\033[1;4m'
-
-def white_background():
-    return '\033[47m'
-
-def red_foreground():
-    return '\033[1;31m'
-
-def mag_foreground():
-    return '\033[1;35m'
-
-# Back to "normal"
-def normal():
-    return '\033[0m'
+    # static variable
+    __using_ansi= True
+    
+    @staticmethod
+    def noAnsi():
+        AnsiCodes.__using_ansi = False
+    @staticmethod
+    def Ansi():
+        AnsiCodes.__using_ansi = False
+        
+    @staticmethod
+    def __returnCode(code):
+        if AnsiCodes.__using_ansi:
+            return code
+        else:
+            return ''
+    
+    @staticmethod
+    def bold():
+        return AnsiCodes.__returnCode('\033[1m')
+    
+    @staticmethod
+    def underline():
+        return AnsiCodes.__returnCode('\033[41m')
+    
+    @staticmethod
+    def boldunderline():
+        return AnsiCodes.__returnCode('\033[1;4m')
+    
+    @staticmethod
+    def white_background():
+        return AnsiCodes.__returnCode('\033[47m')
+    
+    @staticmethod
+    def red_foreground():
+        return AnsiCodes.__returnCode('\033[1;31m')
+    
+    @staticmethod
+    def mag_foreground():
+        return AnsiCodes.__returnCode('\033[1;35m')
+    
+    # Back to "normal"    
+    @staticmethod
+    def normal():
+        return AnsiCodes.__returnCode('\033[0m')
 

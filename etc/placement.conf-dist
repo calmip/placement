@@ -70,6 +70,16 @@ THREADS_PER_CORE: 1
 MEM_PER_SOCKET:   262144
 IS_SHARED:        True
 
+# vendor3, same as vendor1 + 4 gpus attached to socket 0 and socket 1
+[vendor3]
+SOCKETS_PER_NODE: 2
+CORES_PER_SOCKET: 10
+HYPERTHREADING:   True
+THREADS_PER_CORE: 2
+MEM_PER_SOCKET:   65536
+IS_SHARED:        False
+GPUS:             0-1,2-3
+
 #
 # 2/ (optional) Second, we describe our SLURM partitions. 
 #    We consider that a partition is a set of homogeneous nodes

@@ -25,11 +25,13 @@
 #
 
 import os
+from decimal import Decimal
 from running import *
 from matrix import *
 from utilities import *
 from exception import *
-from itertools import chain,product
+import itertools
+from socket import gethostname
 
 class PrintingFor(object):
     """ Base class, all PrintingFor classes extend this class
@@ -37,9 +39,37 @@ class PrintingFor(object):
     o = PrintingForxxx(tasks_binding)
     print o
 """
-
+    # This is a STATIC property, use it with PrintingFor.__warn_printed !
+    # Avoid printing the warning several times, even if we use several PrintingFor objects !
+    __warn_printed = False
+    
     def __init__(self,tasks_binding):
         self._tasks_binding = tasks_binding
+        
+    # If self._tasks_binding is an instance of Running, warn if there is overlap
+    def _warnOverlap(self):
+        warn = ""
+        if PrintingFor.__warn_printed:
+            return warn
+
+        if not isinstance(self._tasks_binding,RunningMode):
+            return warn
+
+        # If overlap, print a warning !
+        try:
+            overlap = self._tasks_binding.overlap
+            if len(overlap)>0:
+                warn += "WARNING - FOLLOWING TASKS ARE OVERLAPPING !\n"
+                warn += "===========================================\n"
+                warn += str(overlap)
+                warn += "\n\n"
+            PrintingFor.__warn_printed = True
+            
+        except AttributeError:
+            pass
+        
+        return warn
+
     def __str__(self):
         return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
 
@@ -118,8 +148,6 @@ class PrintingForHuman(PrintingFor):
         rvl+="]\n"
         return rvl
 
-
-
 class PrintingForAsciiArt(PrintingFor):
     """ Printing for an artist, ie a special human being
 
@@ -129,10 +157,13 @@ class PrintingForAsciiArt(PrintingFor):
     """
 
     def __str__(self):
+        rvl = self._warnOverlap()
+
         if self._tasks_binding.tasks > 66:
-            return "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
+            rvl += "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
         else:
-            return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
+            rvl += self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
+        return rvl
 
 
     def __getCpuBinding(self,archi,tasks_bound,over_cores=None):
@@ -192,7 +223,6 @@ class PrintingForAsciiArt(PrintingFor):
                 rvl += '\n'
     
         return rvl
-
 
 class PrintingForIntelAff(PrintingFor):
     """ Printing for the intel environment variable KMP_AFFINITY (ONLY if 1 task) 
@@ -284,20 +314,28 @@ class PrintingForMatrixThreads(PrintingFor):
         self.__sorted_processes_cores = True
     def ShowIdleThreads(self):
         self.__show_idle = True
+
     # mem_proc if True, display memory occupation/sockets relative to the process memory
     #          if False, display memory occupation/sockets relative to the socket memory
-    def PrintNumamem(self,mem_proc):
+    def PrintNumamem(self,mem_proc=True):
         self.__print_numamem = True
         self.__mem_proc = mem_proc
+
     def __str__(self):
+        '''Convert to a string (-> print) '''
+        
+        rvl = self._warnOverlap()
         if self._tasks_binding.tasks > 66:
-            return "ERROR - Threads representation is not supported if more thant 66 tasks !"
+            rvl += "ERROR - Threads representation is not supported if more than 66 tasks !"
         else:
-            return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.threads_bound)
+            rvl += gethostname().split('.', 1)[0]
+            rvl += '\n'
+            # Print cpu binding, memory info and gpu info
+            rvl += self.__getCpuBinding(self._tasks_binding)
+            
+        return rvl
 
-
-
-    def __getCpuBinding(self,archi,threads_bound):
+    def __getCpuBinding(self,tasks_binding):
         """ return a string, representing sets of threads and tasks in a matrix representation, used only for running tasks
 
         1 column/PHYSICAL core, 1 line/process
@@ -308,6 +346,10 @@ class PrintingForMatrixThreads(PrintingFor):
         threads_bound = A dictionary containing a lot of data about each running task, see running.py for details
         """
 
+        archi         = tasks_binding.archi
+        threads_bound = tasks_binding.threads_bound
+        gpus_info     = tasks_binding.gpus_info
+        
         # For each task in threads_bound, compute the ppsr_min and ppsr_max, ie the min and max physical cores
         ppsr_min = 999999
         ppsr_max = 0
@@ -326,8 +368,8 @@ class PrintingForMatrixThreads(PrintingFor):
                     
             threads_bound[pid]['ppsr_min'] = p_ppsr_min
 
-        # If memory printing, consider the whole machine
-        if self.__print_numamem:
+        # If memory printing, or gpu_info, consider the whole machine
+        if self.__print_numamem or gpus_info != None:
             ppsr_min = 0
             ppsr_max = archi.sockets_per_node * archi.cores_per_node - 1
 
@@ -373,8 +415,12 @@ class PrintingForMatrixThreads(PrintingFor):
         if self.__print_numamem:
             sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
             rvl += "\n"
-            rvl += m.getNumamem(sockets_mem,self.__mem_proc)
-            
+            rvl += m.getNumamem(sockets_mem)
+ 
+        # If wanted, print info about the gpus
+        if self._tasks_binding.gpus_info != None:
+            rvl += m.getGpuInfo(self._tasks_binding)
+                  
         return rvl
 
 
@@ -405,7 +451,184 @@ class PrintingForMatrixThreads(PrintingFor):
 
         return sockets_mem
 
+class PrintingForSummary(PrintingFor):
 
+    __show_depop = False
+    __cpu_thr    = 50      # cpu use default threshold
+    __mem_thr    = 80      # mem threshold     
+    __verbose    = False
+    
+    def ShowDepopulated(self):
+        self.__show_depop = True
+    def SetCpuThreshold(self,thr):
+        self.__cpu_thr = thr
+    def SetMemThreshold(self,thr):
+        self.__mem_thr = thr
+    def setVerbose(self):
+        self.__verbose = True
+    def __isOverlap(self):
+        '''return True if two threads are overlapping (same logical core)'''
+        return len(self._tasks_binding.overlap) > 0
+        
+    def _isHyperUsed(self):
+        '''return true if this job uses hyperthreading'''
+        flat_cores = list(itertools.chain.from_iterable(self._tasks_binding.tasks_bound))
+        
+        return self._tasks_binding.hardware.isHyperThreadingUsed(flat_cores)
+
+    def _getUse(self,hyper):
+        '''return sum(cpu-usages) / nb_of_cores
+           nb_of_cores depends of hyper status'''
+        #processes = self._tasks_binding.pid
+        threads   = self._tasks_binding.threads_bound
+        
+        cpu      = 0.0
+        running  = 0
+        total    = 0
+        mem=0.0
+        
+        for pid,p in threads.iteritems():
+            mem += float(p['mem'])
+            if p['R']:    # If the process is running
+                for tid,t in p['threads'].iteritems():
+                    cpu += float(t['cpu'])
+                    if t['state'] == 'R':
+                        running += 1
+                    total += 1
+                            
+        if hyper:
+            nb_of_cores = self._tasks_binding.hardware.CORES_PER_NODE * self._tasks_binding.hardware.THREADS_PER_CORE
+        else:
+            nb_of_cores = self._tasks_binding.hardware.CORES_PER_NODE
+
+        cpu = int(cpu / nb_of_cores)
+        run = int( (100 * running) / total )
+        return [ cpu, run, mem ]
+        
+    def __str__(self):
+        if not isinstance(self._tasks_binding,RunningMode):
+            return "ERROR - The switch --summary can be used ONLY with --check"
+        
+        summary = ""
+        if self.__verbose:
+            summary += "Pathological status of the job:\n"
+            summary += "0.1:N:N:80:50:90 \n"
+            summary += "  | | |  |  |  \_ Memory allocated by the tasks (max = 100%)\n"
+            summary += "  | | |  |  \____ Part of the threads in state Running at poll time % (max = 100%)\n"
+            summary += "  | | |  \_______ Total cpu used by the threads since start of job (max = 100%)\n"
+            summary += "  | | \__________ Hyper threading used ? N = no, H = yes\n"
+            summary += "  | \____________ Overlap status N = normal, O = Overlap\n"
+            summary += "  \______________ Time to poll the node (s)\n\n"
+
+        summary += gethostname()
+        summary += ' '
+
+        overlap = self.__isOverlap()
+        hyper   = self._isHyperUsed()
+        use     = self._getUse(hyper)
+
+        #warning = overlap or use[0] < 50 or use[1] < 20 or use[2] > 80.0 or self._tasks_binding.duration > 10.0
+        warning = overlap or self._tasks_binding.duration > 10.0
+
+        if self.__show_depop:
+            warning = warning or use[0]<self.__cpu_thr or use[2]>self.__mem_thr
+        
+        # Hide jobs for which we have LOW cpu use but HIGH memory allocation: this is not a pathological case, this is just a depopulated job
+        else:
+            warning = warning or ((use[0]<self.__cpu_thr) ^ (use[2]>self.__mem_thr))  # If cpu use low AND memory high, it is NOT pathological, no warning
+
+        if warning:
+            summary += AnsiCodes.red_foreground()
+
+        summary += str(round(Decimal(str(self._tasks_binding.duration)),1))
+        summary += ':'
+        
+        if overlap:
+            summary += 'O'
+        else:
+            summary += 'N'
+        summary += ':'
+        
+        if hyper:
+            summary += 'H'
+        else:
+            summary += 'N'
+        summary += ':'
+
+        summary += str(use[0])
+        summary += ':'
+        summary += str(use[1])
+        summary += ':'
+        summary += str(int(round(Decimal(str(use[2])),0)))
+
+        gpus_info = self._tasks_binding.gpus_info
+        if gpus_info != None:
+            for s in gpus_info:
+                for g in s:
+                    summary += ':'
+                    summary += str(g['U']) + ':'
+                    summary += str(g['M']) + ':'
+                    summary += str(g['P'])
+
+        if warning:
+            summary += ' W'
+            summary += AnsiCodes.normal()
+        
+        return summary
+
+class PrintingForCsv(PrintingFor):
+    def __getUse(self,hyper=True):
+        '''return cpu use for each physical core - Return an array, sorted in core number'''
+
+        threads   = self._tasks_binding.threads_bound
+
+        cores={}
+        mem=0.0
+        for pid,p in threads.iteritems():
+            mem += float(p['mem'])
+            if p['R']:    # If the process is running
+                for tid,t in p['threads'].iteritems():
+                    use  = float(t['cpu'])
+                    core = int(t['ppsr'])              # Using physical psr, ie cumulating core threads (hyperthreading)
+                    if t['state'] == 'R':
+                        cpu  = float(t['cpu'])
+                    else:
+                        cpu = 0.0
+                    if cores.has_key(core):
+                        cores[core] += cpu
+                    else:
+                        cores[core] = cpu
+        
+        core_use=[]
+        nb_of_cores = self._tasks_binding.hardware.CORES_PER_NODE
+        for c in range(nb_of_cores):
+            if cores.has_key(c):
+                core_use.append(cores[c])
+            else:
+                core_use.append(0)
+        core_use.append(mem)
+        
+        return core_use
+
+    def __str__(self):
+        if not isinstance(self._tasks_binding,RunningMode):
+            return "ERROR - The switch --csv can be used ONLY with --check"
+
+        core_use = self.__getUse()
+
+        csv = ','.join(map(str,core_use))
+        csv += ','
+
+        gpus_info = self._tasks_binding.gpus_info
+        if gpus_info != None:
+            for s in gpus_info:
+                for g in s:
+                    csv += str(g['U']) + ','
+                    csv += str(g['M']) + ','
+                    csv += str(g['P']) + ','
+
+        return csv
+        
 class PrintingForVerbose(PrintingFor):
     """ Printing more information ! """
 

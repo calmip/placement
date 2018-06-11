@@ -104,13 +104,14 @@ from utilities import *
 from printing import *
 
 # If we run an a remote machine via ssh, not sure the HOSTNAME environment variable is available !
-from socket import gethostname
+#####################"from socket import gethostname
 
 def main():
 
     # Analysing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.4.1"
+    ver="1.5.0"
+
     parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
 
     # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
@@ -129,31 +130,37 @@ def main():
     parser.add_argument('nbthreads', metavar='cpus_per_tasks',nargs='?',default=-1 ) 
     parser.add_argument("-T","--hyper",action="store_true",default=False,dest="hyper",help='Force use of hyperthreading (False)')
     parser.add_argument("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (False)")
-    parser.add_argument("-M","--mode",choices=["compact","scatter_cyclic","scatter_block"],default="scatter_cyclic",dest="mode",action="store",help="distribution mode: scatter_cyclic,scatter_block, compact (scatter_cyclic)")
-#    parser.add_argument("--relax",action="store_true",default=False,help="DO NOT USE unless you know what you are doing")
+    parser.add_argument("-M","--mode",choices=["compact","scatter","scatter_block"],default="scatter",dest="mode",action="store",help="distribution mode: scatter,scatter_block, compact (scatter)")
     parser.add_argument("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable")
     parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
     parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
     parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
     parser.add_argument("-Z","--intel_affinity",action="store_const",dest="output_mode",const="kmp",help="Output for intel openmp compiler, try also --verbose")
     parser.add_argument("-G","--gnu_affinity",action="store_const",dest="output_mode",const="gomp",help="Output for gnu openmp compiler")
-#    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, forces --numactl. See examples")
-#    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - See examples")
     parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - EXPERIMENTAL")
     parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, should be used with --numactl. EXPERIMENTAL")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
-    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus (default if check specified)")
+#    FOR THE DEV: --check=+ ==> look for files called PROCESSES.txt, *.NUMASTAT.txt, gpu.xml
+    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus on a running process (default if check specified)")
+    parser.add_argument("--summary","--summary",action="store_true",default=False,help="With --check: show summary of core and gpus utilization in a running process, with a warning for pathological cases")
+    parser.add_argument("--show_depop","--show_depop",action="store_true",default=False,help="With --check --summary: show as pathological jobs the depopulated jobs, ie jobs with low cpu use and high memory allocation")
+    parser.add_argument("--cpu_threshold",dest="cpu_thr",action="store",type=int,help="With --check --summary: threshold to consider the cpu use as \"low\" ")
+    parser.add_argument("--mem_threshold",dest="mem_thr",action="store",type=int,help="With --check --summary: threshold to consider the mem allocated as \"high\" ")
+    parser.add_argument("--csv","--csv",action="store_true",default=False,help="With --check: same infos as --summary, but csv formatted and no warning indicators")
     parser.add_argument("-i","--show_idle",action="store_true",default=False,help="With --threads: show idle threads, not only running")
     parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
-    parser.add_argument("-Y","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
-    parser.add_argument("-S","--mem_proc",action="store_true",default=False,help="With --threads --memory: show the memory occupation/socket relative to the process memory (the default is relative to the socket memory)")
+    parser.add_argument("--memory","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
 #    parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
     parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
+    parser.add_argument("--no_ansi",action="store_true",default=False,dest="noansi",help="Do not use ansi sequences")
     parser.set_defaults(output_mode="srun")
     options=parser.parse_args()
     args=(options.tasks,options.nbthreads)
 
+    if options.noansi:
+        AnsiCodes.noAnsi()
+        
     if options.documentation!=0:
         documentation(options.documentation)
         exit(0)
@@ -184,13 +191,17 @@ def main():
         print e
         exit(1)
 
-    # Main program
+# ----------------------------------------------------------------------
+#                                Main program
+# ----------------------------------------------------------------------
+
     try:
         if options.show_hard==True:
             show_hard(hard)
             exit(0)
 
         # First stage: Compute data and store them inside tasks_binding
+        
         # If --check specified, data are computed from the running job(s)
         if options.check != None:
             #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
@@ -201,29 +212,17 @@ def main():
             #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
             tasks_binding = compute_data_from_parameters(options,args,hard)
 
-        # If overlap, print a warning !
-        try:
-            overlap = tasks_binding.overlap
-            if len(overlap)>0:
-                print "WARNING - FOLLOWING TASKS ARE OVERLAPPING !"
-                print "==========================================="
-                print overlap
-                print
-        except AttributeError:
-            pass
-
         # Second stage - Print data, may be using several formats
+        # outputs is an array of objects extending PrintingFor
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
-            print "OUPS, No output specified !"
-        else:
-            if options.check != None:
-                print gethostname()
+            print ("OUPS, No output specified !")
+
         for o in outputs:
-            print o
+            print (o)
             
     except PlacementException, e:
-        print e
+        print (e)
         exit(1)
 
 
@@ -261,13 +260,13 @@ def buildOutputs(options,tasks_binding):
             return outputs
 
     # If check, the output default is --threads
-    if options.check!=None and (options.asciiart==False and options.human==False):
+    if options.check!=None and (options.asciiart==False and options.human==False and options.summary==False and options.csv==False):
         options.threads = True
         
     # Print for human beings
     if options.human==True:
         outputs.append(PrintingForHuman(tasks_binding))
-    
+        
     # Print for artists (!)
     if options.asciiart==True:
         outputs.append(PrintingForAsciiArt(tasks_binding))
@@ -278,13 +277,31 @@ def buildOutputs(options,tasks_binding):
         if options.show_idle == True:
             o.ShowIdleThreads()
         if options.memory == True:
-            o.PrintNumamem(options.mem_proc)
+            o.PrintNumamem()
         if options.sorted_threads_cores == True:
             o.SortedThreadsCores()
         if options.sorted_processes_cores == True:
             o.SortedProcessesCores()
         outputs.append(o)
 
+    # Only with --check: print a summary
+    if options.check!=None and options.summary==True:
+        o = PrintingForSummary(tasks_binding)
+        if options.verbose == True:
+            o.setVerbose()
+        if options.show_depop == True:
+            o.ShowDepopulated()
+        if options.cpu_thr != None:
+            o.SetCpuThreshold(options.cpu_thr)
+        if options.mem_thr != None:
+            o.SetMemThreshold(options.mem_thr)
+        outputs.append(o)
+
+    # Only with --csv: print a summary in csv format
+    if options.check!=None and options.csv==True:
+        o = PrintingForCsv(tasks_binding)
+        outputs.append(o)
+        
     return outputs
         
 
@@ -403,9 +420,9 @@ def show_env():
         try:
             msg += v
             msg += ' = '
-            msg += bold() + os.environ[v] + normal()
+            msg += AnsiCodes.bold() + os.environ[v] + AnsiCodes.normal()
             if v=='PLACEMENT_DEBUG':
-                msg += red_foreground() + bold() + ' - SHOULD NOT BE SET IN PRODUCTION !' + normal()
+                msg += AnsiCodes.red_foreground() + AnsiCodes.bold() + ' - SHOULD NOT BE SET IN PRODUCTION !' + AnsiCodes.normal()
         except KeyError:
             msg += '<not specified>'
         if v=='PLACEMENT_ARCHI':
