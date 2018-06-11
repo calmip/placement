@@ -328,7 +328,7 @@ class PrintingForMatrixThreads(PrintingFor):
         if self._tasks_binding.tasks > 66:
             rvl += "ERROR - Threads representation is not supported if more than 66 tasks !"
         else:
-            rvl += gethostname()
+            rvl += gethostname().split('.', 1)[0]
             rvl += '\n'
             # Print cpu binding, memory info and gpu info
             rvl += self.__getCpuBinding(self._tasks_binding)
