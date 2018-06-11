@@ -112,7 +112,7 @@ if [[ $jobid != "" ]]
 then
 	# The following returns something like <partition_name>@<node_name>[570-572]@ <user_name>
 	# Example: exclusive@eoscomp[570-572]@ toto
-    PN=$( squeue -j $jobid --noheader -o "%.9P@%.16R@%.8u" )
+    PN=$( squeue -j $jobid --noheader -o "%.9P@%.16R@%.15u" )
 	if [[ $? != 0 || $PN == "" ]]
     then
 		echo "ERROR - Bad jobid ! ($jobid)"
