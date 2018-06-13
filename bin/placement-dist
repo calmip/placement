@@ -27,10 +27,10 @@
 
 # The following may be necessary or not, it depends on your installation
 version=$(python --version 2>&1)
-if [[ ! "$version" =~ "2.7" ]]
+if [[ ! "$version" =~ "3" ]]
 then
 	module purge >/dev/null 2>&1
-	module load python/2.7.6 >/dev/null 2>&1
+	module load python/3.5.3 >/dev/null 2>&1
 fi
 
 # The python executable

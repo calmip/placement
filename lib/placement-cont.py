@@ -125,7 +125,7 @@ def printHeaders():
 	try:
 		hard = hardware.Hardware.factory()
 			
-	except PlacementException, e:
+	except PlacementException as e:
 		print (e)
 		exit(1)
 	
@@ -144,7 +144,7 @@ def printHeaders():
 			h +='GPU'+str(g)+'_M'+','
 			h += 'GPU'+str(g)+'_P'+','
 	
-	print (h.replace(' ',''))
+	print((h.replace(' ','')))
 
 #
 # Call placement on a list of hosts, using clush and print the result

@@ -108,8 +108,8 @@ class TasksBinding(object):
                 rank = os.environ['PMI_RANK']
             except KeyError:
                 msg = "NINI ERROR - NOT intelmpi, NOT bullxmpi, NOT openmpi"
-                for k in os.environ.keys():
-                    print k + ' => ' + os.environ[k]
+                for k in list(os.environ.keys()):
+                    print(k + ' => ' + os.environ[k])
 
                 raise PlacementException(msg)
 

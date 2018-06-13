@@ -99,9 +99,9 @@ def expandNodeList(nodelist):
     matches = re.match('(.+)\[(.+)\](.*)',nodelist)
     if matches:
         prefix = matches.group(1)
-	postfix= matches.group(3)
+        postfix= matches.group(3)
         #print map(lambda x:prefix+str(x)+postfix,compactString2List(matches.group(2)))
-        return map(lambda x:prefix+str(x)+postfix,compactString2List(matches.group(2)))
+        return [prefix+str(x)+postfix for x in compactString2List(matches.group(2))]
     else:
         return [ nodelist ]
 
@@ -120,7 +120,7 @@ def getHostname():
             msg += "/bin/hostname -s returned an error !"
             raise PlacementException(msg)
         else:
-            return p.communicate()[0].split('\n')[0]
+            return p.communicate()[0].decode().split('\n')[0]
         
 def compactString2List(S):
     """ Return a list of integers [0,1,2,5,6,7,9] from a compact list 0-2,5-7,9 """
@@ -137,10 +137,10 @@ def compactString2List(S):
                 l0 = int(c[0])
                 l1 = int(c[1])
                 if l0 < l1:
-                    rvl.append(range(l0,l1))
+                    rvl.append(list(range(l0,l1)))
                     rvl.append([l1])
                 else:
-                    rvl.append(range(l1,l0))
+                    rvl.append(list(range(l1,l0)))
                     rvl.append([l0])
 
         rvl = list(chain(*rvl))
@@ -167,7 +167,7 @@ def computeCpusTasksFromEnv(options,args):
     # If possible, use the SLURM environment
     if slurm_tasks_per_node != '0':
         tmp = slurm_tasks_per_node.partition('(')[0]         # 20(x2)   ==> 2
-        tmp = map(int,tmp.split(','))                        # '11,10'  ==> [11,10]
+        tmp = list(map(int,tmp.split(',')))                        # '11,10'  ==> [11,10]
         if len(tmp)==1:
             tasks = tmp[0]
         elif len(tmp)==2:
@@ -175,8 +175,8 @@ def computeCpusTasksFromEnv(options,args):
             if options.asciiart or options.human:
                 msg = "WARNING - SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node + "\n"
                 msg+= "          We are probably using a cleint-server paradigm, placement takes into account " + str(tasks) + " tasks"
-                print msg
-                print 
+                print(msg)
+                print() 
         else:
             msg =  "ERROR - Placement not supported in this configuration:\n"
             msg += "       SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node
@@ -196,10 +196,20 @@ def computeCpusTasksFromEnv(options,args):
         cpus_per_task = int(slurm_cpus_per_task)
     
     # In anything specified in the command line, use it preferably
-    if args[1] > 0:
-        cpus_per_task = int(args[1])
-    if args[0] > 0:
-        tasks         = int(args[0])
+    try:
+        t = int(args[0])
+        c = int(args[1])
+        if t==0:
+            raise PlacementException( "ERROR - Number of tasks should be >0")
+        elif t>0:
+            tasks = t
+            
+        if c==0:
+            raise PlacementException( "ERROR - Number of cpus per tasks should be >0")
+        elif c>0:
+            cpus_per_task = c
+    except ValueError:
+        raise PlacementException("ERROR - Something wrong with the parameters")
 
     # Returning computing values
     return [cpus_per_task,tasks]

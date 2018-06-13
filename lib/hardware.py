@@ -26,7 +26,7 @@
 
 import os
 import re
-import ConfigParser
+import configparser
 from exception import *
 from utilities import  expandNodeList, getHostname
 
@@ -53,12 +53,12 @@ class Hardware(object):
     def catalog():
         """ Return the available hostnames (as regex), partitions, architectures as lists of lists """
         conf_file = Hardware.__getConfFile()
-        if os.environ.has_key('PLACEMENT_CONF'):
+        if 'PLACEMENT_CONF' in os.environ:
             conf_file = os.environ['PLACEMENT_CONF']
         else:                
             conf_file = os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
 
-        config    = ConfigParser.RawConfigParser()
+        config    = configparser.RawConfigParser()
         config.read(conf_file)        
         partitions = config.options('partitions')
         hosts      = config.options('hosts')
@@ -73,7 +73,7 @@ class Hardware(object):
 
         # 1st stage: Read the configuration file, if possible
         conf_file = Hardware.__getConfFile()
-        config    = ConfigParser.RawConfigParser()
+        config    = configparser.RawConfigParser()
         if os.path.exists(conf_file):
             config.read(conf_file)        
 
@@ -88,7 +88,7 @@ class Hardware(object):
     @staticmethod
     def __getConfFile():
         # Useful for testing !
-        if os.environ.has_key('PLACEMENT_CONF'):
+        if 'PLACEMENT_CONF' in os.environ:
             return os.environ['PLACEMENT_CONF']
         else:                
             return os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
@@ -133,7 +133,7 @@ class Hardware(object):
                 msg += "May be you should write a placement.conf file ";
             else:
                 msg += "Please check " + conf_path
-            raise(PlacementException(msg))
+            raise PlacementException(msg)
             
         return archi_name
 
@@ -272,7 +272,7 @@ class Hardware(object):
             config.set('Slurm','HYPERTHREADING','1')
         else:
             config.set('Slurm','HYPERTHREADING','0')
-        config.set('Slurm','MEM_PER_SOCKET',realmemory / sockets)
+        config.set('Slurm','MEM_PER_SOCKET',realmemory // sockets)
 
 
     def getCore2Socket(self,core):
@@ -288,7 +288,7 @@ class Hardware(object):
         if core >= self.CORES_PER_NODE:
             return self.getCore2Socket(core - self.CORES_PER_NODE)
         else:
-            return core / self.CORES_PER_SOCKET
+            return core // self.CORES_PER_SOCKET
 
     def getCore2Core(self,core):
         """ Return the physical socket core number from the node core number
@@ -355,7 +355,7 @@ class SpecificHardware(Hardware):
     def __init__(self,conf_file, config,archi_name):
         # archi_name should be a section in the configuration file
         if config.has_section(archi_name)==False:
-            raise(PlacementException("ERROR - The architecture " + archi_name + " is unknown - Please check " + conf_file))
+            raise PlacementException("ERROR - The architecture " + archi_name + " is unknown - Please check " + conf_file)
 
         try:
             self.NAME             = archi_name
@@ -368,11 +368,11 @@ class SpecificHardware(Hardware):
             self.CORES_PER_NODE   = self.CORES_PER_SOCKET*self.SOCKETS_PER_NODE
             try:
                 self.GPUS         = config.get(archi_name,'GPUS')
-            except Exception, e:
+            except Exception as e:
                 pass
 
-        except Exception, e:
+        except Exception as e:
             msg = "ERROR - Something is wrong in the configuration - Please check " + conf_file
             msg += "\n"
             msg += "ERROR WAS = " + str(e)
-            raise(PlacementException(msg))
+            raise PlacementException(msg)

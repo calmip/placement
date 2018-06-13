@@ -71,7 +71,7 @@ class Matrix(object):
         for p in range(self.__ppsr_min,self.__ppsr_max+1):
             if self.__hard.getCore2Core(p)==0:
                 rvl += ' '
-            rvl += str(p/100)
+            rvl += str(p//100)
         rvl += '\n'
 
         # Ligne 2 = les dizaines
@@ -79,7 +79,7 @@ class Matrix(object):
         for p in range(self.__ppsr_min,self.__ppsr_max+1):
             if self.__hard.getCore2Core(p)==0:
                 rvl += ' '
-            rvl += str((p%100)/10)
+            rvl += str((p%100)//10)
         rvl += '\n'
 
         # Ligne 3 = les unités
@@ -127,7 +127,7 @@ class Matrix(object):
         #rvl += self.__hard.SOCKETS_PER_NODE*(self.__hard.CORES_PER_SOCKET+1)*' '
         #rvl += "  DISTRIBUTION\n"
         
-        tags = mem_pid_socket.keys()
+        tags = list(mem_pid_socket.keys())
         tags.sort()
         for tag in tags:
             val = mem_pid_socket[tag]
@@ -200,19 +200,20 @@ class Matrix(object):
         processes = {}
         mem_p_proc= {} # key = tag, val = the total mem used by this process
         for sm in sockets_mem:
-            for tag,val in sm.iteritems():
+            for tag,val in sm.items():
                 if not tag in processes:
                     processes[tag] = []
                 if not tag in mem_p_proc:
                     mem_p_proc[tag] = 0
                 processes[tag].append(val)
                 mem_p_proc[tag] += val
-         
-        for tag,val in processes.iteritems():
-            if mem_proc:
-                processes[tag] = map(lambda x: int(100.0*x/mem_p_proc[tag]),val)
-            else:
-                processes[tag] = map(lambda x: int(100.0*x/self.__hard.MEM_PER_SOCKET),val)
+        
+        if mem_p_proc[tag]!=0:
+            for tag,val in processes.items():
+                if mem_proc:
+                    processes[tag] = [int(100.0*x/mem_p_proc[tag]) for x in val]
+                else:
+                    processes[tag] = [int(100.0*x/self.__hard.MEM_PER_SOCKET) for x in val]
                     
         return processes
 

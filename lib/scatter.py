@@ -70,7 +70,7 @@ class ScatterGenMode(TasksBinding):
                 raise PlacementException(msg)
                 
         # Avoiding tasks straddling on several sockets ! 
-        max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
+        max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket//self.cpus_per_task)
         if self.cpus_per_task>1:
             if self.tasks>max_tasks and max_tasks>0:
                 msg = "ERROR - One task is straddling two sockets ! Please lower the number of tasks/node, max is "
@@ -104,11 +104,11 @@ class ScatterMode(ScatterGenMode):
 
             # q = number of tasks / socket
             # r = supplementary tasks on first sockets
-            q = self.tasks / self.archi.sockets_reserved
+            q = self.tasks // self.archi.sockets_reserved
             r = self.tasks % self.archi.sockets_reserved
 
             # hp = number of physical cores used by each task
-            hp = self.cpus_per_task / self.archi.threads_per_core
+            hp = self.cpus_per_task // self.archi.threads_per_core
 
             # si = the index in the l_socekts list
             # s  = The socket
@@ -171,11 +171,11 @@ class ScatterMode(ScatterGenMode):
         c = 0
         y = 0
         if explode:
-            nb_cores = self.cpus_per_task / self.archi.sockets_reserved
+            nb_cores = self.cpus_per_task // self.archi.sockets_reserved
         else:
             nb_cores = self.cpus_per_task
 
-        nb_phys_core = nb_cores / self.archi.threads_per_core
+        nb_phys_core = nb_cores // self.archi.threads_per_core
             
         for t in range(0,nb_cores):
             tmpl.append(c)
@@ -263,7 +263,7 @@ class ScatterBlockMode(ScatterGenMode):
             # nb of tasks x2, nb of threads /2 then recursive call
             tmp_task_distrib = ScatterBlockMode(self.archi,
                                                 check,
-                                                self.cpus_per_task/2,
+                                                self.cpus_per_task//2,
                                                 self.tasks*2)
             tmp_tasks_bound= tmp_task_distrib.distribTasks(check=False)
 

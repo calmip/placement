@@ -26,6 +26,7 @@
 
 from utilities import *
 import unittest
+import os
 
 class TestNumTaskToLetter(unittest.TestCase):
 
@@ -125,6 +126,10 @@ class TestgetGauge(unittest.TestCase):
         self.assertRaises(ValueError,getGauge,-1,8,False)
         self.assertRaises(ValueError,getGauge,101,8,False)
 
-  
+class TestgetHostname(unittest.TestCase):
+    def test_normal(self):
+        '''Not sure this test will succeed - Please set the environment variable HOSTNAME is necessary'''
+        self.assertEqual(getHostname(),os.environ['HOSTNAME'])
+          
 if __name__ == '__main__':
     unittest.main()

@@ -8,5 +8,7 @@
 #  GNU General Public License for more details.
 
 class PlacementException(Exception):
+    def __init__(self,msg):
+        Exception.__init__(self,msg)
     pass
 

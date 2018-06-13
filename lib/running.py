@@ -98,7 +98,7 @@ class RunningMode(TasksBinding):
             try:
                 tmp    = subprocess.check_output(cmd.split(' '))
 
-            except subprocess.CalledProcessError,e:
+            except subprocess.CalledProcessError as e:
                 msg = "ERROR " + cmd + " returned an error: " + str(e.returncode) + "\noutput: " + e.output
                 raise PlacementException(msg)
             
@@ -147,10 +147,10 @@ class RunningMode(TasksBinding):
             if self.path == '+':
                 fh_numastat = open(str(pid)+'.NUMASTAT.txt','r')
                 tmp = fh_numastat.readlines()
-                tmp = map(lambda x: x.replace('\n',''),tmp)
+                tmp = [x.replace('\n','') for x in tmp]
             else:
                 cmd = 'numastat ' + str(pid)
-                tmp = subprocess.check_output(cmd.split(' ')).split('\n')
+                tmp = subprocess.check_output(cmd.split(' ')).decode().split('\n')
                 tmp.pop()
             #print '\n'.join(tmp)
 
@@ -160,7 +160,7 @@ class RunningMode(TasksBinding):
             # remove first and last columns
             ttl.pop()
             ttl.pop(0)
-            ttl = map(float,ttl)
+            ttl = list(map(float,ttl))
 
             # We must have same number of numbers / sockets !
             if self.hardware.SOCKETS_PER_NODE != len(ttl):
@@ -208,7 +208,7 @@ class RunningMode(TasksBinding):
                     for i,l in enumerate(ps_res):
                         ps_res[i] = l.replace('\n','')
 
-                except subprocess.CalledProcessError,e:
+                except subprocess.CalledProcessError as e:
                     msg = "ERROR " + exe + " returned an error: " + str(e.returncode)
                     raise PlacementException(msg)
 
@@ -219,11 +219,11 @@ class RunningMode(TasksBinding):
 
                 try:
                     tmp    = subprocess.check_output(exe.split(' '),stderr=subprocess.STDOUT)
-                    ps_res = tmp.split('\n')
+                    ps_res = tmp.decode().split('\n')
                     for i,l in enumerate(ps_res):
                         ps_res[i] = l.replace('\n','')
 
-                except subprocess.CalledProcessError,e:
+                except subprocess.CalledProcessError as e:
                     if (e.returncode != 1):
                         msg = "ERROR " + exe + " returned an error: " + str(e.returncode)
                         raise PlacementException(msg)
@@ -241,7 +241,7 @@ class RunningMode(TasksBinding):
                         for i,l in enumerate(ps_res):
                             ps_res[i] = l.replace('\n','')
 
-                    except subprocess.CalledProcessError,e:
+                    except subprocess.CalledProcessError as e:
                         msg = "ERROR "
 
                         if (e.returncode == 1):
@@ -264,7 +264,7 @@ class RunningMode(TasksBinding):
             if mp != None:
 
                 # If there is at least 1 active thread in the current process, it is tagged and saved
-                if processus_courant.has_key('R'):
+                if 'R' in processus_courant:
                     processus_courant['tag'] = numTaskToLetter(process_nb)
                     process_nb += 1
                     processus[processus_courant['pid']] = processus_courant
@@ -310,13 +310,13 @@ class RunningMode(TasksBinding):
                 thread_courant['state'] = state                                 # State of the thrad (running etc)
                 thread_courant['mem'] = processus_courant['mem']                # % mem use
 
-                if processus_courant.has_key('threads')== False:
+                if ('threads' in processus_courant)== False:
                     processus_courant['threads'] = {}
 
                 processus_courant['threads'][tid] = thread_courant
 
         # If there is at least 1 active thread in the current process when xiting from the loop, it is tagged and saved
-        if processus_courant.has_key('R'):
+        if 'R' in processus_courant:
             processus_courant['tag'] = numTaskToLetter(process_nb)
             processus[processus_courant['pid']] = processus_courant
                 
@@ -381,7 +381,7 @@ class RunningMode(TasksBinding):
         rvl  = "TASK  ==> PID (USER,CMD) ==> AFFINITY\n"
         rvl += "=====================================\n"
         threads_bound = self.threads_bound
-        for (pid,proc) in sorted(threads_bound.iteritems(),key=lambda(k,v):(v['tag'],k)):
+        for (pid,proc) in sorted(iter(threads_bound.items()),key=lambda k_v:(k_v[1]['tag'],k_v[0])):
             rvl += proc['tag'] + '     '
             rvl += ' ==> '
             rvl += str(pid)
@@ -394,7 +394,7 @@ class RunningMode(TasksBinding):
             # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
             cores=[]
             threads=proc['threads']
-            for tid in threads.keys():
+            for tid in list(threads.keys()):
                 if threads[tid]['state']=='R':
                     cores.append(threads[tid]['psr'])
 
@@ -458,10 +458,10 @@ class BuildTasksBoundFromPs(BuildTasksBound):
     def __call__(self,tasksBinding):
         tasks_bound=[]
         #for pid in sorted(tasksBinding.processus.keys()):
-        for (pid,proc) in sorted(tasksBinding.processus.iteritems(),key=lambda(k,v):(v['tag'],k)):
+        for (pid,proc) in sorted(iter(tasksBinding.processus.items()),key=lambda k_v1:(k_v1[1]['tag'],k_v1[0])):
             cores=[]
             threads=proc['threads']
-            for tid in threads.keys():
+            for tid in list(threads.keys()):
                 if threads[tid]['state']=='R':
                     cores.append(threads[tid]['psr'])
             tasks_bound.append(cores)
