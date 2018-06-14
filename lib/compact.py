@@ -38,7 +38,7 @@ class CompactGenMode(TasksBinding):
     def checkParameters(self):
         self._checkParameters()
 
-        if self.cpus_per_task % self.archi.threads_per_core!=0:
+        if self.cpus_per_task>1 and self.cpus_per_task % self.archi.threads_per_core!=0:
             msg = "ERROR - cpus_per_task ("
             msg += str(self.cpus_per_task)
             msg += ") => should be a multiple of ("
