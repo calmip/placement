@@ -197,7 +197,7 @@ class RunningMode(TasksBinding):
                 
         # Build a complicated command ps
         else:
-            cmd = 'ps --no-headers -m -o %u -o %p -o tid -o psr -o %c -o state -o %cpu -o %mem '
+            cmd = 'ps --no-headers -m -o ruser:15 -o %p -o tid -o psr -o %c -o state -o %cpu -o %mem '
             
             # --check=ALL ==> No selection, among the processes
             if self.path == 'ALL':
