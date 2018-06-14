@@ -75,8 +75,8 @@ class TasksBinding(object):
         Raise of exception in case of a problem
         """
 
-        if (self.cpus_per_task<0 or self.tasks<0 ):
-            raise PlacementException("ERROR - Every parameter should be an integer >= 0")
+        if (self.cpus_per_task<=0 or self.tasks<=0 ):
+            raise PlacementException("ERROR - tasks and cpus_per_task should be > 0")
         if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_reserved:
             msg = "ERROR - Not enough cores ! Please lower cpus_per_task (";
             msg += str(self.cpus_per_task)
