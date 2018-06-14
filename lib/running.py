@@ -481,7 +481,7 @@ def _detectOverlap(tasks_bound):
                 over.append((i,j))
                 over_cores.extend(overlap)
 
-    # Use 1-char tags instead of numbers, however the number should be < 66 (and we do not check, shame !)
+    # Use 1-char tags instead of numbers, however the number should be < 296 (and we do not check, shame !)
     over_l = []
     for c in over:
         over_l.append( (numTaskToLetter(c[0]),numTaskToLetter(c[1])) )

@@ -41,15 +41,15 @@ def removeBlanks(L):
 
 
 def numTaskToLetter(n):
-    """ Return a single letter (A-Z-a-z0-9) from a (task) number (0..66) """
+    """ Return a single letter (A-Z-a-z and 245 other glyphes) from a (task) number (0..295) """
 
-    if n<0 or n>66:
-        raise PlacementException("INTERNAL ERROR - If more than 66 tasks, please use getCpuTaskAsciiBinding")
+    if n<0 or n>295:
+        raise PlacementException("INTERNAL ERROR - If more than 296 tasks, please use getCpuTaskAsciiBinding")
     if n<26:
-        return chr(65+n)   # A..Z
+        return chr(65+n)    # A..Z   (0..25)
     if n<52:
-        return chr(71+n)   # a..z  (71=97-26)
-    return chr(n-4)        # 0..>  (-4=53-48)
+        return chr(71+n)    # a..z   (26..91)
+    return chr(148+n)       #        (92..295)
 
 
 def list2CompactString(A):

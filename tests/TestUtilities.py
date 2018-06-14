@@ -38,17 +38,12 @@ class TestNumTaskToLetter(unittest.TestCase):
         self.assertEqual(numTaskToLetter(25),'Z')
         self.assertEqual(numTaskToLetter(26),'a')
         self.assertEqual(numTaskToLetter(51),'z')
-        self.assertEqual(numTaskToLetter(52),'0')
-
-        self.assertEqual(numTaskToLetter(62),':')
-        self.assertEqual(numTaskToLetter(63),';')
-        self.assertEqual(numTaskToLetter(64),'<')
-        self.assertEqual(numTaskToLetter(65),'=')
-        self.assertEqual(numTaskToLetter(66),'>')
+        self.assertEqual(numTaskToLetter(52),chr(200))
+        self.assertEqual(numTaskToLetter(295),chr(443))
 
     def test_out_of_limits(self):
         self.assertRaises(PlacementException, numTaskToLetter, -1)
-        self.assertRaises(PlacementException, numTaskToLetter, 67)
+        self.assertRaises(PlacementException, numTaskToLetter, 296)
 
 
 class TestList2CompactString(unittest.TestCase):
