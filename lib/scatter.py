@@ -32,8 +32,8 @@ class ScatterGenMode(TasksBinding):
     """ Distributing processes on cores in "scatter" modes, this generic class is a base class
 
     Two scatter modes are currently implemented:
-        1/ scatter_cyclic (default mode)
-           # placement 8 4 --ascii --mode=scatter_cyclic
+        1/ scatter (default mode)
+           # placement 8 4 --ascii --mode=scatter
            S0-------- S1-------- 
            P AABBCCDD.. EEFFGGHH.. 
            L AABBCCDD.. EEFFGGHH.. 
@@ -67,7 +67,7 @@ class ScatterGenMode(TasksBinding):
         if self.tasks > 1:
             if self.cpus_per_task > self.archi.threads_per_core*self.archi.cores_per_socket:
                 msg  = "ERROR - Please reduce the threads number (max threads number = " + str(self.archi.threads_per_core*self.archi.cores_per_socket) +")\n"
-                msg += "        Or use only ONE task/node and go to mode scatter_cyclic !"
+                msg += "        Or use only ONE task/node and go to mode scatter !"
                 raise PlacementException(msg)
                 
         # Avoiding tasks straddling on several sockets ! 
@@ -75,7 +75,7 @@ class ScatterGenMode(TasksBinding):
         # If not, ajust number of threads
         # TODO - This is great for a bisocket node, but how to manage machines with more than 2 sockets ?
         if self.tasks == 1 and self.cpus_per_task % 2 == 1:
--            self.cpus_per_task += 1
+            self.cpus_per_task += 1
 
         max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket//self.cpus_per_task)
         if self.cpus_per_task>1:
