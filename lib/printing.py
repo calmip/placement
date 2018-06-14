@@ -161,8 +161,8 @@ class PrintingForAsciiArt(PrintingFor):
     def __str__(self):
         rvl = self._warnOverlap()
 
-        if self._tasks_binding.tasks > 66:
-            rvl += "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
+        if self._tasks_binding.tasks > 296:
+            rvl += "ERROR - AsciiArt representation unsupported if more than 296 tasks !"
         else:
             rvl += self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
         return rvl
@@ -328,8 +328,8 @@ class PrintingForMatrixThreads(PrintingFor):
         '''Convert to a string (-> print) '''
         
         rvl = self._warnOverlap()
-        if self._tasks_binding.tasks > 66:
-            rvl += "ERROR - Threads representation is not supported if more than 66 tasks !"
+        if self._tasks_binding.tasks > 296:
+            rvl += "ERROR - Threads representation is not supported if more than 296 tasks !"
         else:
             rvl += gethostname()
             rvl += '\n'
