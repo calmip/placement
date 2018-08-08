@@ -31,7 +31,6 @@ from matrix import *
 from utilities import *
 from exception import *
 import itertools
-from socket import gethostname
 
 class PrintingFor(object):
     """ Base class, all PrintingFor classes extend this class
@@ -331,7 +330,7 @@ class PrintingForMatrixThreads(PrintingFor):
         if self._tasks_binding.tasks > 296:
             rvl += "ERROR - Threads representation is not supported if more than 296 tasks !"
         else:
-            rvl += gethostname()
+            rvl += getHostname()
             rvl += '\n'
             # Print cpu binding, memory info and gpu info
             rvl += self.__getCpuBinding(self._tasks_binding)
@@ -523,7 +522,7 @@ class PrintingForSummary(PrintingFor):
             summary += "  | \____________ Overlap status N = normal, O = Overlap\n"
             summary += "  \______________ Time to poll the node (s)\n\n"
 
-        summary += gethostname()
+        summary += getHostname()
         summary += ' '
 
         overlap = self.__isOverlap()
