@@ -112,7 +112,8 @@ def main():
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
     ver="1.6.0-dev"
     parser = argparse.ArgumentParser(description="placement " + ver,epilog=epilog)
-
+    parser.add_argument('--version', action='version', version='%(prog)s '+ver)
+    
     # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
     #           They are reminded here for coherency and for correctly writing help
     group = parser.add_argument_group('checking jobs running on compute nodes (THOSE SWITCHES MUST BE SPECIFIED FIRST)')
