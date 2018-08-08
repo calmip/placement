@@ -123,7 +123,7 @@ class TestgetGauge(unittest.TestCase):
 
 class TestgetHostname(unittest.TestCase):
     def test_normal(self):
-        '''Not sure this test will succeed - Please set the environment variable HOSTNAME is necessary'''
+        '''Not sure this test will succeed - Please set the environment variable HOSTNAME : export HOSTNAME=$(hostname -s)'''
         self.assertEqual(getHostname(),os.environ['HOSTNAME'])
           
 if __name__ == '__main__':
