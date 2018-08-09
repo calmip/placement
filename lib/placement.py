@@ -90,6 +90,7 @@ https://www.calmip.univ-toulouse.fr
 """
 
 import os
+import sys
 import argparse
 import subprocess
 from itertools import chain,product
@@ -179,7 +180,8 @@ def main():
         try:
             check_mpi_aware()
         except PlacementException as e:
-            print(e)
+            print("PLACEMENT_ERROR_FOUND")
+            print("PLACEMENT " + str(e), file = sys.stderr)
             exit(1)
 
     # Guess the hardware, from the placement.conf file and from environment variables
@@ -188,7 +190,8 @@ def main():
         hard = hardware.Hardware.factory()
             
     except PlacementException as e:
-        print(e)
+        print("PLACEMENT_ERROR_FOUND")
+        print("PLACEMENT " + str(e), file = sys.stderr)
         exit(1)
 
 # ----------------------------------------------------------------------
@@ -216,13 +219,14 @@ def main():
         # outputs is an array of objects extending PrintingFor
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
-            print ("OUPS, No output specified !")
+            print ("OUPS, No output specified !", file = sys.stderr)
 
         for o in outputs:
             print (o)
             
     except PlacementException as e:
-        print (e)
+        print("PLACEMENT_ERROR_FOUND")
+        print("PLACEMENT " + str(e), file = sys.stderr)
         exit(1)
 
 
