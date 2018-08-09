@@ -106,10 +106,11 @@ class ScatterMode(ScatterGenMode):
             self.tasks_bound = self.__distribManyThreadsSingleTask(self.cpus_per_task)
 
         else:
+            # If monothreaded tasks
             if self.cpus_per_task==1:
                 self.tasks_bound = self.__distribSingleThreadManyTasks(self.tasks)
             
-            # do not straddle between sockets !
+            # If multithreaded tasks: do not straddle between sockets !
             else:
                 self.tasks_bound = self.__distribManyThreadsManyTasks(self.cpus_per_task,self.tasks)
 
