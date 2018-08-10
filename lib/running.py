@@ -123,7 +123,7 @@ class RunningMode(TasksBinding):
                 gpu['M'] = int((100.0*mem_used)/mem_total);
                 
                 # gpu utilization
-                gpu['U'] = int(obj_g.find(".//utilization/gpu_util").text.translate(None,' %'))
+                gpu['U'] = int(obj_g.find(".//utilization/gpu_util").text.strip('%'))
                 
                 # power used
                 pwr_used = float(obj_g.find(".//power_readings/power_draw").text.partition(' ')[0])
@@ -133,11 +133,17 @@ class RunningMode(TasksBinding):
                 # gpu number
                 gpu['id'] = g
                 
+                # processes
+                processes = []
+                for pid in obj_g.findall(".//processes/process_info/pid"):
+                    processes.append(int(pid.text))
+                gpu['PS'] = processes
+                
                 sg.append(gpu)
             gpus_bound.append(sg)
 
         self.gpus_info = gpus_bound                
-        #print ("gpus_info =  " + str(self.gpus_info))
+        # print ("gpus_info =  " + str(self.gpus_info))
                 
     def __identNumaMem(self):
         """ Call numastat for each pid of threads_bound, and keep the returned info inside threads_bound"""

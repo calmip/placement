@@ -152,7 +152,8 @@ class Matrix(object):
 
         rvl = ""
         gpus_info = tasks_binding.gpus_info
-        #print (gpus_info)
+        # print ("tasks_binding.pid = " + str(tasks_binding.pid))
+        # print ("tasks_binding.threads_bound = " + str(tasks_binding.threads_bound))
         
         col_skipped = ''
         for s in gpus_info:
@@ -162,6 +163,14 @@ class Matrix(object):
                 rvl += 'USE             ' + col_skipped + getGauge(g['U'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['U']) + "%\n"
                 rvl += 'MEMORY          ' + col_skipped + getGauge(g['M'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['M']) + "%\n"
                 rvl += 'POWER           ' + col_skipped + getGauge(g['P'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['P']) + "%\n"
+                rvl += 'PROCESSES       ' + col_skipped
+                # Build and print the line "PROCESSES"
+                rvl += AnsiCodes.red_foreground()
+                for pid in g['PS']:
+                    rvl += tasks_binding.threads_bound[pid]['tag']
+                rvl += AnsiCodes.normal()
+                rvl += "\n"
+
                 rvl += "\n"
             col_skipped += ' '*(self.__hard.CORES_PER_SOCKET+1)
                 
