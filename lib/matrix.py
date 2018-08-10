@@ -166,8 +166,18 @@ class Matrix(object):
                 rvl += 'PROCESSES       ' + col_skipped
                 # Build and print the line "PROCESSES"
                 rvl += AnsiCodes.red_foreground()
-                for pid in g['PS']:
+                for p in g['PS']:
+                    pid = p[0];
                     rvl += tasks_binding.threads_bound[pid]['tag']
+                rvl += AnsiCodes.normal()
+                rvl += "\n"
+
+                # Build and print the line "USED MEMORY"
+                rvl += 'USED MEMORY     ' + col_skipped
+                rvl += AnsiCodes.red_foreground()
+                for p in g['PS']:
+                    mem = p[1];
+                    rvl += getGauge1(mem)
                 rvl += AnsiCodes.normal()
                 rvl += "\n"
 

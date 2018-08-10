@@ -81,7 +81,7 @@ class TestCompactString2List(unittest.TestCase):
         self.assertEqual(compactString2List('12-8'),[8,9,10,11,12])
         self.assertRaises(ValueError,compactString2List,'a-c')
 
-class TextExpandNodeList(unittest.TestCase):
+class TestExpandNodeList(unittest.TestCase):
     def test_normal(self):
         self.assertEqual(expandNodeList('eoscomp[1-3]'),['eoscomp1','eoscomp2','eoscomp3'])
         self.assertEqual(expandNodeList('eoscomp[1]'),['eoscomp1'])
@@ -90,6 +90,17 @@ class TextExpandNodeList(unittest.TestCase):
 
     def test_limits(self):
         self.assertEqual(expandNodeList('eosmesca1'),['eosmesca1'])
+
+class TestConvertMemory(unittest.TestCase):
+    def test_normal(self):
+        self.assertEqual(convertMemory('200 KiB'),204800)
+        self.assertEqual(convertMemory('200 MiB'),209715200)
+        self.assertEqual(convertMemory('200 GiB'),214748364800)
+
+    def test_bad(self):
+        self.assertRaises(PlacementException, convertMemory, '200 TiB')
+        self.assertRaises(PlacementException, convertMemory, '200')
+        self.assertRaises(PlacementException, convertMemory, 200)
 
 class TestNum2Slice(unittest.TestCase):
     '''OBSOLETE - NOT USED ANY MORE'''

@@ -135,8 +135,19 @@ class RunningMode(TasksBinding):
                 
                 # processes
                 processes = []
-                for pid in obj_g.findall(".//processes/process_info/pid"):
-                    processes.append(int(pid.text))
+                max_mem = 0
+                for obj_proc in obj_g.findall(".//processes/process_info"):
+                    pid = int(obj_proc.find(".//pid").text)
+                    mem = convertMemory(obj_proc.find(".//used_memory").text)
+                    if mem>max_mem:
+                        max_mem=mem
+                    processes.append([pid,mem])
+                    
+                # normalize the memory used (0..100)
+                if max_mem>0:
+                    for ps in processes:
+                        ps[1] = int(100.0*ps[1]/max_mem)
+
                 gpu['PS'] = processes
                 
                 sg.append(gpu)

@@ -51,7 +51,20 @@ def numTaskToLetter(n):
         return chr(71+n)    # a..z   (26..91)
     return chr(148+n)       #        (92..295)
 
-
+def convertMemory(m):
+    """ Return a number of bytes from a string like: 100 KiB, 100 MiB, 100 GiB""" 
+    
+    m1    = str(m).partition(' ');
+    unit  = m1[2].lower();
+    if unit == 'kib':
+        return int(m1[0]) * 1024
+    if unit == 'mib':
+        return int(m1[0]) * 1048576
+    if unit == 'gib':
+        return int(m1[0]) * 1073741824
+    raise PlacementException("INTERNAL ERROR - Could not convert the string: " + str(m))
+    
+    
 def list2CompactString(A):
     """ Return a compact list 0-2,5-7,9 from a list of integers [0,1,2,5,6,7,9] """
 
@@ -257,7 +270,23 @@ def getGauge(value,size,color=True):
         if p>0:
             rvl += point*p
     return rvl       
+
+def getGauge1(value):
+    '''Return a unicode char between 9601..9605, from the value (5 levels)'''
+
+    if value<0 or value>100:
+        raise ValueError( "INTERNAL ERROR - " + str(value) +" should be in the interval [0-100]")
     
+    if value<20:
+        return chr(9601)
+    if value<40:
+        return chr(9602)
+    if value<60:
+        return chr(9603)
+    if value<80:
+        return chr(9605)
+    return chr(9606)
+        
 class AnsiCodes(object):
 
     # static variable
