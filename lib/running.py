@@ -221,7 +221,7 @@ class RunningMode(TasksBinding):
                 exe = cmd + 'ax'
                 try:
                     tmp    = subprocess.check_output(exe.split(' '))
-                    ps_res = tmp.split('\n')
+                    ps_res = str(tmp).split('\\n')
                     for i,l in enumerate(ps_res):
                         ps_res[i] = l.replace('\n','')
 
