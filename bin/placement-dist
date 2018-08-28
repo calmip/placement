@@ -138,7 +138,7 @@ then
 			echo "$n: CALLING $0 --check $U $*"
 		fi
 		# Force the partition, check all processes belonging to user on the node $n
-		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check $U $*
+		ssh -x $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check $U $*
 
 		# Checking ONLY FIRST NODE, we consider that all nodes behave the same
 		break		
@@ -161,7 +161,7 @@ then
 			echo "$n: CALLING $0 $*"
 		fi
 		# Force the partition, check all processes runnning on the node $n
-		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check ALL $*
+		ssh -x $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check ALL $*
 	done
 
 # The switches --jobid, --host --checkme should be specified FIRST
