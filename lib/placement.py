@@ -111,7 +111,7 @@ def main():
 
     # Analysing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.6.0-dev"
+    ver="1.6.0"
     parser = argparse.ArgumentParser(description="placement " + ver,epilog=epilog)
     parser.add_argument('--version', action='version', version='%(prog)s '+ver)
     
