@@ -347,7 +347,7 @@ def make_mpi_aware():
     """
 
     # Analyze the output of umactl --show
-    numa_res = subprocess.check_output(["numactl", "--show"]).split("\n")
+    numa_res = subprocess.check_output(["numactl", "--show"]).decode().split("\n")
 
     # Look for the line physcpubind: 0 1 ...
     cores=''

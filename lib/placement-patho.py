@@ -202,7 +202,7 @@ def callPlacementSummary(jobids,options):
 				cmd.append('--show_depop')
 
 			#print(cmd)				
-			out=subprocess.check_output(cmd).rstrip('\n')
+			out=subprocess.check_output(cmd).decode().rstrip('\n')
 		except subprocess.CalledProcessError:
 			pass
 		if out.endswith('W'):
@@ -223,7 +223,7 @@ def callPlacementSummary(jobids,options):
 #
 def detectRunningJobs():
 	cmd = SQUEUECMD
-	out=subprocess.check_output(cmd).split('\n')
+	out=subprocess.check_output(cmd).decode().split('\n')
 	return out
 
 if __name__ == "__main__":

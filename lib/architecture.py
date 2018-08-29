@@ -226,7 +226,7 @@ class Shared(Architecture):
             msg += "numactl error - Are you sure you are on the correct node ?"
             raise PlacementException(msg)
         else:
-            output = p.communicate()[0].split('\n')
+            output = p.communicate()[0].decode().split('\n')
 
             # l_sockets is generated from line nodebind of numactl
             # nodebind: 4 5 6 => [4,5,6]

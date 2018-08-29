@@ -96,7 +96,7 @@ class RunningMode(TasksBinding):
             cmd = 'nvidia-smi -q -x'
             tmp = ''            
             try:
-                tmp    = subprocess.check_output(cmd.split(' '))
+                tmp    = subprocess.check_output(cmd.split(' ')).decode()
 
             except subprocess.CalledProcessError as e:
                 msg = "ERROR " + cmd + " returned an error: " + str(e.returncode) + "\noutput: " + e.output
@@ -221,7 +221,7 @@ class RunningMode(TasksBinding):
                 exe = cmd + 'ax'
                 try:
                     tmp    = subprocess.check_output(exe.split(' '))
-                    ps_res = str(tmp).split('\\n')
+                    ps_res = tmp.decode().split('\n')
                     for i,l in enumerate(ps_res):
                         ps_res[i] = l.replace('\n','')
 
@@ -254,7 +254,7 @@ class RunningMode(TasksBinding):
 
                     try:
                         tmp    = subprocess.check_output(exe.split(' '))
-                        ps_res = tmp.split('\n')
+                        ps_res = tmp.decode().split('\n')
                         for i,l in enumerate(ps_res):
                             ps_res[i] = l.replace('\n','')
 
