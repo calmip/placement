@@ -217,6 +217,7 @@ def main():
 
         # Second stage - Print data, may be using several formats
         # outputs is an array of objects extending PrintingFor
+        print ("hehe")
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
             print ("OUPS, No output specified !", file = sys.stderr)
@@ -225,8 +226,10 @@ def main():
             print (o)
             
     except PlacementException as e:
-        print("PLACEMENT_ERROR_FOUND")
-        print("PLACEMENT " + str(e), file = sys.stderr)
+        if options.summary == False:
+            ManageException(e)
+        else:
+            print ("0.0:0")
         exit(1)
 
 
