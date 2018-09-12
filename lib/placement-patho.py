@@ -132,7 +132,7 @@ def main():
 	#
 	reskeys = []
 	for r in results:
-		rk = frozenset(r.keys())
+		rk = frozenset(list(r.keys()))
 		reskeys.append(rk)
 		
 	inter = reskeys[0]
@@ -143,7 +143,7 @@ def main():
 	# Print the remaining pathological jobs
 	#
 	if len(inter) > 0:
-		print str(len(inter)) + " PATHOLOGICAL JOBS FOUND ON " + gethostname() + " at " + str(datetime.datetime.today())
+		print(str(len(inter)) + " PATHOLOGICAL JOBS FOUND ON " + gethostname() + " at " + str(datetime.datetime.today()))
 		printHeaders(N)
 		for j in inter:
 			printResults(j,results)
@@ -152,25 +152,25 @@ def main():
 # printResults
 #
 def printResults(j,results):
-	print j,
+	print(j, end=' ')
 	first = True
 	for r in results:
 		r1=r[j].split(' ')
 		if first:
-			print r1[0],
+			print(r1[0], end=' ')
 			first = False
-		print r1[1],
-	print 
+		print(r1[1], end=' ')
+	print() 
 
 #
 # printHeaders
 #
 def printHeaders(N):
-	print 'jobid',
-	print 'node',
+	print('jobid', end=' ')
+	print('node', end=' ')
 	for i in range(N):
-		print 'summary'+str(i+1),
-	print
+		print('summary'+str(i+1), end=' ')
+	print()
 	
 	
 		
@@ -202,7 +202,7 @@ def callPlacementSummary(jobids,options):
 				cmd.append('--show_depop')
 
 			#print(cmd)				
-			out=subprocess.check_output(cmd).rstrip('\n')
+			out=subprocess.check_output(cmd).decode().rstrip('\n')
 		except subprocess.CalledProcessError:
 			pass
 		if out.endswith('W'):
@@ -223,7 +223,7 @@ def callPlacementSummary(jobids,options):
 #
 def detectRunningJobs():
 	cmd = SQUEUECMD
-	out=subprocess.check_output(cmd).split('\n')
+	out=subprocess.check_output(cmd).decode().split('\n')
 	return out
 
 if __name__ == "__main__":

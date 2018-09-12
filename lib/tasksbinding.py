@@ -77,7 +77,7 @@ class TasksBinding(object):
 
         if (self.cpus_per_task<=0 or self.tasks<=0 ):
             raise PlacementException("ERROR - tasks and cpus_per_task should be > 0")
-            
+
         if self.cpus_per_task*self.tasks>self.archi.threads_per_core*self.archi.cores_reserved:
             msg = "ERROR - Not enough cores ! Please lower cpus_per_task (";
             msg += str(self.cpus_per_task)
@@ -109,8 +109,8 @@ class TasksBinding(object):
                 rank = os.environ['PMI_RANK']
             except KeyError:
                 msg = "NINI ERROR - NOT intelmpi, NOT bullxmpi, NOT openmpi"
-                for k in os.environ.keys():
-                    print k + ' => ' + os.environ[k]
+                for k in list(os.environ.keys()):
+                    print(k + ' => ' + os.environ[k])
 
                 raise PlacementException(msg)
 

@@ -32,8 +32,8 @@ class ScatterGenMode(TasksBinding):
     """ Distributing processes on cores in "scatter" modes, this generic class is a base class
 
     Two scatter modes are currently implemented:
-        1/ scatter_cyclic (default mode)
-           # placement 8 4 --ascii --mode=scatter_cyclic
+        1/ scatter (default mode)
+           # placement 8 4 --ascii --mode=scatter
            S0-------- S1-------- 
            P AABBCCDD.. EEFFGGHH.. 
            L AABBCCDD.. EEFFGGHH.. 
@@ -51,7 +51,7 @@ class ScatterGenMode(TasksBinding):
 
     def checkParameters(self):
         """ Avoiding tasks straddling different sockets and other ugly things"""
- 
+
         self._checkParameters()
 
         # Allow 1 thread, or a multiple of threads_per_core
@@ -67,11 +67,17 @@ class ScatterGenMode(TasksBinding):
         if self.tasks > 1:
             if self.cpus_per_task > self.archi.threads_per_core*self.archi.cores_per_socket:
                 msg  = "ERROR - Please reduce the threads number (max threads number = " + str(self.archi.threads_per_core*self.archi.cores_per_socket) +")\n"
-                msg += "        Or use only ONE task/node and go to mode scatter_cyclic !"
+                msg += "        Or use only ONE task/node and go to mode scatter !"
                 raise PlacementException(msg)
                 
         # Avoiding tasks straddling on several sockets ! 
-        max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket/self.cpus_per_task)
+        # If 1 task, the number of threads should be even (because we straddle between sockets !)
+        # If not, ajust number of threads
+        # TODO - This is great for a bisocket node, but how to manage machines with more than 2 sockets ?
+        if self.tasks == 1 and self.cpus_per_task % 2 == 1:
+            self.cpus_per_task += 1
+
+        max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket//self.cpus_per_task)
         if self.cpus_per_task>1:
             if self.tasks>max_tasks and max_tasks>0:
                 msg = "ERROR - One task is straddling two sockets ! Please lower the number of tasks/node, max is "
@@ -101,74 +107,123 @@ class ScatterMode(ScatterGenMode):
         if check:
             self.checkParameters()
 
-        tasks_bound = []
-
-        # If several tasks, do not straddle between sockets !
-        if self.tasks > 1:
-
-            # tmpl is a "template" describing the distribution of the cores for 1 task
-            tmpl = self.__compute_task_template()
-
-            # q = number of tasks / socket
-            # r = supplementary tasks on first sockets
-            q = self.tasks / self.archi.sockets_reserved
-            r = self.tasks % self.archi.sockets_reserved
-
-            # hp = number of physical cores used by each task
-            hp = self.cpus_per_task / self.archi.threads_per_core
-
-            # si = the index in the l_socekts list
-            # s  = The socket
-            si = 0
-            s = self.archi.l_sockets[si]
-
-            # c  = the core, relative to the socekt
-            # ca = the core, absolute address
-            c = 0
-            ca = 0
-
-            # cpt_t = Tasks counter on the current socket
-            cpt_t = 1
-
-            # Each task uses the same template
-            for t in range(self.tasks):
-                ca = s * self.archi.cores_per_socket + c
-                t_bound = []
-                for h in range(self.cpus_per_task):
-                    t_bound.append(ca + tmpl[h])
-                tasks_bound.append(t_bound)
-
-                # Compute the next task position
-                if cpt_t<q:
-                    cpt_t += 1
-                    c     += hp
-                elif si<r and cpt_t==q:
-                    cpt_t += 1
-                    c     += hp
-                else:
-                    si    += 1
-                    if si==len(self.archi.l_sockets):
-                        break
-
-                    s     =  self.archi.l_sockets[si]
-                    c     =  0
-                    cpt_t = 1
-
         # If only ONE task, it is exploded between available sockets
+        if self.tasks==1:
+            self.tasks_bound = self.__distribManyThreadsSingleTask(self.cpus_per_task)
+
         else:
-            tmpl = self.__compute_task_template(True)
-            t_bound = []
-            for s in self.archi.l_sockets:
-                c_start = s * self.archi.cores_per_socket
-                for c in tmpl:
-                    t_bound.append(c_start+c)
-            tasks_bound.append(t_bound)
+            # If monothreaded tasks
+            if self.cpus_per_task==1:
+                self.tasks_bound = self.__distribSingleThreadManyTasks(self.tasks)
+            
+            # If multithreaded tasks: do not straddle between sockets !
+            else:
+                self.tasks_bound = self.__distribManyThreadsManyTasks(self.cpus_per_task,self.tasks)
 
-
-        self.tasks_bound = tasks_bound
         return self.tasks_bound
 
-    def __compute_task_template(self,explode=False):
+    def __distribSingleThreadManyTasks(self,tasks):
+        """Implementing the distribTasks algo when there are many monothreaded tasks"""
+
+
+        # The number of physical cores we have
+        nb_of_cores = self.archi.hardware.CORES_PER_SOCKET * self.archi.sockets_reserved
+        
+        # Less tasks than cores - __distribManyThreadsManyTasks works well
+        if tasks <= nb_of_cores:
+            return self.__distribManyThreadsManyTasks(1,tasks)
+            
+        # More tasks than cores = Use hyperthreading !
+        else:
+            # The first nb_of_cores tasks
+            tasks_bound     = self.__distribManyThreadsManyTasks(1,nb_of_cores)
+
+            # Compute tasks_bound for the remaining tasks
+            tasks_rem       = tasks - nb_of_cores
+            tasks_bound_rem = self.__distribManyThreadsManyTasks(1,tasks_rem)
+
+            # Correct the result and append to tasks_bound
+            for t in tasks_bound_rem:
+                tasks_bound.append([t[0]+self.archi.cores_per_node])
+            
+            return tasks_bound
+        
+        
+    def __distribManyThreadsSingleTask(self,cpus_per_task):
+        """Implementing the distribTasks algo when only one task / many threads"""
+
+        tasks_bound = []
+        
+        # tmpl is a "template" describing the distribution of the cores for 1 task
+        tmpl = self.__compute_task_template(cpus_per_task,True)
+
+        t_bound = []
+        for s in self.archi.l_sockets:
+            c_start = s * self.archi.cores_per_socket
+            for c in tmpl:
+                t_bound.append(c_start+c)
+
+        tasks_bound.append(t_bound)
+        return tasks_bound
+
+    def __distribManyThreadsManyTasks(self,cpus_per_task,tasks):
+        """Implementing the distribTasks algo when many tasks / many threads"""
+    
+        tasks_bound = []
+        
+        # tmpl is a "template" describing the distribution of the cores for 1 task
+        tmpl = self.__compute_task_template(cpus_per_task)
+
+        # q = number of tasks / socket
+        # r = supplementary tasks on first sockets
+        q = tasks // self.archi.sockets_reserved
+        r = tasks % self.archi.sockets_reserved
+
+        # hp = number of physical cores used by each task (at least 1)
+        hp = cpus_per_task // self.archi.threads_per_core
+        if hp==0:
+            hp=1
+
+        # si = the index in the l_sockets list
+        # s  = The socket
+        si = 0
+        s = self.archi.l_sockets[si]
+
+        # c  = the core, relative to the socket
+        # ca = the core, absolute address
+        c = 0
+        ca = 0
+
+        # cpt_t = Tasks counter on the current socket
+        cpt_t = 1
+
+        # Each task uses the same template
+        for t in range(tasks):
+            ca = s * self.archi.cores_per_socket + c
+            t_bound = []
+            for h in range(cpus_per_task):
+                t_bound.append(ca + tmpl[h])
+            tasks_bound.append(t_bound)
+
+            # Compute the next task position
+            if cpt_t<q:
+                cpt_t += 1
+                c     += hp
+            elif si<r and cpt_t==q:
+                cpt_t += 1
+                c     += hp
+            else:
+                si    += 1
+                if si==len(self.archi.l_sockets):
+                    break
+
+                s     =  self.archi.l_sockets[si]
+                c     =  0
+                cpt_t = 1
+                
+        return tasks_bound
+
+    def __compute_task_template(self,cpus_per_task,explode=False):
         """ Return the cores used by the FIRST task, the pattern will be reproduced by every task.
 
         If explode == true, the task is exploded between the sockets
@@ -178,11 +233,11 @@ class ScatterMode(ScatterGenMode):
         c = 0
         y = 0
         if explode:
-            nb_cores = self.cpus_per_task / self.archi.sockets_reserved
+            nb_cores = cpus_per_task // self.archi.sockets_reserved
         else:
-            nb_cores = self.cpus_per_task
+            nb_cores = cpus_per_task
 
-        nb_phys_core = nb_cores / self.archi.threads_per_core
+        nb_phys_core = nb_cores // self.archi.threads_per_core
             
         for t in range(0,nb_cores):
             tmpl.append(c)
@@ -195,7 +250,7 @@ class ScatterMode(ScatterGenMode):
     def test__compute_task_template(self,explode=False):
         '''DO NOT USE - Useful only for unit tests'''
 
-        return self.__compute_task_template(explode)
+        return self.__compute_task_template(self.cpus_per_task,explode)
 
 #
 # class ScatterMode, dérive de TaskBinding, implémente les algos utilisés en mode scatter
@@ -270,7 +325,7 @@ class ScatterBlockMode(ScatterGenMode):
             # nb of tasks x2, nb of threads /2 then recursive call
             tmp_task_distrib = ScatterBlockMode(self.archi,
                                                 check,
-                                                self.cpus_per_task/2,
+                                                self.cpus_per_task//2,
                                                 self.tasks*2)
             tmp_tasks_bound= tmp_task_distrib.distribTasks(check=False)
 

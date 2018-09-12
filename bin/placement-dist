@@ -23,14 +23,13 @@
 #        Nicolas Renon - Université Paul Sabatier - University of Toulouse)
 #
 
-# We need python 2.7 BUT placement DOES NOT WORK (yet) WITH PYTHON 3
-
+# We need python3 !!!
 # The following may be necessary or not, it depends on your installation
 version=$(python --version 2>&1)
-if [[ ! "$version" =~ "2.7" ]]
+if [[ ! "$version" =~ "^3" ]]
 then
 	module purge >/dev/null 2>&1
-	module load python/2.7.6 >/dev/null 2>&1
+	module load python/3.5.3 >/dev/null 2>&1
 fi
 
 # The python executable
@@ -112,7 +111,7 @@ if [[ $jobid != "" ]]
 then
 	# The following returns something like <partition_name>@<node_name>[570-572]@ <user_name>
 	# Example: exclusive@eoscomp[570-572]@ toto
-    PN=$( squeue -j $jobid --noheader -o "%.9P@%.16R@%.15u" )
+    PN=$( squeue -t RUNNING -j $jobid --noheader -o "%.9P@%.16R@%.15u" )
 	if [[ $? != 0 || $PN == "" ]]
     then
 		echo "ERROR - Bad jobid ! ($jobid)"
@@ -139,7 +138,7 @@ then
 			echo "$n: CALLING $0 --check $U $*"
 		fi
 		# Force the partition, check all processes belonging to user on the node $n
-		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check $U $*
+		ssh -x $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check $U $*
 
 		# Checking ONLY FIRST NODE, we consider that all nodes behave the same
 		break		
@@ -162,7 +161,7 @@ then
 			echo "$n: CALLING $0 $*"
 		fi
 		# Force the partition, check all processes runnning on the node $n
-		ssh $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check ALL $*
+		ssh -x $n export PLACEMENT_PARTITION=\"$P\" \; $0 --check ALL $*
 	done
 
 # The switches --jobid, --host --checkme should be specified FIRST

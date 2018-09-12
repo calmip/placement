@@ -90,6 +90,7 @@ https://www.calmip.univ-toulouse.fr
 """
 
 import os
+import sys
 import argparse
 import subprocess
 from itertools import chain,product
@@ -108,11 +109,11 @@ from printing import *
 
 def main():
 
-    # Analysing the command line arguments
+    # Analyzing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.5.0"
-
-    parser = argparse.ArgumentParser(version=ver,description="placement " + ver,epilog=epilog)
+    ver="1.6.0"
+    parser = argparse.ArgumentParser(description="placement " + ver,epilog=epilog)
+    parser.add_argument('--version', action='version', version='%(prog)s '+ver)
 
     # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
     #           They are reminded here for coherency and for correctly writing help
@@ -178,8 +179,9 @@ def main():
     if options.mpiaware==True:
         try:
             check_mpi_aware()
-        except PlacementException, e:
-            print e
+        except PlacementException as e:
+            print("PLACEMENT_ERROR_FOUND")
+            print("PLACEMENT " + str(e), file = sys.stderr)
             exit(1)
 
     # Guess the hardware, from the placement.conf file and from environment variables
@@ -187,8 +189,9 @@ def main():
     try:
         hard = hardware.Hardware.factory()
             
-    except PlacementException, e:
-        print e
+    except PlacementException as e:
+        print("PLACEMENT_ERROR_FOUND")
+        print("PLACEMENT " + str(e), file = sys.stderr)
         exit(1)
 
 # ----------------------------------------------------------------------
@@ -216,13 +219,14 @@ def main():
         # outputs is an array of objects extending PrintingFor
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
-            print ("OUPS, No output specified !")
+            print ("OUPS, No output specified !", file = sys.stderr)
 
         for o in outputs:
             print (o)
             
-    except PlacementException, e:
-        print (e)
+    except PlacementException as e:
+        print("PLACEMENT_ERROR_FOUND")
+        print("PLACEMENT " + str(e), file = sys.stderr)
         exit(1)
 
 
@@ -323,10 +327,10 @@ def documentation(section):
         if line.startswith(sct):
             flag += 1
         if flag >= 2:
-            print line,
+            print(line, end=' ')
 
     if flag==False:
-        print "OUPS - Nothing in documentation, section " + sct + ' !'
+        print("OUPS - Nothing in documentation, section " + sct + ' !')
             
 
 ###########################################################
@@ -343,7 +347,7 @@ def make_mpi_aware():
     """
 
     # Analyze the output of umactl --show
-    numa_res = subprocess.check_output(["numactl", "--show"]).split("\n")
+    numa_res = subprocess.check_output(["numactl", "--show"]).decode().split("\n")
 
     # Look for the line physcpubind: 0 1 ...
     cores=''
@@ -366,7 +370,7 @@ def make_mpi_aware():
     if 'SLURM_CPUS_PER_TASK' in os.environ:
         msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
 
-    print msg
+    print(msg)
     
     return
 
@@ -376,7 +380,7 @@ def check_mpi_aware():
 #    return
 
 #    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
-    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE'):
+    if 'PLACEMENT_PHYSCPU' in os.environ and 'PLACEMENT_NODE' in os.environ:
         return
 
     msg =  'OUPS - I am not really mpi_aware, some environment variables are missing !\n'
@@ -430,7 +434,7 @@ def show_env():
         if v=='PLACEMENT_PARTITION':
             msg += ' of ' + str(cat[1])
         msg += '\n'
-    print msg
+    print(msg)
 
 def compute_data_from_running(options,args,hard):
     """ Compute and return task_distrib observing a running program
@@ -485,8 +489,6 @@ def compute_data_from_parameters(options,args,hard):
             
     task_distrib = ""
     if options.mode == "scatter":
-        task_distrib = ScatterMode(archi,check)
-    elif options.mode == "scatter_cyclic":
         task_distrib = ScatterMode(archi,check)
     elif options.mode == "scatter_block":
         task_distrib = ScatterBlockMode(archi,check)

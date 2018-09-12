@@ -112,7 +112,7 @@ def main():
 def isRunning(jobid):
 	cmd = ['squeue','-j',str(jobid),'-o','%t','-h']
 	try:
-		out=subprocess.check_output(cmd).rstrip('\n')
+		out=subprocess.check_output(cmd).decode().rstrip('\n')
 		return (out=='R')
 	except subprocess.CalledProcessError:
 		return False
@@ -125,7 +125,7 @@ def printHeaders():
 	try:
 		hard = hardware.Hardware.factory()
 			
-	except PlacementException, e:
+	except PlacementException as e:
 		print (e)
 		exit(1)
 	
@@ -144,14 +144,14 @@ def printHeaders():
 			h +='GPU'+str(g)+'_M'+','
 			h += 'GPU'+str(g)+'_P'+','
 	
-	print (h.replace(' ',''))
+	print((h.replace(' ','')))
 
 #
 # Call placement on a list of hosts, using clush and print the result
 #
 def callPlacement(partition, hosts, user):
 	cmd=['clush','-w',hosts,PLACEMENT,'--check',user,'--csv']	# 
-	out=subprocess.check_output(cmd).rstrip('\n').split(': ')	# totocomp: 100,100,100,99,... -> ['totocomp: ','100','100',...]
+	out=subprocess.check_output(cmd).decode().rstrip('\n').split(': ')	# totocomp: 100,100,100,99,... -> ['totocomp: ','100','100',...]
 	out=','.join(out)                                           # 'totocomp,100,100,100,99,...
 	print(out)
 	
@@ -171,7 +171,7 @@ def jobid2hosts(jobid):
 
 	while(True):
 		try:
-			tmp = subprocess.check_output(cmd)
+			tmp = subprocess.check_output(cmd).decode()
 			tmp = tmp.rstrip('"\n')
 			tmp = tmp.strip('"')
 			tmp = tmp.split('@')
@@ -231,7 +231,7 @@ def Usage():
 #cmd = ['squeue','-o','"%t %B"','-h','-j',str(jobid)]
 
 #try:
-#	tmp = subprocess.check_output(cmd)
+#	tmp = subprocess.check_output(cmd).decode()
 #	tmp = tmp.rstrip('"\n')
 #	tmp = tmp.strip('"')
 #	tmp = tmp.split(' ')

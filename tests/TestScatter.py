@@ -62,6 +62,7 @@ class TestScatterExclusive(unittest.TestCase):
         self.exclu_ko7   = Exclusive(self.hardware,2,21,True)
 
         # Si pas d'hyperthreading, autant de threads qu'on veut
+        # Trying with 1 or 2 threads
         self.exclu_ok8   = Exclusive(self.hardware,1,5,False)
         self.scatter_ok8 = ScatterMode(self.exclu_ok8)
 
@@ -70,7 +71,8 @@ class TestScatterExclusive(unittest.TestCase):
 
         # Si hyperthreading activé, seulement nombre PAIR de threads !
         # TODO - Something wrong here, 11,3 there is an exception, 12,3 no exception !!!
-        self.exclu_ko10 = Exclusive(self.hardware,11,3,True)
+        # self.exclu_ko10 = Exclusive(self.hardware,11,3,True)
+        self.exclu_ko10 = Exclusive(self.hardware,5,1,True)
 
         self.exclu_ok11 = Exclusive(self.hardware,2,5,True)
         self.scatter_ok11 = ScatterMode(self.exclu_ok11)
@@ -95,7 +97,7 @@ class TestScatterExclusive(unittest.TestCase):
         self.assertEqual(self.scatter_ok12.test__compute_task_template(True),[0,1,2,3,4,5])
         self.assertEqual(self.scatter_ok13.test__compute_task_template(True),[0,1,2,3,4,5,20,21,22,23,24,25])
 
-
+    #@unittest.skip("does not work, see later")
     def test_exclusive_check(self):
         ok = [self.scatter_ok1,self.scatter_ok2,self.scatter_ok3,self.scatter_ok4,self.scatter_ok6,self.scatter_ok8,self.scatter_ok9,self.scatter_ok11,self.scatter_ok12]
         ko = [self.exclu_ko5,self.exclu_ko7,self.exclu_ko10,self.exclu_ko15]
@@ -124,6 +126,35 @@ class TestScatterExclusive(unittest.TestCase):
         self.assertEqual(self.scatter_ok11.distribTasks(),[[0,20],[1,21],[2,22],[10,30],[11,31]])
         self.assertEqual(self.scatter_ok12.distribTasks(),[[0,1,2,3,4,5,10,11,12,13,14,15]])
         self.assertEqual(self.scatter_ok13.distribTasks(),[[0,1,2,3,4,5,20,21,22,23,24,25,10,11,12,13,14,15,30,31,32,33,34,35]])
+
+# Testing the special use case where we have:
+#       - 10 cores/socket
+#       - Hyperthreading
+#       - 2 sockets
+#       - 22 tasks
+#       - 1 core / task
+#@unittest.skip("it does not work yet, not tested")
+class TestScatterExclusive1(unittest.TestCase):
+    def setUp(self):
+        os.environ['PLACEMENT_CONF'] = 'test3.conf'
+        os.environ['HOSTNAME'] = 'node101'
+        self.hardware = Hardware.factory()
+        self.assertEqual(self.hardware.NAME,'hard1')
+
+        # 20 tasks/1 thread
+        self.exclu_ok1   = Exclusive(self.hardware,1,20,True)
+        self.scatter_ok1 = ScatterMode(self.exclu_ok1)
+        
+        # 22 tasks/1 thread
+        self.exclu_ok2   = Exclusive(self.hardware,1,22,True)
+        self.scatter_ok2 = ScatterMode(self.exclu_ok2)
+
+
+    def test_exclusive_distrib(self):
+        self.assertEqual(self.scatter_ok1.distribTasks(),[[0],[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11],[12],[13],[14],[15],[16],[17],[18],[19]])
+        self.assertEqual(self.scatter_ok2.distribTasks(),[[0],[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11],[12],[13],[14],[15],[16],[17],[18],[19],[20],[30]])
+
+
 
 # bien qu'on teste ici une architecture Shared, tout se passe comme si elle était exclusive
 class TestScatterSharedMesca(unittest.TestCase):
@@ -202,9 +233,14 @@ class TestScatterBlockExclusive(unittest.TestCase):
         self.exclu_ok9   = Exclusive(self.hardware,2,5,False)
         self.scatter_block_ok9 = ScatterBlockMode(self.exclu_ok9)
 
+<<<<<<< HEAD
         # Si hyperthreading activé, et nb de taches>1, seulement nombre PAIR de threads !
         # TODO - Something wrong here, 11,3 there is an exception, 12,3 no exception !!!
         self.exclu_ko10 = Exclusive(self.hardware,11,3,True)
+=======
+        # Si hyperthreading activé, seulement nombre PAIR de threads !
+        self.exclu_ko10 = Exclusive(self.hardware,3,5,True)
+>>>>>>> release/1.6.0
 
         self.exclu_ok11 = Exclusive(self.hardware,2,5,True)
         self.scatter_block_ok11 = ScatterBlockMode(self.exclu_ok11)
@@ -223,6 +259,7 @@ class TestScatterBlockExclusive(unittest.TestCase):
         # Si plusieurs tâches elles ne doivent pas être à cheval sur deux sockets
         self.exclu_ko15 = Exclusive(self.hardware,4,5,False)
 
+    #@unittest.skip("does not work, see later")
     def test_exclusive_check(self):
         ok = [self.scatter_block_ok1,self.scatter_block_ok2,self.scatter_block_ok3,self.scatter_block_ok4,self.scatter_block_ok6,self.scatter_block_ok8,self.scatter_block_ok9,self.scatter_block_ok11,self.scatter_block_ok12]
         ko = []

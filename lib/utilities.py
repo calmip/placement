@@ -41,17 +41,30 @@ def removeBlanks(L):
 
 
 def numTaskToLetter(n):
-    """ Return a single letter (A-Z-a-z0-9) from a (task) number (0..66) """
+    """ Return a single letter (A-Z-a-z and 245 other glyphes) from a (task) number (0..295) """
 
-    if n<0 or n>66:
-        raise PlacementException("INTERNAL ERROR - If more than 66 tasks, please use getCpuTaskAsciiBinding")
+    if n<0 or n>295:
+        raise PlacementException("INTERNAL ERROR - If more than 296 tasks, please use getCpuTaskAsciiBinding")
     if n<26:
-        return chr(65+n)   # A..Z
+        return chr(65+n)    # A..Z   (0..25)
     if n<52:
-        return chr(71+n)   # a..z  (71=97-26)
-    return chr(n-4)        # 0..>  (-4=53-48)
+        return chr(71+n)    # a..z   (26..91)
+    return chr(148+n)       #        (92..295)
 
-
+def convertMemory(m):
+    """ Return a number of bytes from a string like: 100 KiB, 100 MiB, 100 GiB""" 
+    
+    m1    = str(m).partition(' ');
+    unit  = m1[2].lower();
+    if unit == 'kib':
+        return int(m1[0]) * 1024
+    if unit == 'mib':
+        return int(m1[0]) * 1048576
+    if unit == 'gib':
+        return int(m1[0]) * 1073741824
+    raise PlacementException("INTERNAL ERROR - Could not convert the string: " + str(m))
+    
+    
 def list2CompactString(A):
     """ Return a compact list 0-2,5-7,9 from a list of integers [0,1,2,5,6,7,9] """
 
@@ -99,9 +112,9 @@ def expandNodeList(nodelist):
     matches = re.match('(.+)\[(.+)\](.*)',nodelist)
     if matches:
         prefix = matches.group(1)
-	postfix= matches.group(3)
+        postfix= matches.group(3)
         #print map(lambda x:prefix+str(x)+postfix,compactString2List(matches.group(2)))
-        return map(lambda x:prefix+str(x)+postfix,compactString2List(matches.group(2)))
+        return [prefix+str(x)+postfix for x in compactString2List(matches.group(2))]
     else:
         return [ nodelist ]
 
@@ -109,7 +122,6 @@ def getHostname():
     """ Return the environment HOSTNAME if set, else call /bin/hostname -s"""
     if 'HOSTNAME' in os.environ:
         return os.environ['HOSTNAME'].partition('.')[0]  # striping after '.' = same as -s above !
-
     else:
         cmd = "/bin/hostname -s"
         p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -121,7 +133,7 @@ def getHostname():
             msg += "/bin/hostname -s returned an error !"
             raise PlacementException(msg)
         else:
-            return p.communicate()[0].split('\n')[0]
+            return p.communicate()[0].decode().split('\n')[0]
         
 def compactString2List(S):
     """ Return a list of integers [0,1,2,5,6,7,9] from a compact list 0-2,5-7,9 """
@@ -138,10 +150,10 @@ def compactString2List(S):
                 l0 = int(c[0])
                 l1 = int(c[1])
                 if l0 < l1:
-                    rvl.append(range(l0,l1))
+                    rvl.append(list(range(l0,l1)))
                     rvl.append([l1])
                 else:
-                    rvl.append(range(l1,l0))
+                    rvl.append(list(range(l1,l0)))
                     rvl.append([l0])
 
         rvl = list(chain(*rvl))
@@ -168,7 +180,7 @@ def computeCpusTasksFromEnv(options,args):
     # If possible, use the SLURM environment
     if slurm_tasks_per_node != '0':
         tmp = slurm_tasks_per_node.partition('(')[0]         # 20(x2)   ==> 2
-        tmp = map(int,tmp.split(','))                        # '11,10'  ==> [11,10]
+        tmp = list(map(int,tmp.split(',')))                        # '11,10'  ==> [11,10]
         if len(tmp)==1:
             tasks = tmp[0]
         elif len(tmp)==2:
@@ -176,8 +188,8 @@ def computeCpusTasksFromEnv(options,args):
             if options.asciiart or options.human:
                 msg = "WARNING - SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node + "\n"
                 msg+= "          We are probably using a cleint-server paradigm, placement takes into account " + str(tasks) + " tasks"
-                print msg
-                print 
+                print(msg)
+                print() 
         else:
             msg =  "ERROR - Placement not supported in this configuration:\n"
             msg += "       SLURM_TASKS_PER_NODE = " + slurm_tasks_per_node
@@ -197,10 +209,20 @@ def computeCpusTasksFromEnv(options,args):
         cpus_per_task = int(slurm_cpus_per_task)
     
     # In anything specified in the command line, use it preferably
-    if args[1] > 0:
-        cpus_per_task = int(args[1])
-    if args[0] > 0:
-        tasks         = int(args[0])
+    try:
+        t = int(args[0])
+        c = int(args[1])
+        if t==0:
+            raise PlacementException( "ERROR - Number of tasks should be >0")
+        elif t>0:
+            tasks = t
+            
+        if c==0:
+            raise PlacementException( "ERROR - Number of cpus per tasks should be >0")
+        elif c>0:
+            cpus_per_task = c
+    except ValueError:
+        raise PlacementException("ERROR - Something wrong with the parameters")
 
     # Returning computing values
     return [cpus_per_task,tasks]
@@ -248,7 +270,23 @@ def getGauge(value,size,color=True):
         if p>0:
             rvl += point*p
     return rvl       
+
+def getGauge1(value):
+    '''Return a unicode char between 9601..9605, from the value (5 levels)'''
+
+    if value<0 or value>100:
+        raise ValueError( "INTERNAL ERROR - " + str(value) +" should be in the interval [0-100]")
     
+    if value<20:
+        return chr(9601)
+    if value<40:
+        return chr(9602)
+    if value<60:
+        return chr(9603)
+    if value<80:
+        return chr(9605)
+    return chr(9606)
+        
 class AnsiCodes(object):
 
     # static variable

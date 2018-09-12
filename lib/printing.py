@@ -31,7 +31,6 @@ from matrix import *
 from utilities import *
 from exception import *
 import itertools
-from socket import gethostname
 
 class PrintingFor(object):
     """ Base class, all PrintingFor classes extend this class
@@ -159,8 +158,8 @@ class PrintingForAsciiArt(PrintingFor):
     def __str__(self):
         rvl = self._warnOverlap()
 
-        if self._tasks_binding.tasks > 66:
-            rvl += "ERROR - AsciiArt representation unsupported if more than 66 tasks !"
+        if self._tasks_binding.tasks > 296:
+            rvl += "ERROR - AsciiArt representation unsupported if more than 296 tasks !"
         else:
             rvl += self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound,self._tasks_binding.over_cores)
         return rvl
@@ -325,8 +324,8 @@ class PrintingForMatrixThreads(PrintingFor):
         '''Convert to a string (-> print) '''
         
         rvl = self._warnOverlap()
-        if self._tasks_binding.tasks > 66:
-            rvl += "ERROR - Threads representation is not supported if more than 66 tasks !"
+        if self._tasks_binding.tasks > 296:
+            rvl += "ERROR - Threads representation is not supported if more than 296 tasks !"
         else:
             rvl += gethostname().split('.', 1)[0]
             rvl += '\n'
@@ -353,7 +352,7 @@ class PrintingForMatrixThreads(PrintingFor):
         # For each task in threads_bound, compute the ppsr_min and ppsr_max, ie the min and max physical cores
         ppsr_min = 999999
         ppsr_max = 0
-        for pid in threads_bound.keys():
+        for pid in list(threads_bound.keys()):
             p_ppsr_min = 9999
             threads = threads_bound[pid]['threads']
 
@@ -384,18 +383,18 @@ class PrintingForMatrixThreads(PrintingFor):
         # Printing the body
         # Sort threads_bound, on processes or on threads
         if self.__sorted_processes_cores:
-            sorted_processes = sorted(threads_bound.iteritems(),key=lambda(k,v):(v['ppsr_min'],k))
+            sorted_processes = sorted(iter(threads_bound.items()),key=lambda k_v1:(k_v1[1]['ppsr_min'],k_v1[0]))
         else:
-            sorted_processes = sorted(threads_bound.iteritems())
+            sorted_processes = sorted(threads_bound.items())
 
         # Print one line/thread
         for (pid,thr) in sorted_processes:
             l = threads_bound[pid]['tag']
             threads = threads_bound[pid]['threads']
             if self.__sorted_threads_cores:
-                sorted_threads = sorted(threads.iteritems(),key=lambda(k,v):(v['ppsr'],k))
+                sorted_threads = sorted(iter(threads.items()),key=lambda k_v:(k_v[1]['ppsr'],k_v[0]))
             else:
-                sorted_threads = sorted(threads.iteritems())
+                sorted_threads = sorted(threads.items())
 
             for (tid,thr) in sorted_threads:
                 if not self.__show_idle and threads[tid]['state'] != 'R':
@@ -406,7 +405,7 @@ class PrintingForMatrixThreads(PrintingFor):
                     S = '.'
                 else:
                     S = '?'
-                if thr.has_key('mem'):
+                if 'mem' in thr:
                     rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['mem'])
                 else:
                     rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'])
@@ -438,7 +437,7 @@ class PrintingForMatrixThreads(PrintingFor):
                             
         """
 
-        sockets = range(0,archi.hardware.SOCKETS_PER_NODE)
+        sockets = list(range(0,archi.hardware.SOCKETS_PER_NODE))
         sockets_mem = []
         for s in sockets:
             sockets_mem.append({})
@@ -487,10 +486,10 @@ class PrintingForSummary(PrintingFor):
         total    = 0
         mem=0.0
         
-        for pid,p in threads.iteritems():
+        for pid,p in threads.items():
             mem += float(p['mem'])
             if p['R']:    # If the process is running
-                for tid,t in p['threads'].iteritems():
+                for tid,t in p['threads'].items():
                     cpu += float(t['cpu'])
                     if t['state'] == 'R':
                         running += 1
@@ -501,7 +500,7 @@ class PrintingForSummary(PrintingFor):
         else:
             nb_of_cores = self._tasks_binding.hardware.CORES_PER_NODE
 
-        cpu = int(cpu / nb_of_cores)
+        cpu = int(cpu // nb_of_cores)
         run = int( (100 * running) / total )
         return [ cpu, run, mem ]
         
@@ -520,7 +519,7 @@ class PrintingForSummary(PrintingFor):
             summary += "  | \____________ Overlap status N = normal, O = Overlap\n"
             summary += "  \______________ Time to poll the node (s)\n\n"
 
-        summary += gethostname()
+        summary += getHostname()
         summary += ' '
 
         overlap = self.__isOverlap()
@@ -584,17 +583,17 @@ class PrintingForCsv(PrintingFor):
 
         cores={}
         mem=0.0
-        for pid,p in threads.iteritems():
+        for pid,p in threads.items():
             mem += float(p['mem'])
             if p['R']:    # If the process is running
-                for tid,t in p['threads'].iteritems():
+                for tid,t in p['threads'].items():
                     use  = float(t['cpu'])
                     core = int(t['ppsr'])              # Using physical psr, ie cumulating core threads (hyperthreading)
                     if t['state'] == 'R':
                         cpu  = float(t['cpu'])
                     else:
                         cpu = 0.0
-                    if cores.has_key(core):
+                    if core in cores:
                         cores[core] += cpu
                     else:
                         cores[core] = cpu
@@ -602,7 +601,7 @@ class PrintingForCsv(PrintingFor):
         core_use=[]
         nb_of_cores = self._tasks_binding.hardware.CORES_PER_NODE
         for c in range(nb_of_cores):
-            if cores.has_key(c):
+            if c in cores:
                 core_use.append(cores[c])
             else:
                 core_use.append(0)

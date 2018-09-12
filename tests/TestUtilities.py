@@ -26,6 +26,7 @@
 
 from utilities import *
 import unittest
+import os
 
 class TestNumTaskToLetter(unittest.TestCase):
 
@@ -37,17 +38,12 @@ class TestNumTaskToLetter(unittest.TestCase):
         self.assertEqual(numTaskToLetter(25),'Z')
         self.assertEqual(numTaskToLetter(26),'a')
         self.assertEqual(numTaskToLetter(51),'z')
-        self.assertEqual(numTaskToLetter(52),'0')
-
-        self.assertEqual(numTaskToLetter(62),':')
-        self.assertEqual(numTaskToLetter(63),';')
-        self.assertEqual(numTaskToLetter(64),'<')
-        self.assertEqual(numTaskToLetter(65),'=')
-        self.assertEqual(numTaskToLetter(66),'>')
+        self.assertEqual(numTaskToLetter(52),chr(200))
+        self.assertEqual(numTaskToLetter(295),chr(443))
 
     def test_out_of_limits(self):
         self.assertRaises(PlacementException, numTaskToLetter, -1)
-        self.assertRaises(PlacementException, numTaskToLetter, 67)
+        self.assertRaises(PlacementException, numTaskToLetter, 296)
 
 
 class TestList2CompactString(unittest.TestCase):
@@ -85,7 +81,7 @@ class TestCompactString2List(unittest.TestCase):
         self.assertEqual(compactString2List('12-8'),[8,9,10,11,12])
         self.assertRaises(ValueError,compactString2List,'a-c')
 
-class TextExpandNodeList(unittest.TestCase):
+class TestExpandNodeList(unittest.TestCase):
     def test_normal(self):
         self.assertEqual(expandNodeList('eoscomp[1-3]'),['eoscomp1','eoscomp2','eoscomp3'])
         self.assertEqual(expandNodeList('eoscomp[1]'),['eoscomp1'])
@@ -94,6 +90,17 @@ class TextExpandNodeList(unittest.TestCase):
 
     def test_limits(self):
         self.assertEqual(expandNodeList('eosmesca1'),['eosmesca1'])
+
+class TestConvertMemory(unittest.TestCase):
+    def test_normal(self):
+        self.assertEqual(convertMemory('200 KiB'),204800)
+        self.assertEqual(convertMemory('200 MiB'),209715200)
+        self.assertEqual(convertMemory('200 GiB'),214748364800)
+
+    def test_bad(self):
+        self.assertRaises(PlacementException, convertMemory, '200 TiB')
+        self.assertRaises(PlacementException, convertMemory, '200')
+        self.assertRaises(PlacementException, convertMemory, 200)
 
 class TestNum2Slice(unittest.TestCase):
     '''OBSOLETE - NOT USED ANY MORE'''
@@ -125,6 +132,10 @@ class TestgetGauge(unittest.TestCase):
         self.assertRaises(ValueError,getGauge,-1,8,False)
         self.assertRaises(ValueError,getGauge,101,8,False)
 
-  
+class TestgetHostname(unittest.TestCase):
+    def test_normal(self):
+        '''Not sure this test will succeed - Please set the environment variable HOSTNAME : export HOSTNAME=$(hostname -s)'''
+        self.assertEqual(getHostname(),os.environ['HOSTNAME'])
+          
 if __name__ == '__main__':
     unittest.main()

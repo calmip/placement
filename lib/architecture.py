@@ -65,7 +65,7 @@ class Architecture(object):
             msg += str(sockets_per_node)
             msg += " > " 
             msg += str(hardware.SOCKETS_PER_NODE)
-            print msg
+            print(msg)
             raise PlacementException(msg)
         if sockets_per_node < 0:
             self.sockets_per_node = hardware.SOCKETS_PER_NODE
@@ -128,7 +128,7 @@ class Exclusive(Architecture):
         """
 
         Architecture.__init__(self, hardware, cpus_per_task, tasks, hyper, sockets_per_node)
-        self.l_sockets = range(self.sockets_per_node)
+        self.l_sockets = list(range(self.sockets_per_node))
         self.m_cores = None
 
 
@@ -175,12 +175,12 @@ class Shared(Architecture):
 
         # mpi_aware context: numactl was already called, the result is stored to PLACEMENT_PHYSCPU
         if 'PLACEMENT_NODE' in os.environ:
-            l_sockets = map(int,os.environ['PLACEMENT_NODE'].split(','))
+            l_sockets = list(map(int,os.environ['PLACEMENT_NODE'].split(',')))
             if 'PLACEMENT_PHYSCPU' not in os.environ:
                 msg = "ERROR -";
                 msg += "PLACEMENT_NODE is set, but PLACEMENT_PHYSCPU is NOT set. Did you call before placement --make_mpi_aware ?"
                 raise PlacementException(msg)
-            physcpubind = map(int,os.environ['PLACEMENT_PHYSCPU'].split(','))
+            physcpubind = list(map(int,os.environ['PLACEMENT_PHYSCPU'].split(',')))
 
         # debug mode: do not call numactl, read pseudo-reserved sockets and cores from an environment variable
         elif 'PLACEMENT_DEBUG' in os.environ:
@@ -226,15 +226,15 @@ class Shared(Architecture):
             msg += "numactl error - Are you sure you are on the correct node ?"
             raise PlacementException(msg)
         else:
-            output = p.communicate()[0].split('\n')
+            output = p.communicate()[0].decode().split('\n')
 
             # l_sockets is generated from line nodebind of numactl
             # nodebind: 4 5 6 => [4,5,6]
             for l in output:
                 if l.startswith('nodebind:'):
-                    l_sockets = map(int,l.rpartition(':')[2].strip().split(' '))
+                    l_sockets = list(map(int,l.rpartition(':')[2].strip().split(' ')))
                 elif l.startswith('physcpubind:'):
-                    physcpubind = map(int,l.rpartition(':')[2].strip().split(' '))
+                    physcpubind = list(map(int,l.rpartition(':')[2].strip().split(' ')))
                 
             return [l_sockets,physcpubind]
 
@@ -247,7 +247,7 @@ class Shared(Architecture):
 
         placement_debug = os.environ['PLACEMENT_DEBUG']
         part = placement_debug.partition(':')
-        l_sockets   = map(int,compactString2List(part[0]))
+        l_sockets   = list(map(int,compactString2List(part[0])))
         physcpubind = []
         if part[2] == '':
             for s in l_sockets:
@@ -255,6 +255,6 @@ class Shared(Architecture):
                 for c in range(self.cores_per_socket):
                     physcpubind.append(min_c+c)
         else:
-            physcpubind = map(int,compactString2List(part[2]))
+            physcpubind = list(map(int,compactString2List(part[2])))
         
         return [l_sockets,physcpubind]
