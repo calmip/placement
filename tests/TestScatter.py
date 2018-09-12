@@ -233,14 +233,11 @@ class TestScatterBlockExclusive(unittest.TestCase):
         self.exclu_ok9   = Exclusive(self.hardware,2,5,False)
         self.scatter_block_ok9 = ScatterBlockMode(self.exclu_ok9)
 
-<<<<<<< HEAD
         # Si hyperthreading activé, et nb de taches>1, seulement nombre PAIR de threads !
         # TODO - Something wrong here, 11,3 there is an exception, 12,3 no exception !!!
-        self.exclu_ko10 = Exclusive(self.hardware,11,3,True)
-=======
+        # self.exclu_ko10 = Exclusive(self.hardware,11,3,True)
         # Si hyperthreading activé, seulement nombre PAIR de threads !
         self.exclu_ko10 = Exclusive(self.hardware,3,5,True)
->>>>>>> release/1.6.0
 
         self.exclu_ok11 = Exclusive(self.hardware,2,5,True)
         self.scatter_block_ok11 = ScatterBlockMode(self.exclu_ok11)
