@@ -28,7 +28,8 @@ import os
 import re
 import configparser
 from exception import *
-from utilities import  expandNodeList, getHostname
+from utilities import  expandNodeList, getHostname, flatten
+import subprocess
 
 class Hardware(object):
     """ Describing hardware configuration 
@@ -48,15 +49,13 @@ class Hardware(object):
     THREADS_PER_CORE = ''
     IS_SHARED        = ''
     GPUS             = ''
+    ADDRESSING       = None
+    REVADDRESSING    = None
 
     @staticmethod
     def catalog():
         """ Return the available hostnames (as regex), partitions, architectures as lists of lists """
         conf_file = Hardware.__getConfFile()
-        if 'PLACEMENT_CONF' in os.environ:
-            conf_file = os.environ['PLACEMENT_CONF']
-        else:                
-            conf_file = os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
 
         config    = configparser.RawConfigParser()
         config.read(conf_file)        
@@ -290,6 +289,22 @@ class Hardware(object):
         else:
             return core // self.CORES_PER_SOCKET
 
+    def getCore2Addr(self,core):
+        """ Return the address of the (logical) core number from the internal representation """
+
+        if self.ADDRESSING==None:
+            return core
+        else:
+            return self.ADDRESSING[core]
+            
+    def getAddr2Core(self,addr):
+        """ Return the core number in the internal representation from the address number"""
+        
+        if self.REVADDRESSING==None:
+            return addr
+        else:
+            return self.REVADDRESSING[addr]
+        
     def getCore2Core(self,core):
         """ Return the physical socket core number from the node core number
 
@@ -366,6 +381,8 @@ class SpecificHardware(Hardware):
             self.MEM_PER_SOCKET   = config.getint(archi_name,'MEM_PER_SOCKET')
             self.IS_SHARED        = config.getboolean(archi_name,'IS_SHARED')
             self.CORES_PER_NODE   = self.CORES_PER_SOCKET*self.SOCKETS_PER_NODE
+            if 'ADDRESSING' in config[archi_name]:
+                self.__initAddressing(config[archi_name]['ADDRESSING'])
             try:
                 self.GPUS         = config.get(archi_name,'GPUS')
             except Exception as e:
@@ -376,3 +393,102 @@ class SpecificHardware(Hardware):
             msg += "\n"
             msg += "ERROR WAS = " + str(e)
             raise PlacementException(msg)
+
+    #
+    # The Cores addressing:
+    #
+    #     placement uses internally a representation depicted under and supported
+    #     by most hardware configurations:
+    #
+    #     For a machine with 2 sockets, 4 cores/socket, 2 threads by core:
+    #
+    #     SOCKET 0     SOCKET 1
+    #     0  1  2  3    4  5  6  7
+    #     8  9 10 11   12 13 14 15 
+    #
+    #     The numactl --hardware output of such a configuration is:
+    #
+    #     available: 2 nodes (0-1)
+    #     node 0 cpus: 0 1 2 3 8 9 10 11 
+    #     ...
+    #     node 1 cpus: 4 5 6 7 12 13 14 15
+    #
+    #     HOWEVER, with the same processors, several machines adopt another addressing, 
+    #     shown by the following numactl--hardware output:
+    #
+    #     available: 2 nodes (0-1)
+    #     node 0 cpus: 0 2 4 6 8 10 12 14
+    #     ...
+    #     node 1 cpus: 1 3 5 7 9 11 13 15
+    #
+    #     If your machine adopts the FIRST convention, you may REMOVE the parameter
+    #     Addressing in placement.conf. 
+    #     BUT if your machine adopts the SECOND convention (or still another one), 
+    #     you must SET this parameter to Numactl (onyl value supported),
+    #     so that placement will issue a numactl --hardware to fix the addressing.
+    #
+    #     If you do not know, please set the parameter to Numactl, as it should always work
+    #     
+    
+    def __initAddressing(self,addressing):
+        """Initalize core addressing tables"""
+        
+        if addressing != 'Numactl':
+            raise PlacementException("ERROR - The only value accepted for ADDRESSING is Numactl")
+        
+        tmp = self.__callNumactl()
+        
+        # Init self.ADDRESSING: for converting FROM internal representation
+        self.ADDRESSING = [ -1 for i in range(self.SOCKETS_PER_NODE * self.CORES_PER_SOCKET * self.THREADS_PER_CORE)]
+        i   = 0
+        for s in range(self.SOCKETS_PER_NODE):
+            for t in range(self.THREADS_PER_CORE):
+                for c in range(self.CORES_PER_SOCKET):
+                    self.ADDRESSING[t * self.SOCKETS_PER_NODE * self.CORES_PER_SOCKET + s * self.CORES_PER_SOCKET + c] = tmp[i]
+                    i += 1
+
+        # Init self.REVADDRESSING: for conversion TO internal representation        
+        self.REVADDRESSING = [ -1 for i in range(self.SOCKETS_PER_NODE * self.CORES_PER_SOCKET * self.THREADS_PER_CORE)]
+        for i in range(self.SOCKETS_PER_NODE * self.CORES_PER_SOCKET * self.THREADS_PER_CORE):
+            self.REVADDRESSING[self.ADDRESSING[i]] = i
+
+        # Check: is self.REVADDRESSING or self.ADDRESSING correctly initialized ?
+        for i in range(self.SOCKETS_PER_NODE * self.CORES_PER_SOCKET * self.THREADS_PER_CORE):
+            if self.ADDRESSING[i] == -1:
+                raise PlacementException("INTERNAL ERROR - self.ADDRESSING[" + str(i) + "] not initialized. pb with numactl output")
+            if self.REVADDRESSING[i] == -1:
+                raise PlacementException("INTERNAL ERROR - self.REVADDRESSING[" + str(i) + "] not initialized. pb with numactl output")
+
+        print(str(self.ADDRESSING))
+        print(str(self.REVADDRESSING))
+        
+        print ("PAS FAIT !");
+
+    def __callNumactl(self): 
+        """Call numactl, detecting sockets and core addressing
+           return An array of int (concatenation of node X cpus: outputs of numactl --hardware)
+        """
+
+        rvl = []
+        cmd = "numactl --hardware"
+        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p.wait()
+        # If returncode != 0, the is a problem
+        if p.returncode !=0:
+            msg = "ERROR - "
+            msg += "numactl error - Cannot detect properly the hardware"
+            raise PlacementException(msg)
+        else:
+            output = p.communicate()[0].decode().split('\n')
+
+            # Looking for lines (in this order !)
+            # node 0 cpus: 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30
+            # node 1 cpus: 1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31
+            sock_cnt=0
+            for l in output:
+                if l.startswith('node '+str(sock_cnt)+ ' cpus:'):
+                    cores = l.partition(':')[2]
+                    rvl.append(list(map(int,cores.strip().split(' '))))
+                    sock_cnt += 1
+            
+            return flatten(rvl)
