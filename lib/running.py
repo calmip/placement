@@ -187,7 +187,7 @@ class RunningMode(TasksBinding):
     def __identProcesses(self):
         """Identify the interesting processes together with their threads, from a set of commands ps
 
-        We keep only processes selected by the switch --check, ie proceses launched by a command, or belonging
+        We keep only processes selected by the switch --check, ie processes launched by a command, or belonging
         to some user... pr all processes
         Among them, some "reserved" commands ('ps', 'top' etc) are discarded
         And finally we keep only processes having at least ONE running thread
@@ -321,7 +321,7 @@ class RunningMode(TasksBinding):
                 cpu   = float(mt.group(4))
                 thread_courant        = {}
                 thread_courant['tid'] = tid                                     # thread id
-                thread_courant['psr'] = psr                                     # core number
+                thread_courant['psr'] = self.hardware.getAddr2Core(psr)         # core number (internal representation)
                 thread_courant['ppsr']= self.hardware.getCore2PhysCore(psr)     # physical code number (in case of hyperthreading) 
                 thread_courant['cpu'] = cpu                                     # % cpu use
                 thread_courant['state'] = state                                 # State of the thrad (running etc)

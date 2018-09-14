@@ -87,8 +87,9 @@ class PrintingForSrun(PrintingFor):
         """ Call __GetCpuTaskBinding for each task, concatene and return """
 
         mask_cpus=[]
+        gc = archi.hardware.getCore2Addr
         for t in tasks_bound:
-            mask_cpus += [self.__getCpuTaskBinding(archi,t)]
+            mask_cpus += [self.__getCpuTaskBinding(archi,list(map(gc,t)))]
 
         return "--cpu_bind=mask_cpu:" + ",".join(mask_cpus)
 
@@ -141,8 +142,9 @@ class PrintingForHuman(PrintingFor):
         rvl="[ "
         sorted_cores = cores
         sorted_cores.sort()
+        gc = archi.hardware.getCore2Addr
         for c in sorted_cores:
-            rvl+=str(c)
+            rvl+=str(gc(c))
             rvl += ' '
         rvl+="]\n"
         return rvl
@@ -243,14 +245,16 @@ class PrintingForIntelAff(PrintingFor):
             return "ERROR - KMP_Affinity representation impossible if more than 1 task !"
         else:
             rvl  = 'export KMP_AFFINITY="granularity=fine,explicit,proclist=';
-            rvl += self.__getCpuBinding(self._tasks_binding.tasks_bound);
+            rvl += self.__getCpuBinding(self._tasks_binding);
             if self.__verbose:
                 rvl += ',verbose';
             rvl += '"';
             return rvl
 
-    def __getCpuBinding(self,tasks_bound):
-        return str(tasks_bound[0])
+    def __getCpuBinding(self,tasks_binding):
+        tb = tasks_binding.tasks_bound
+        gc = tasks_binding.archi.hardware.getCore2Addr
+        return str(list(map(gc,tb[0])))
 
 
 
@@ -271,12 +275,14 @@ class PrintingForGnuAff(PrintingFor):
             return "ERROR - Gnu_Affinity representation impossible if more than 1 task !"
         else:
             rvl  = 'export GOMP_CPU_AFFINITY="';
-            rvl += self.__getCpuBinding(self._tasks_binding.tasks_bound);
+            rvl += self.__getCpuBinding(self._tasks_binding);
             rvl += '"';
             return rvl
 
-    def __getCpuBinding(self,tasks_bound):
-        return ' '.join(map(str,tasks_bound[0]))
+    def __getCpuBinding(self,tasks_binding):
+        tb = tasks_binding.tasks_bound
+        gc = tasks_binding.archi.hardware.getCore2Addr
+        return ' '.join(map(str,map(gc,tb[0])))
 
 
 class PrintingForNumactl(PrintingFor):
@@ -291,7 +297,7 @@ class PrintingForNumactl(PrintingFor):
 
 
     def __getCpuBinding(self,archi,tasks_bound):
-        """ Call __GetCpuTaskBinding for each task, concatene and return """
+        """ Call __GetCpuTaskBinding for each task, concatenate and return """
 
         cpus=[]
 
@@ -299,7 +305,7 @@ class PrintingForNumactl(PrintingFor):
         sorted_tasks_bound.sort()
 
         for t in sorted_tasks_bound:
-            cpus += [list2CompactString(t)]
+            cpus += [list2CompactString(map(archi.hardware.getCore2Addr,t))]
 
         return "--physcpubind=" + ",".join(cpus)
   

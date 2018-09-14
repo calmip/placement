@@ -217,7 +217,6 @@ def main():
 
         # Second stage - Print data, may be using several formats
         # outputs is an array of objects extending PrintingFor
-        print ("hehe")
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
             print ("OUPS, No output specified !", file = sys.stderr)

@@ -459,10 +459,8 @@ class SpecificHardware(Hardware):
             if self.REVADDRESSING[i] == -1:
                 raise PlacementException("INTERNAL ERROR - self.REVADDRESSING[" + str(i) + "] not initialized. pb with numactl output")
 
-        print(str(self.ADDRESSING))
-        print(str(self.REVADDRESSING))
-        
-        print ("PAS FAIT !");
+        #print(str(self.ADDRESSING))
+        #print(str(self.REVADDRESSING))
 
     def __callNumactl(self): 
         """Call numactl, detecting sockets and core addressing
