@@ -58,7 +58,7 @@ def main():
 	
 	# Analysing the command line arguments
 	#epilog = ""
-	ver="1.5.0-dev"
+	ver="1.5.0"
 	parser = argparse.ArgumentParser(version=ver,description="placement-mon " + ver)
 	group = parser.add_argument_group('detecting pathological jobs on compute nodes')
 	group.add_argument("--pathological",dest='patho',action="store_true",help="required")
@@ -202,7 +202,7 @@ def callPlacementSummary(jobids,options):
 				cmd.append('--show_depop')
 
 			#print(cmd)				
-			out=subprocess.check_output(cmd).rstrip('\n')
+			out=subprocess.check_output(cmd).decode().rstrip('\n')
 		except subprocess.CalledProcessError:
 			pass
 		if out.endswith('W'):
@@ -223,7 +223,7 @@ def callPlacementSummary(jobids,options):
 #
 def detectRunningJobs():
 	cmd = SQUEUECMD
-	out=subprocess.check_output(cmd).split('\n')
+	out=subprocess.check_output(cmd).decode().split('\n')
 	return out
 
 if __name__ == "__main__":

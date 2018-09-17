@@ -26,7 +26,7 @@
 # We need python3 !!!
 # The following may be necessary or not, it depends on your installation
 version=$(python --version 2>&1)
-if [[ ! "$version" =~ "3" ]]
+if [[ ! "$version" =~ "^3" ]]
 then
 	module purge >/dev/null 2>&1
 	module load python/3.5.3 >/dev/null 2>&1
@@ -111,7 +111,7 @@ if [[ $jobid != "" ]]
 then
 	# The following returns something like <partition_name>@<node_name>[570-572]@ <user_name>
 	# Example: exclusive@eoscomp[570-572]@ toto
-    PN=$( squeue -j $jobid --noheader -o "%.9P@%.16R@%.15u" )
+    PN=$( squeue -t RUNNING -j $jobid --noheader -o "%.9P@%.16R@%.15u" )
 	if [[ $? != 0 || $PN == "" ]]
     then
 		echo "ERROR - Bad jobid ! ($jobid)"

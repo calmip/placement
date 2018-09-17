@@ -147,8 +147,6 @@ class PrintingForHuman(PrintingFor):
         rvl+="]\n"
         return rvl
 
-
-
 class PrintingForAsciiArt(PrintingFor):
     """ Printing for an artist, ie a special human being
 
@@ -224,7 +222,6 @@ class PrintingForAsciiArt(PrintingFor):
                 rvl += '\n'
     
         return rvl
-
 
 class PrintingForIntelAff(PrintingFor):
     """ Printing for the intel environment variable KMP_AFFINITY (ONLY if 1 task) 

@@ -16,7 +16,7 @@ function Usage {
 [ "$1" = "--help" ] && Usage
 
 # Install top directory defaults to home directory
-PLACEMENT_ROOT=${2-$(cd; pwd -P)}/placement
+PLACEMENT_ROOT=${1-$(cd; pwd -P)}/placement
 
 echo "placement will be installed inside the directory: " $PLACEMENT_ROOT
 read -p "Are you OK (Y/N) ?"
