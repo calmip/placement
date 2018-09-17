@@ -1,0 +1,36 @@
+v 1.6.0
+-------
+    Now need python3 (3.5.x min)
+    Error messages now on stderr, no more stdout -> better log files in slurm.out
+    --check = May display up to 296 tasks, thanks to utf8 outputs !
+    GPU = display processes known by the gpus and memory used
+
+v 1.5.0
+-------
+    Introducing the --summary switch (still experimental)
+    --no_ansi may be useful with --summary
+    Redesigned the --check output
+
+v 1.4.0
+-------
+    Support for the GPU
+    With --checkme: we display only the first node, even if we have a lot of reserved nodes
+
+v 1.3.0
+-------
+    Trying to guess architecture from slurm.conf
+    Added mpi_aware mode
+
+
+v 1.2.0
+-------
+    --intel_affinity and --gnu_affinity switches
+    --memory with --check to display memory consumption of the processes 
+    --Better display with --check
+    
+v 1.1.0
+------
+    Refactoring for a better code
+    Unit tests added to the git repository
+    Added switches --check and --checkme
+    Added switches --srun and --numactl
