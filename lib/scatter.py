@@ -77,18 +77,13 @@ class ScatterGenMode(TasksBinding):
         if self.tasks == 1 and self.cpus_per_task % 2 == 1:
             self.cpus_per_task += 1
 
-        max_tasks = self.archi.sockets_reserved * self.archi.threads_per_core * (self.archi.cores_per_socket//self.cpus_per_task)
+        max_tasks_per_socket = (self.archi.threads_per_core * self.archi.cores_per_socket)//self.cpus_per_task
+        max_tasks = self.archi.sockets_reserved * max_tasks_per_socket
         if self.cpus_per_task>1:
             if self.tasks>max_tasks and max_tasks>0:
                 msg = "ERROR - One task is straddling two sockets ! Please lower the number of tasks/node, max is "
                 msg += str(max_tasks)
                 raise PlacementException(msg)
-                
-        # If 1 task, the number of threads should be even (because we straddle between sockets !)
-        # If not, ajust number of threads
-        # TODO - This is great for a bisocket node, but how to manage machines with more than 2 sockets ?
-        if self.tasks == 1 and self.cpus_per_task % 2 == 1:
-            self.cpus_per_task += 1
 
 
 class ScatterMode(ScatterGenMode):
