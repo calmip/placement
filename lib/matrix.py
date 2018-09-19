@@ -71,7 +71,7 @@ class Matrix(object):
         for p in range(self.__ppsr_min,self.__ppsr_max+1):
             if self.__hard.getCore2Core(p)==0:
                 rvl += ' '
-            rvl += str(p//100)
+            rvl += str(self.__hard.getCore2Addr(p)//100)
         rvl += '\n'
 
         # Ligne 2 = les dizaines
@@ -79,7 +79,7 @@ class Matrix(object):
         for p in range(self.__ppsr_min,self.__ppsr_max+1):
             if self.__hard.getCore2Core(p)==0:
                 rvl += ' '
-            rvl += str((p%100)//10)
+            rvl += str((self.__hard.getCore2Addr(p)%100)//10)
         rvl += '\n'
 
         # Ligne 3 = les unités
@@ -87,7 +87,7 @@ class Matrix(object):
         for p in range(self.__ppsr_min,self.__ppsr_max+1):
             if self.__hard.getCore2Core(p)==0:
                 rvl += ' '
-            rvl += str(p%10)
+            rvl += str(self.__hard.getCore2Addr(p)%10)
 #        rvl += '  %CPU %MEM'
         rvl += '\n'
         return rvl

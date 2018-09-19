@@ -118,6 +118,12 @@ def expandNodeList(nodelist):
     else:
         return [ nodelist ]
 
+def flatten(l):
+    """ Return a flatten version of the list passed in parameter
+        See https://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
+    """
+    return [item for sublist in l for item in sublist]
+    
 def getHostname():
     """ Return the environment HOSTNAME if set, else call /bin/hostname -s"""
     if 'HOSTNAME' in os.environ:
