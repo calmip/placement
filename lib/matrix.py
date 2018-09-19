@@ -168,7 +168,10 @@ class Matrix(object):
                 rvl += AnsiCodes.red_foreground()
                 for p in g['PS']:
                     pid = p[0];
-                    rvl += tasks_binding.threads_bound[pid]['tag']
+                    if tasks_binding.threads_bound.get(pid)!=None:
+                        rvl += tasks_binding.threads_bound[pid]['tag']
+                    else:
+                        rvl += '.'
                 rvl += AnsiCodes.normal()
                 rvl += "\n"
 
