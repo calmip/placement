@@ -28,8 +28,7 @@ import os
 import re
 import configparser
 from exception import *
-from utilities import  expandNodeList, getHostname, flatten
-import subprocess
+from utilities import  expandNodeList, getHostname, flatten, runCmd
 
 class Hardware(object):
     """ Describing hardware configuration 
@@ -469,24 +468,16 @@ class SpecificHardware(Hardware):
 
         rvl = []
         cmd = "numactl --hardware"
-        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        p.wait()
-        # If returncode != 0, the is a problem
-        if p.returncode !=0:
-            msg = "ERROR - "
-            msg += "numactl error - Cannot detect properly the hardware"
-            raise PlacementException(msg)
-        else:
-            output = p.communicate()[0].decode().split('\n')
+        output = runCmd(cmd).split('\n')
 
-            # Looking for lines (in this order !)
-            # node 0 cpus: 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30
-            # node 1 cpus: 1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31
-            sock_cnt=0
-            for l in output:
-                if l.startswith('node '+str(sock_cnt)+ ' cpus:'):
-                    cores = l.partition(':')[2]
-                    rvl.append(list(map(int,cores.strip().split(' '))))
-                    sock_cnt += 1
-            
-            return flatten(rvl)
+        # Looking for lines (in this order !)
+        # node 0 cpus: 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30
+        # node 1 cpus: 1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31
+        sock_cnt=0
+        for l in output:
+            if l.startswith('node '+str(sock_cnt)+ ' cpus:'):
+                cores = l.partition(':')[2]
+                rvl.append(list(map(int,cores.strip().split(' '))))
+                sock_cnt += 1
+        
+        return flatten(rvl)

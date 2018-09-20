@@ -26,8 +26,7 @@
 
 import os
 from exception import *
-from utilities import compactString2List
-import subprocess
+from utilities import compactString2List,runCmd
 
 class Architecture(object):
     """ Describing the architecture of the system
@@ -218,25 +217,17 @@ class Shared(Architecture):
            return the list of reserved sockets, and the list of physical cores  """
 
         cmd = "numactl --show"
-        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        p.wait()
-        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-        if p.returncode !=0:
-            msg = "ERROR - "
-            msg += "numactl error - Are you sure you are on the correct node ?"
-            raise PlacementException(msg)
-        else:
-            output = p.communicate()[0].decode().split('\n')
+        output = runCmd(cmd).split('\n')
 
-            # l_sockets is generated from line nodebind of numactl
-            # nodebind: 4 5 6 => [4,5,6]
-            for l in output:
-                if l.startswith('nodebind:'):
-                    l_sockets = list(map(int,l.rpartition(':')[2].strip().split(' ')))
-                elif l.startswith('physcpubind:'):
-                    physcpubind = list(map(int,l.rpartition(':')[2].strip().split(' ')))
-                
-            return [l_sockets,physcpubind]
+        # l_sockets is generated from line nodebind of numactl
+        # nodebind: 4 5 6 => [4,5,6]
+        for l in output:
+            if l.startswith('nodebind:'):
+                l_sockets = list(map(int,l.rpartition(':')[2].strip().split(' ')))
+            elif l.startswith('physcpubind:'):
+                physcpubind = list(map(int,l.rpartition(':')[2].strip().split(' ')))
+            
+        return [l_sockets,physcpubind]
 
 
     def __callDebug(self):

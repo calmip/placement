@@ -292,6 +292,32 @@ def getGauge1(value):
     if value<80:
         return chr(9605)
     return chr(9606)
+
+def runCmd(cmd,host=None):
+    '''Run a command locally or on another host, through ssh
+       cmd may be a string or a list, if a string it is converted to a list
+       Return the output as a string
+       Raises an exception if retrun value != 0
+    '''
+    
+    if isinstance(cmd,str):
+        cmd = cmd.split(' ')
+        
+    if host != None:
+        cmd.insert(0,host)
+        cmd.insert(0,'-x')
+        cmd.insert(0,'ssh')
+        
+    cpltdProc=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
+    if cpltdProc.returncode==0:
+        # for debug only
+        # print(cpltdProc.stdout)
+        return cpltdProc.stdout
+    else:
+        msg = ' '.join(cmd)
+        msg += ' - ERROR code = '
+        msg += str(cpltdProc.returncode)
+        raise PlacementException(msg,cpltdProc.returncode)
         
 class AnsiCodes(object):
 

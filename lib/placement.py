@@ -92,7 +92,6 @@ https://www.calmip.univ-toulouse.fr
 import os
 import sys
 import argparse
-import subprocess
 from itertools import chain,product
 import hardware
 from architecture import *
@@ -339,7 +338,7 @@ def make_mpi_aware():
     """
 
     # Analyze the output of umactl --show
-    numa_res = subprocess.check_output(["numactl", "--show"]).decode().split("\n")
+    numa_res = runCmd(["numactl", "--show"]).split("\n")
 
     # Look for the line physcpubind: 0 1 ...
     cores=''

@@ -10,8 +10,9 @@
 import sys
 
 class PlacementException(Exception):
-    def __init__(self,msg):
+    def __init__(self,msg,err=None):
         Exception.__init__(self,msg)
+        self.err=err
     
 def ManageException(e):
     print("PLACEMENT_ERROR_FOUND")
