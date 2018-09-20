@@ -138,8 +138,8 @@ def main():
     parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
     parser.add_argument("-Z","--intel_affinity",action="store_const",dest="output_mode",const="kmp",help="Output for intel openmp compiler, try also --verbose")
     parser.add_argument("-G","--gnu_affinity",action="store_const",dest="output_mode",const="gomp",help="Output for gnu openmp compiler")
-    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="To be used with --mpi_aware in the sbatch script BEFORE mpirun - EXPERIMENTAL")
-    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, should be used with --numactl. EXPERIMENTAL")
+    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="Can be used with --mpi_aware in the sbatch script BEFORE mpirun, if you work on a SHARED node - EXPERIMENTAL")
+    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, implies --numactl. EXPERIMENTAL")
     parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
 #    FOR THE DEV: --check=+ ==> look for files called PROCESSES.txt, *.NUMASTAT.txt, gpu.xml
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus on a running process (default if check specified)")
@@ -173,16 +173,6 @@ def main():
     if options.makempiaware==True:
         make_mpi_aware()
         exit(0)
-
-    # En mode mpi_aware, vérifie que toutes les variables d'environnement sont bien là
-    # If called with --mpi_aware, we check all the needed environment variables are set
-    if options.mpiaware==True:
-        try:
-            check_mpi_aware()
-        except PlacementException as e:
-            print("PLACEMENT_ERROR_FOUND")
-            print("PLACEMENT " + str(e), file = sys.stderr)
-            exit(1)
 
     # Guess the hardware, from the placement.conf file and from environment variables
     hard = '';
@@ -375,19 +365,6 @@ def make_mpi_aware():
     print(msg)
     
     return
-
-def check_mpi_aware():
-    """In mpi_aware mode, check the 4 environment variables are set and raise an exception if they are not """
-
-#    return
-
-#    if os.environ.has_key('PLACEMENT_PHYSCPU') and os.environ.has_key('PLACEMENT_NODE') and os.environ.has_key('PLACEMENT_SLURM_TASKS_PER_NODE') and os.environ.has_key('PLACEMENT_SLURM_CPUS_PER_TASK'):
-    if 'PLACEMENT_PHYSCPU' in os.environ and 'PLACEMENT_NODE' in os.environ:
-        return
-
-    msg =  'OUPS - I am not really mpi_aware, some environment variables are missing !\n'
-    msg += '       Did you put in your script, BEFORE CALLING mpirun, the command $(placement --make_mpi_aware) ?'
-    raise PlacementException(msg)
 
 def show_hard(hard):
     """Print some information about the guessed hardware
