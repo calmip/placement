@@ -1,3 +1,9 @@
+v 1.7.0
+-------
+    New cores addressing supported (encountered on Dell servers for instance)
+    placement --make_mpi_aware is only useful owith slurm, on a SHARED node
+    So you can use directly --mpi_aware
+    
 v 1.6.0
 -------
     Now need python3 (3.5.x min)
