@@ -297,7 +297,7 @@ def runCmd(cmd,host=None):
     '''Run a command locally or on another host, through ssh
        cmd may be a string or a list, if a string it is converted to a list
        Return the output as a string
-       Raises an exception if retrun value != 0
+       Raises an exception if return value != 0
     '''
     
     if isinstance(cmd,str):
@@ -308,12 +308,44 @@ def runCmd(cmd,host=None):
         cmd.insert(0,'-x')
         cmd.insert(0,'ssh')
         
+    # for debug only
+    if 'PLACEMENT_DEBUG' in os.environ:
+        print("Executing " + ' '.join(cmd))
+
     cpltdProc=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
+
     if cpltdProc.returncode==0:
         # for debug only
-        # print(cpltdProc.stdout)
+        if 'PLACEMENT_DEBUG' in os.environ and os.environ['PLACEMENT_DEBUG']=='2':
+            print("Result   =" + cpltdProc.stdout)
         return cpltdProc.stdout
     else:
+        msg = ' '.join(cmd)
+        msg += ' - ERROR code = '
+        msg += str(cpltdProc.returncode)
+        raise PlacementException(msg,cpltdProc.returncode)
+
+def runCmdNoOut(cmd,host=None):
+    '''Run a command locally or on another host, through ssh
+       cmd may be a string or a list, if a string it is converted to a list
+       Return None (the output is not captured)
+       Raises an exception if return value != 0
+    '''
+    
+    if isinstance(cmd,str):
+        cmd = cmd.split(' ')
+        
+    if host != None:
+        cmd.insert(0,host)
+        cmd.insert(0,'-x')
+        cmd.insert(0,'ssh')
+        
+    # for debug only
+    if 'PLACEMENT_DEBUG' in os.environ:
+        print("Executing " + ' '.join(cmd))
+
+    cpltdProc=subprocess.run(cmd)
+    if cpltdProc.returncode!=0:
         msg = ' '.join(cmd)
         msg += ' - ERROR code = '
         msg += str(cpltdProc.returncode)
