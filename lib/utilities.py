@@ -317,7 +317,7 @@ def runCmd(cmd,host=None):
     if cpltdProc.returncode==0:
         # for debug only
         if 'PLACEMENT_DEBUG' in os.environ and os.environ['PLACEMENT_DEBUG']=='2':
-            print("Result   =" + cpltdProc.stdout)
+            print(cpltdProc.stdout)
         return cpltdProc.stdout
     else:
         msg = ' '.join(cmd)
