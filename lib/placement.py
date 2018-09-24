@@ -110,7 +110,7 @@ def main():
 
     # Analyzing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.6.1"
+    ver="1.7.0"
     parser = argparse.ArgumentParser(description="placement " + ver,epilog=epilog)
     parser.add_argument('--version', action='version', version='%(prog)s '+ver)
 
@@ -173,6 +173,9 @@ def main():
         make_mpi_aware()
         exit(0)
 
+    if options.mpiaware==True:
+        options.output_mode="numactl"
+        
     # Guess the hardware, from the placement.conf file and from environment variables
     hard = '';
     try:
