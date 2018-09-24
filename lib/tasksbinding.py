@@ -108,10 +108,10 @@ class TasksBinding(object):
                 # Get the rank if using intelmpi library (also mpich ?)
                 rank = os.environ['PMI_RANK']
             except KeyError:
-                msg = "NINI ERROR - NOT intelmpi, NOT bullxmpi, NOT openmpi"
-                for k in list(os.environ.keys()):
-                    print(k + ' => ' + os.environ[k])
-
+                msg = "NINI ERROR - NOT RUNNING through openmpi, NOR bullxmpi, NOR intelmpi"
+                # The following useful only for debug
+                #for k in list(os.environ.keys()):
+                #    print(k + ' => ' + os.environ[k])
                 raise PlacementException(msg)
 
         rank = int(rank)

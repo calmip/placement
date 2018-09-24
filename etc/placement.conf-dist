@@ -80,10 +80,24 @@ MEM_PER_SOCKET:   65536
 IS_SHARED:        False
 GPUS:             0-1,2-3
 
+# vendor4, same as vendor1 but the cores addressing should be filled in from numactl
+# See the file hardware.py L400
+[vendor4]
+SOCKETS_PER_NODE: 2
+CORES_PER_SOCKET: 10
+HYPERTHREADING:   True
+THREADS_PER_CORE: 2
+MEM_PER_SOCKET:   65536
+IS_SHARED:        False
+GPUS:             0-1,2-3
+ADDRESSING:       Numactl
+
 #
-# 2/ (optional) Second, we describe our SLURM partitions. 
+# 2/ (optional) The partitions section: useful if you have SLURM installed
+#    we describe our SLURM partitions. 
 #    We consider that a partition is a set of homogeneous nodes
 #    It is thus easy to detect the architecture from the partition name
+#    WARNING - If you remove this section, you MUST fill the hosts section !
 #
 #    Environment variable: PLACEMENT_PARTITION
 #       You can tell placement on what architecture it runs using for example:
@@ -98,6 +112,7 @@ mesca:					vendor2
 
 #
 # 3/ (optional) The hosts section
+#    WARNING - If you remove this section, you MUST fill the partitions section !
 #    First column is a compact list of hosts (same syntax as slurm's compact names)
 #    Second column is the name of a hardware architecture
 #

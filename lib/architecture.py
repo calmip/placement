@@ -178,7 +178,7 @@ class Shared(Architecture):
             l_sockets = list(map(int,os.environ['PLACEMENT_NODE'].split(',')))
             if 'PLACEMENT_PHYSCPU' not in os.environ:
                 msg = "ERROR -";
-                msg += "PLACEMENT_NODE is set, but PLACEMENT_PHYSCPU is NOT set. Did you call before placement --make_mpi_aware ?"
+                msg += "PLACEMENT_NODE is set, but PLACEMENT_PHYSCPU is NOT set. Did you call placement --make_mpi_aware previously to this job ?"
                 raise PlacementException(msg)
             physcpubind = list(map(int,os.environ['PLACEMENT_PHYSCPU'].split(',')))
 
