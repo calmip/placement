@@ -102,6 +102,7 @@ from compact import *
 from running import *
 from utilities import *
 from printing import *
+from front import *
 
 # If we run an a remote machine via ssh, not sure the HOSTNAME environment variable is available !
 #####################"from socket import gethostname
@@ -118,8 +119,8 @@ def main():
     #           They are reminded here for coherency and for correctly writing help
     group = parser.add_argument_group('checking jobs running on compute nodes (THOSE SWITCHES MUST BE SPECIFIED FIRST)')
     group.add_argument("--checkme",dest='checkme',action="store_true",help="Check my running job")
-    group.add_argument("--jobid",dest='jobid',action="store_true",help="Check this running job (must be mine, except for sysadmins)")
-    group.add_argument("--host",dest='host',action="store_true",help="Check those hosts, ex: node[10-15] (must execute my jobs, except for sysadmins)")
+    group.add_argument("--jobid",dest='jobid',action="store",type=int,help="Check this running job")
+    group.add_argument("--host",dest='host',action="store",type=str,help="Check those hosts, ex: node[10-15] (must execute my jobs, except for sysadmins)")
 
     group = parser.add_argument_group('Displaying some information')
     group.add_argument("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware and leave")
@@ -154,6 +155,12 @@ def main():
 #    parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
     parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
     parser.add_argument("--no_ansi",action="store_true",default=False,dest="noansi",help="Do not use ansi sequences")
+    parser.add_argument("--from_frontal",action="store_true",default=False,dest="ff",help=argparse.SUPPRESS)
+    
+    # Still experimental, not documented
+    parser.add_argument("--continuous",action="store_true",default=False,dest="continuous",help=argparse.SUPPRESS)
+    parser.add_argument("--patho",action="store_true",default=False,dest="pathological",help=argparse.SUPPRESS)
+
     parser.set_defaults(output_mode="srun")
     options=parser.parse_args()
     args=(options.tasks,options.nbthreads)
@@ -170,12 +177,19 @@ def main():
         exit(0)
 
     if options.makempiaware==True:
+        options.output_mode="numactl"
         make_mpi_aware()
         exit(0)
 
-    if options.mpiaware==True:
-        options.output_mode="numactl"
-        
+    # If necessary run another exe may be on another host
+    fn = FrontNode(options,sys.argv)
+    try:
+        if fn.runPlacement():
+            exit(0)
+    except PlacementException as e:
+        print("PLACEMENT " + str(e), file = sys.stderr)
+        exit(1)
+            
     # Guess the hardware, from the placement.conf file and from environment variables
     hard = '';
     try:
@@ -213,6 +227,8 @@ def main():
         if len(outputs)==0:
             print ("OUPS, No output specified !", file = sys.stderr)
 
+        if options.jobid != None:
+            print("jobid " + str(options.jobid))
         for o in outputs:
             print (o)
             
@@ -400,13 +416,13 @@ def show_env():
     msg = "Current environment...\n"
     msg += "WORKING ON HOST " + getHostname() + ', should match one of ' + str(cat[0]) + '\n'
     
-    for v in ['PYTHONPATH','PLACEMENT_ROOT','PLACEMENT_ARCHI','PLACEMENT_PARTITION','SLURM_CONF','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
-              'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK','PLACEMENT_DEBUG']:
+    for v in ['PLACEMENT_PYTHON','PYTHONPATH','PLACEMENT_ROOT','PLACEMENT_ARCHI','PLACEMENT_PARTITION','SLURM_CONF','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
+              'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK','PLACEMENT_DEBUG','PLACEMENT_DEBUG_1']:
         try:
             msg += v
             msg += ' = '
             msg += AnsiCodes.bold() + os.environ[v] + AnsiCodes.normal()
-            if v=='PLACEMENT_DEBUG':
+            if v=='PLACEMENT_DEBUG_1':
                 msg += AnsiCodes.red_foreground() + AnsiCodes.bold() + ' - SHOULD NOT BE SET IN PRODUCTION !' + AnsiCodes.normal()
         except KeyError:
             msg += '<not specified>'

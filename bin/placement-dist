@@ -24,16 +24,14 @@
 #
 
 # We need python3 !!!
+
 # The following may be necessary or not, it depends on your installation
-version=$(python --version 2>&1)
-if [[ ! "$version" =~ "^3" ]]
-then
-	module purge >/dev/null 2>&1
-	module load python/3.5.3 >/dev/null 2>&1
-fi
+
+#module load python/3.5.3
+module load python/3.6.3
 
 # The python executable
-PYTHON=python
+export PLACEMENT_PYTHON=python
 
 # The PLACEMENT_ROOT env variable (should be correctly set by the install script)
 export PLACEMENT_ROOT=PROOT
@@ -41,28 +39,35 @@ export PLACEMENT_ROOT=PROOT
 # The PYTHONPATH env variable
 export PYTHONPATH=$PLACEMENT_ROOT/lib:$PYTHONPATH
 
-# Path to the placement.py python program
+# Path to the python programs
 PLACEMENTPY=$PLACEMENT_ROOT/lib/placement.py
-
-# Path to the placement-cont.py and placement-patho.py python programs
-PLACEMENTCONTPY=$PLACEMENT_ROOT/lib/placement-cont.py
-PLACEMENTPATHOPY=$PLACEMENT_ROOT/lib/placement-patho.py
+#PLACEMENTCONTPY=$PLACEMENT_ROOT/lib/placement-cont.py
+#PLACEMENTPATHOPY=$PLACEMENT_ROOT/lib/placement-patho.py
 
 # ================ The following should not be changed =====================
 
 # continuously calling placement
-if [[ "$*" =~ "--continuous" ]]
-then
-	exec $PLACEMENTCONTPY $*
-	exit 0
-fi
-
+#if [[ "$*" =~ "--continuous" ]]
+#then
+#	exec $PLACEMENTCONTPY $*
+#	exit 0
+#fi
+#
 # the pathological mode
-if [[ "$*" =~ "--patho" ]]
-then
-	exec $PLACEMENTPATHOPY $*
-	exit 0
-fi
+#if [[ "$*" =~ "--patho" ]]
+#then
+#	exec $PLACEMENTPATHOPY $*
+#	exit 0
+#fi
+
+# Calling the python script
+exec $PLACEMENT_PYTHON $PLACEMENTPY $*
+
+
+
+
+
+
 
 # verbose !
 if [[ "$*" =~ "--verb" ]]

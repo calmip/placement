@@ -182,7 +182,7 @@ class Shared(Architecture):
             physcpubind = list(map(int,os.environ['PLACEMENT_PHYSCPU'].split(',')))
 
         # debug mode: do not call numactl, read pseudo-reserved sockets and cores from an environment variable
-        elif 'PLACEMENT_DEBUG' in os.environ:
+        elif 'PLACEMENT_DEBUG_1' in os.environ:
             [l_sockets,physcpubind] = self.__callDebug()
 
         # Not in an mpi_aware context, no debug: we call numactl --show 
@@ -231,13 +231,13 @@ class Shared(Architecture):
 
 
     def __callDebug(self):
-        """ Read the env variable PLACEMENT_DEBUG and return the list of reserved sockets, and the list of physical cores
-            Possible values for PLACEMENT_DEBUG: 
+        """ Read the env variable PLACEMENT_DEBUG_1 and return the list of reserved sockets, and the list of physical cores
+            Possible values for PLACEMENT_DEBUG_1: 
               '[0-3]' Sockets 0 to 3, all cores
               '[0,1]:[0-5,20,21]  Sockets 0,1, physical cores 0,1,2,3,4,5,20,21 """
 
-        placement_debug = os.environ['PLACEMENT_DEBUG']
-        part = placement_debug.partition(':')
+        PLACEMENT_DEBUG_1 = os.environ['PLACEMENT_DEBUG_1']
+        part = PLACEMENT_DEBUG_1.partition(':')
         l_sockets   = list(map(int,compactString2List(part[0])))
         physcpubind = []
         if part[2] == '':
