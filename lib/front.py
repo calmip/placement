@@ -26,6 +26,7 @@
 
 import os
 from utilities import runCmd,runCmdNoOut,getHostname
+from slurm import *
 from exception import *
 
 class FrontNode(object):
@@ -35,56 +36,17 @@ class FrontNode(object):
     """
 
     def __init__(self,option,argv):
-        self.option = option
-        self.argv   = argv.copy()        
+        self.option  = option
+        self.argv    = argv.copy()
+        self.__sched = Slurm()
         
     def __pyPath(self,exe=None):
-        """From an exe, compute the path"""
+        """From an exe, compute the path to a python program """
         if exe==None:
             exe = 'placement.py'
         exe =  os.environ['PLACEMENT_ROOT'] + '/lib/' + exe
         return exe
-
-    def __findJobId(self,jobid):
-        """Find in the slurm's squeue command the jobid passed by parameter
-           If found, return a tuple: partition, user, nodeset
-           If not found, return a tuple: "","",""
-        """
-        cmd = 'squeue -t RUNNING -j ' + str(jobid) + ' --noheader -o %.9P@%.16R@%.15u'
-        try:
-            rvl = runCmd(cmd)
-        except:
-            return ("","","")
-        
-        if rvl == "":
-            return ("","","")
-
-        # partition@    host[0-4]@         user ==> (partition,host[0-4],user)        
-        return tuple(map(str.strip,rvl.split('@'))) 
-    
-    def __findMyJob(self):
-        """Find in the slurm's squeue command the first jobid running and belonging to me
-           Return the jobid
-           If not found, return ""
-        """
-        user = runCmd('whoami').rstrip()
-        jobs = runCmd(['squeue','--noheader','-u',user,'-t','R','-o','%A'])
-        if jobs=="":
-            return ""
-        else:
-            return jobs.split('\n')[0]
-        
-    def __nodesetToHost(self,nodeset,first=False):
-        """If first is True:  return the FIRST host of the nodeset passed by parameters
-           If first is False: return a list of hosts corresponding to the nodeset
-        """
-        
-        nodes = runCmd('nodeset -e ' + nodeset).rstrip().split(' ')
-        if first:
-            return nodes[0]
-        else:
-            return nodes        
-        
+            
     def __runPlacement(self,host):
         """Run placement on another host, using self.argv"""
 
@@ -136,7 +98,7 @@ class FrontNode(object):
         #     Then, detect the nodeset we are using for this job and call placement on the first node only
         if self.option.jobid or self.option.checkme:
             if self.option.checkme:
-                jobid = self.__findMyJob()
+                jobid = self.__sched.findMyJob()[2]
                 if jobid=="":
                     raise PlacementException("ERROR - --checkme is a nonsense if you do not have any running job !")
                 self.argv.remove('--checkme')
@@ -145,11 +107,11 @@ class FrontNode(object):
             else:
                 jobid = self.option.jobid
                 
-            (partition,nodeset,user) = self.__findJobId(jobid)
+            (nodeset,user,j,partition) = self.__sched.findJobFromId(jobid)
             if nodeset=="":
                 raise PlacementException("ERROR - Bad jobid ! (" + str(jobid) + ")")
 
-            host = self.__nodesetToHost(nodeset,True)
+            host = self.__sched.nodesetToHost(nodeset)
             
             # We check only the user who launched the job
             self.argv.append('--check')
@@ -160,7 +122,7 @@ class FrontNode(object):
         # The host switch:
         #     Translate to a list of hosts and call placement on each host
         if self.option.host:
-            hosts = self.__nodesetToHost(self.option.host)
+            hosts = self.__sched.nodesetToHosts(self.option.host)
             
             # We check everything on each host
             self.argv.append('--check')

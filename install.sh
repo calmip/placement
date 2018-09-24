@@ -37,7 +37,7 @@ echo "Now installing placement..."
 [ ! -d $LIB ] && (mkdir -p $LIB || exit 1)
 [ ! -d $ETC ] && (mkdir -p $ETC || exit 1)
 
-for f in front.py hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py placement-cont.py placement-patho.py
+for f in jobsched.py slurm.py front.py hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py placement-cont.py placement-patho.py
 do
   cp $SRC/lib/$f $LIB
 done
