@@ -7,8 +7,12 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 
+import sys
+
 class PlacementException(Exception):
     def __init__(self,msg):
         Exception.__init__(self,msg)
-    pass
-
+    
+def ManageException(e):
+    print("PLACEMENT_ERROR_FOUND")
+    print("PLACEMENT " + str(e), file = sys.stderr)
