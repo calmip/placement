@@ -263,29 +263,51 @@ The following is for developers who want to debug placement:
 -----------------------------------------
 The environment variable PLACEMENT_DEBUG
 -----------------------------------------
+You can have a look to the external commands used by placement with this variable:
+
+1/ To have the command line printed use:
+export PLACEMENT_DEBUG=1
+
+2/ To have the command line printed AND the raw result, use:
+export PLACEMENT_DEBUG=2
+
+3/ In a production environment, you'll prefer not to have output spoiled with those messages:
+export -n PLACEMENT_DEBUG
+
+-------------------------------------------
+The environment variable PLACEMENT_DEBUG_1
+-------------------------------------------
 On a non-exclusive node, you can further debug the configuration:
-export PLACEMENT_DEBUG='0-1' means that only sockets 0,1 are reserved for your job
+export PLACEMENT_DEBUG_1='0-1' means that only sockets 0,1 are reserved for your job
 
 You can even specify the complete cpuset: 
-export PLACEMENT_DEBUG='0-1:10-15,16-21' means that only 12 cores on 2 sockets are reserved for your job
+export PLACEMENT_DEBUG_1='0-1:10-15,16-21' means that only 12 cores on 2 sockets are reserved for your job
 
-Of course, PLACEMENT_DEBUG SHOULD BE USED ONLY FOR DEBUGGING PURPOSE, AND SHOULD BE UNSET FOR PRODUCTION !
+Of course, PLACEMENT_DEBUG_1 SHOULD BE USED ONLY FOR DEBUGGING PURPOSE, AND SHOULD BE UNSET FOR PRODUCTION !
 
-When PLACEMENT_DEBUG is not set, placement calls numactl --show to know the current reserved cpuset
+When PLACEMENT_DEBUG_1 is not set, placement calls numactl --show to know the current reserved cpuset
 
-You can simulate how placement will behave on your supercomputer:
+You can simulate how placement will behave on your supercomputer, using two different syntaxes for $PLACEMENT_DEBUG_1:
 
-# ( export PLACEMENT_ARCHI=Mesca2; export PLACEMENT_DEBUG=1-2,4; ~/bin/placement 3 6   --mode=scatter --ascii )
+1/ First syntax: SOCKETS granularity
+------------------------------------
+You can tell placement that the system did give you the sockets 1, 2, and 4:
+
+# ( export PLACEMENT_ARCHI=vendor2; export PLACEMENT_DEBUG_1=1-2,4; ~/bin/placement 3 6   --mode=scatter --ascii )
   S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
 P                  AAAAAA.......... BBBBBB..........                  CCCCCC..........                  
 
-If you specify some cores (ie you do not have whole sockets reserved, but only several cores), using scatter mode is a nonsense (and does not
-work). However, you can still use the compact mode:
+2/ Second syntax: CORES granularity
+-----------------------------------
+You can tell placement that the system did give you the cores 20 to 23, 40 to 45, and 64 to 71, which are in the sockets 1,2 and 4:.
+As we do not specify whole sockets, we cannot use scatter mode. However, you can still use the compact mode:
 
-( export PLACEMENT_ARCHI=Mesca2; export PLACEMENT_DEBUG='0-7:20-23,40-45,64-71'; ~/bin/placement 3 6   --mode=compact --ascii ) 
+( export PLACEMENT_ARCHI=vendor2; export PLACEMENT_DEBUG_1='1,2,4:20-23,40-45,64-71'; ~/bin/placement 3 6   --mode=compact --ascii ) 
   S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
 P                  ....AAAA........ ........AABBBB..                  BBCCCCCC........
 
+
+That's all Folks !
 
 Have fun using placement !
 Emmanuel

@@ -159,9 +159,9 @@ class TestScatterExclusive1(unittest.TestCase):
 # bien qu'on teste ici une architecture Shared, tout se passe comme si elle était exclusive
 class TestScatterSharedMesca(unittest.TestCase):
     def setUp(self):
-        os.environ['PLACEMENT_CONF']  = 'test3.conf'
-        os.environ['PLACEMENT_ARCHI'] = 'hard4'
-        os.environ['PLACEMENT_DEBUG'] = '0-7'
+        os.environ['PLACEMENT_CONF']    = 'test3.conf'
+        os.environ['PLACEMENT_ARCHI']   = 'hard4'
+        os.environ['PLACEMENT_DEBUG_1'] = '0-7'
         self.hardware = Hardware.factory()
         self.assertEqual(self.hardware.NAME,'hard4')
 
@@ -199,7 +199,7 @@ class TestScatterBlockExclusive(unittest.TestCase):
     def setUp(self):
         os.environ['PLACEMENT_CONF']  = 'test3.conf'
         os.environ['PLACEMENT_ARCHI'] = 'hard1'
-        os.environ.pop('PLACEMENT_DEBUG',0)
+        os.environ.pop('PLACEMENT_DEBUG_1',0)
         self.hardware = Hardware.factory()
         self.assertEqual(self.hardware.NAME,'hard1')
 
