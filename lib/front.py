@@ -107,7 +107,7 @@ class FrontNode(object):
             else:
                 jobid = self.option.jobid
                 
-            (nodeset,user,j,partition) = self.__sched.findJobFromId(jobid)
+            (nodeset,user,j) = self.__sched.findJobFromId(jobid)
             if nodeset=="":
                 raise PlacementException("ERROR - Bad jobid ! (" + str(jobid) + ")")
 

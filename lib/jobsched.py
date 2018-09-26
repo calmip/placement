@@ -35,10 +35,9 @@ class JobSched(object):
         """Return a tuple representing the the jobs of the jobid passed by parameter.
            Return (user,nodeset,jobid,partition)
            user      = The user who launched the job
-           nodeset   = A list of nodes, used by the job
+           nodeset   = A list of nodes used by the job
            jobid     = The jobid
-           partition = A set of nodes, not used by placement - You can forget it
-           If jobid does not exist or is not running, return ("","",,"","")
+           If jobid does not exist or is not running, return ("","","")
            WARNING - Jobs in any other state than RUNNING are ignored"""
 
         return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
@@ -57,7 +56,7 @@ class JobSched(object):
         
     def findMyJob(self):
         """Call FindJobsFromUser, passing the output of whoami, and keeping only the FIRST job returned
-           Return  a tuple (jobid,partition,user,nodeset), or ("","","","")
+           Return  a tuple (jobid,partition,user,nodeset), or ("","","")
            WARNING - Jobs in any other state than RUNNING are ignored"""
            
         user = runCmd('whoami').rstrip()
@@ -65,7 +64,7 @@ class JobSched(object):
         if len(j) > 0:
            return j[0]
         else:
-            return ("","","","")
+            return ("","","")
     
     def nodesetToHosts(self,nodeset):
         """From a nodeset, ie a string representing a set of nodes, return the list of corresponding nodes

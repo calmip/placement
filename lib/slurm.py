@@ -35,28 +35,28 @@ class Slurm(JobSched):
 
     def findJobFromId(self,jobid):
         
-        cmd = 'squeue -t RUNNING -j ' + str(jobid) + ' --noheader -o %.16R@%.15u@%.7A@%.9P'
+        cmd = 'squeue -t RUNNING -j ' + str(jobid) + ' --noheader -o %.16R@%.15u@%.7A'
         try:
             rvl = runCmd(cmd)
         except:
-            return ("","","","")
+            return ("","","")
         
         if rvl == "":
-            return ("","","","")
+            return ("","","")
 
         # host[0-4]@   user@jobid  @partition ==> (host[0-4],user,jobid,partition)
         return tuple(map(str.strip,rvl.split('@'))) 
 
     def findJobsFromUser(self,user):
         
-        cmd = 'squeue -t RUNNING -u ' + user + ' --noheader -o %.16R@%.15u@%.7A@%.9P'
+        cmd = 'squeue -t RUNNING -u ' + user + ' --noheader -o %.16R@%.15u@%.7A'
         try:
             rvl = runCmd(cmd)
         except:
-            return ("","","","")
+            return ("","","")
         
         if rvl == "":
-            return ("","","","")
+            return ("","","")
 
         tuples = []
 
