@@ -27,9 +27,7 @@
 """
 This software can help you to bind your processes to one or more cpu cores
 
-CALMIP - 2015-2016
-
-WARNING - There is STRONG DEPENDENCY between placement and the SLURM scheduler (http://slurm.schedmd.com)
+CALMIP - 2015-2018
 
 Start with  placement --help 
 
@@ -392,6 +390,7 @@ def show_hard(hard):
     """
 
     if hard.NAME == 'Slurm':
+        # This was removed in placement 1.8
         arch = 'Guessed from slurm.conf'
     else:
         arch = hard.NAME
@@ -416,7 +415,7 @@ def show_env():
     msg = "Current environment...\n"
     msg += "WORKING ON HOST " + getHostname() + ', should match one of ' + str(cat[0]) + '\n'
     
-    for v in ['PLACEMENT_PYTHON','PYTHONPATH','PLACEMENT_ROOT','PLACEMENT_ARCHI','PLACEMENT_PARTITION','SLURM_CONF','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
+    for v in ['PLACEMENT_PYTHON','PYTHONPATH','PLACEMENT_ROOT','PLACEMENT_ARCHI','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
               'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK','PLACEMENT_DEBUG','PLACEMENT_DEBUG_1']:
         try:
             msg += v
@@ -427,8 +426,6 @@ def show_env():
         except KeyError:
             msg += '<not specified>'
         if v=='PLACEMENT_ARCHI':
-            msg += ' of ' + str(cat[2])
-        if v=='PLACEMENT_PARTITION':
             msg += ' of ' + str(cat[1])
         msg += '\n'
     print(msg)
