@@ -255,8 +255,9 @@ class Matrix(object):
         else:
             pre += 7 * ' ' + fmt1.format(tid)
 
-        socket= self.__hard.getCore2Socket(ppsr)
-        core  = self.__hard.getCore2Core(ppsr)
+        addr  = self.__hard.getAddr2Core(ppsr)
+        socket= self.__hard.getCore2Socket(addr)
+        core  = self.__hard.getCore2Core(addr)
 
         # Les colonnes vides avant le coeur concerne
         debut = self.__blankBeforeCore(socket,core)
