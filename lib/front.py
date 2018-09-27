@@ -8,7 +8,7 @@
 # PLACEMENT is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# (at your options) any later version.
 #
 #  Copyright (C) 2015-2018 Emmanuel Courcelle
 #  PLACEMENT is distributed in the hope that it will be useful,
@@ -32,13 +32,20 @@ from exception import *
 class FrontNode(object):
     """This class is useful when we are logged on the front node, and we want to execute placement
        on some other node.
-       Typical use case: we are on the fron node and we want to check a running job on a compute node
+       Typical use case: we are on the front node and we want to check a running job on a compute node
     """
 
-    def __init__(self,option,argv):
-        self.option  = option
-        self.argv    = argv.copy()
-        self.__sched = Slurm()
+    def __init__(self,externals):
+        """ externals = An array of external commands, used to decide which JobSched objet to instantiate
+        """
+        self.options  = None
+        self.argv     = None
+        if 'squeue' in externals:
+            self.__sched_name = 'slurm'
+            self.__sched      = Slurm()
+        else:
+            self.__sched_name = ""
+            self.__sched      = None
         
     def __pyPath(self,exe=None):
         """From an exe, compute the path to a python program """
@@ -64,7 +71,15 @@ class FrontNode(object):
             # The entry point must be the bash script, may be there is some stuff to init
             cmd[0]= os.environ['PLACEMENT_ROOT'] + '/bin/placement'
             runCmdNoOut(cmd,host)
-                    
+
+    def setOptions(self,options,argv):
+        """ Initialize together options and argv """
+        self.options = options
+        self.argv    = argv.copy()
+        
+    def getJobSchedName(self): 
+        return self.__sched_name
+
     def runPlacement(self):
         """ For some options, we run placement or another exe, maybe on another host
             Return True if we launched another exe
@@ -72,11 +87,11 @@ class FrontNode(object):
         """
 
         # If the switch --from-front is specified, we were already launched by placement.py: return False, avoiding an infinite loop
-        if self.option.ff:
+        if self.options.ff:
             return False
 
-        # Supervision experimental option            
-        if self.option.continuous:
+        # Supervision experimental options            
+        if self.options.continuous:
             self.argv[0] = self.__pyPath('placement-cont.py')
             try:
                 runCmdNoOut(self.argv)
@@ -84,8 +99,8 @@ class FrontNode(object):
                 pass
             return True
             
-        # Another supervision option:
-        if self.option.pathological:
+        # Another supervision options:
+        if self.options.pathological:
             self.argv[0] = self.__pyPath('placement-patho.py')
             try:
                 runCmdNoOut(self.argv)
@@ -96,33 +111,34 @@ class FrontNode(object):
         # The jobid switch and the checkme switch:
         #     Detect the jobid corresponding the --checkme
         #     Then, detect the nodeset we are using for this job and call placement on the first node only
-        if self.option.jobid or self.option.checkme:
-            if self.option.checkme:
-                jobid = self.__sched.findMyJob()[2]
-                if jobid=="":
-                    raise PlacementException("ERROR - --checkme is a nonsense if you do not have any running job !")
-                self.argv.remove('--checkme')
-                self.argv.append('--jobid')
-                self.argv.append(jobid)
-            else:
-                jobid = self.option.jobid
+        if self.__sched_name != "":
+            if self.options.jobid or self.options.checkme:
+                if self.options.checkme:
+                    jobid = self.__sched.findMyJob()[2]
+                    if jobid=="":
+                        raise PlacementException("ERROR - --checkme is a nonsense if you do not have any running job !")
+                    self.argv.remove('--checkme')
+                    self.argv.append('--jobid')
+                    self.argv.append(jobid)
+                else:
+                    jobid = self.options.jobid
+                    
+                (nodeset,user,j) = self.__sched.findJobFromId(jobid)
+                if nodeset=="":
+                    raise PlacementException("ERROR - Bad jobid ! (" + str(jobid) + ")")
+    
+                host = self.__sched.nodesetToHost(nodeset)
                 
-            (nodeset,user,j) = self.__sched.findJobFromId(jobid)
-            if nodeset=="":
-                raise PlacementException("ERROR - Bad jobid ! (" + str(jobid) + ")")
-
-            host = self.__sched.nodesetToHost(nodeset)
-            
-            # We check only the user who launched the job
-            self.argv.append('--check')
-            self.argv.append(user)
-            self.__runPlacement(host)
-            return True
+                # We check only the user who launched the job
+                self.argv.append('--check')
+                self.argv.append(user)
+                self.__runPlacement(host)
+                return True
 
         # The host switch:
         #     Translate to a list of hosts and call placement on each host
-        if self.option.host:
-            hosts = self.__sched.nodesetToHosts(self.option.host)
+        if self.options.host:
+            hosts = self.__sched.nodesetToHosts(self.options.host)
             
             # We check everything on each host
             self.argv.append('--check')

@@ -36,6 +36,9 @@ export PLACEMENT_PYTHON=python
 # The PLACEMENT_ROOT env variable (should be correctly set by the install script)
 export PLACEMENT_ROOT=PROOT
 
+# The PLACEMENT_EXTERNALS env variable = Some useful external programs 
+export PLACEMENT_EXTERNALS=PEXT
+
 # The PYTHONPATH env variable
 export PYTHONPATH=$PLACEMENT_ROOT/lib:$PYTHONPATH
 

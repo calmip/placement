@@ -37,7 +37,7 @@ echo "Now installing placement..."
 [ ! -d $LIB ] && (mkdir -p $LIB || exit 1)
 [ ! -d $ETC ] && (mkdir -p $ETC || exit 1)
 
-for f in jobsched.py slurm.py front.py hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py placement-cont.py placement-patho.py
+for f in params.py jobsched.py slurm.py front.py hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py placement-cont.py placement-patho.py
 do
   cp $SRC/lib/$f $LIB
 done
@@ -51,10 +51,17 @@ cp $SRC/bin/placement-dist $BIN
 chmod -R a=rX,u+w $LIB $BIN $ETC
 chmod a+rx $BIN/placement-dist $LIB/placement.py $LIB/placement-cont.py $LIB/placement-patho.py
 
-# edit placement-dist 
-sed -i -e "s!PROOT!$PLACEMENT_ROOT!" $BIN/placement-dist 
-
 echo
+
+EXTERNALS=""
+# Do we have numactl ?
+NUMACTL=$(which numactl)
+if [ "$NUMACTL" = "" ]
+then
+    echo "numactl is NOT installed on this machine. PLACEMENT CANNOT BE INSTALLED "
+    exit 1
+fi
+
 # Do we have numastat ?
 NUMASTAT=$(which numastat)
 if [ "$NUMASTAT" = "" ]
@@ -62,24 +69,27 @@ then
     echo "numastat is NOT installed on this machine. The switch --memory will NOT be available"
 else
     echo "Found numastat = $NUMASTAT"
+    EXTERNALS="$EXTERNALS numastat"
 fi
 
 # Do we have squeue or nodeset ?
 SQUEUE=$(which squeue)
 if [ "$SQUEUE" = "" ]
 then
-    echo "squeue is NOT installed on this machine. The switch --check, --checkme will NOT be available"
+    echo "squeue is NOT installed on this machine. The switches --jobid, --checkme will NOT be available"
 else
     echo "Found squeue   = $SQUEUE"
+    EXTERNALS="$EXTERNALS squeue"
 fi
 
 # Do we have squeue or nodeset ?
 NODESET=$(which nodeset)
 if [ "$NODESET" = "" ]
 then
-    echo "nodeset is NOT installed on this machine. The switch --check, --checkme will NOT be available"
+    echo "nodeset is NOT installed on this machine. The switches --host, --jobid, --checkme will NOT be available"
 else
     echo "Found nodeset  = $NODESET"
+    EXTERNALS="$EXTERNALS nodeset"
 fi
 
 # Do we have clush ?
@@ -89,7 +99,12 @@ then
     echo "clush is NOT installed on this machine. The switches --continuous, --pathological will NOT be available"
 else
     echo "Found clush    = $CLUSH"
+    EXTERNALS="$EXTERNALS clush"
 fi
+
+# edit placement-dist 
+sed -i -e "s!PLACEMENT_ROOT=PROOT!PLACEMENT_ROOT=$PLACEMENT_ROOT!" -e "s!PLACEMENT_EXTERNALS=PEXT!PLACEMENT_EXTERNALS=\"$EXTERNALS\"!" $BIN/placement-dist 
+
 
 echo
 echo "==========================="   
