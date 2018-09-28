@@ -28,7 +28,7 @@ import os
 import re
 import configparser
 from exception import *
-from utilities import  expandNodeList, getHostname, flatten, runCmd
+from utilities import  expandNodeList, getHostnameRem, flatten, runCmd
 
 class Hardware(object):
     """ Describing hardware configuration 
@@ -110,7 +110,7 @@ class Hardware(object):
                 archi_name = placement_archi
 
         # Archi not yet guessed, trying to guess from the hostname
-        node = getHostname()
+        node = getHostnameRem()
         if archi_name == None:
             archi_name = Hardware.__hostname2Archi(config, node)
             

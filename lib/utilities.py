@@ -140,7 +140,14 @@ def getHostname():
             raise PlacementException(msg)
         else:
             return p.communicate()[0].decode().split('\n')[0]
-        
+ 
+def getHostnameRem():
+    """ Return the environment varialbe PLACEMENT_REMOTE if specified, of getHostName()"""
+    if 'PLACEMENT_REMOTE' in os.environ:
+        return os.environ['PLACEMENT_REMOTE']
+    else:
+        return getHostname()         
+    
 def compactString2List(S):
     """ Return a list of integers [0,1,2,5,6,7,9] from a compact list 0-2,5-7,9 """
 
@@ -296,13 +303,18 @@ def getGauge1(value):
 def runCmd(cmd,host=None):
     '''Run a command locally or on another host, through ssh
        cmd may be a string or a list, if a string it is converted to a list
+       host is the remote host, or None
+       If host is None, the environment variable PLACEMENT_REMOTE is used instead
        Return the output as a string
        Raises an exception if return value != 0
     '''
     
     if isinstance(cmd,str):
         cmd = cmd.split(' ')
-        
+ 
+    if host==None and 'PLACEMENT_REMOTE' in os.environ:
+        host = os.environ['PLACEMENT_REMOTE']
+               
     if host != None:
         cmd.insert(0,host)
         cmd.insert(0,'-x')

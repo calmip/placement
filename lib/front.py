@@ -60,18 +60,14 @@ class FrontNode(object):
         cmd = self.argv.copy()        
         cmd.append('--from_frontal')
         
-        if host==getHostname():
-            # Same host = we use placement.py as entry point and we do not use ssh
-            #             Call through $PLACEMENT_PYTHON
-            cmd.insert(0,os.environ['PLACEMENT_PYTHON'])
-            runCmdNoOut(cmd)
-            
-        else:
-            # We run placement on another host
-            # The entry point must be the bash script, may be there is some stuff to init
-            cmd[0]= os.environ['PLACEMENT_ROOT'] + '/bin/placement'
-            runCmdNoOut(cmd,host)
+        if host!=getHostname():
+            os.environ['PLACEMENT_REMOTE'] = host
 
+        cmd.insert(0,os.environ['PLACEMENT_PYTHON'])
+        runCmdNoOut(cmd)
+            
+        os.environ.pop('PLACEMENT_REMOTE',None)
+        
     def setOptions(self,options,argv):
         """ Initialize together options and argv """
         self.options = options
@@ -144,7 +140,13 @@ class FrontNode(object):
             self.argv.append('--check')
             self.argv.append('ALL')
             for h in hosts:
-                self.__runPlacement(h)
+                try:
+                    self.__runPlacement(h)
+                except PlacementException as e:
+                    print ("host " + h)
+                    print (e)
+                    print ()
+                    
             return True
                      
         return False
