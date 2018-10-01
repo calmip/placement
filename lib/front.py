@@ -58,7 +58,7 @@ class FrontNode(object):
         """Run placement on another host, using self.argv"""
 
         cmd = self.argv.copy()        
-        cmd.append('--from_frontal')
+        cmd.append('--from-frontal')
         
         if host!=getHostname():
             os.environ['PLACEMENT_REMOTE'] = host
@@ -89,6 +89,7 @@ class FrontNode(object):
         # Supervision experimental options            
         if self.options.continuous:
             self.argv[0] = self.__pyPath('placement-cont.py')
+            self.argv.append("--from-frontal")
             try:
                 runCmdNoOut(self.argv)
             except:
