@@ -30,24 +30,38 @@ BIN="$PLACEMENT_ROOT/bin"
 LIB="$PLACEMENT_ROOT/lib"
 ETC="$PLACEMENT_ROOT/etc"
 
-SRC=.
+SRC=$(pwd)
 
 echo "Now installing placement..."
 [ ! -d $BIN ] && (mkdir -p $BIN || exit 1)
 [ ! -d $LIB ] && (mkdir -p $LIB || exit 1)
 [ ! -d $ETC ] && (mkdir -p $ETC || exit 1)
 
+if [ "$SRC/lib" != "$LIB" ]
+then
+
 for f in params.py jobsched.py slurm.py front.py hardware.py architecture.py exception.py tasksbinding.py scatter.py compact.py running.py utilities.py matrix.py printing.py placement.py placement-cont.py placement-patho.py
 do
   cp $SRC/lib/$f $LIB
 done
+
+fi
+
+if [ "$SRC/etc" != "$ETC" ]
+then
 
 for f in placement.conf-dist documentation.txt
 do
   cp $SRC/etc/$f $ETC
 done
 
-cp $SRC/bin/placement-dist $BIN
+fi
+
+if [ "$SRC/bin" != "$BIN" ]
+then
+    cp $SRC/bin/placement-dist $BIN
+fi
+
 chmod -R a=rX,u+w $LIB $BIN $ETC
 chmod a+rx $BIN/placement-dist $LIB/placement.py $LIB/placement-cont.py $LIB/placement-patho.py
 
