@@ -104,6 +104,15 @@ def list2CompactString(A):
         __compact(tmp,start,last_c)
     return ','.join(tmp)
 
+def strminlen(x,l):
+    """ For explandNodeList: return a string representing the integer, the length
+        of the string is at least l. If necessary we pad with 0 to the left"""
+    rvl = str(x)
+    if len(rvl)<l:
+        return (l-len(rvl))*'0' + rvl
+    else:
+        return rvl
+        
 def expandNodeList(nodelist):
     """ Return a list nodes, just like ExpandNodeList
         toto[5-6] -> return ['toto5','toto6'] 
@@ -112,9 +121,16 @@ def expandNodeList(nodelist):
     matches = re.match('(.+)\[(.+)\](.*)',nodelist)
     if matches:
         prefix = matches.group(1)
+        rge    = matches.group(2)
         postfix= matches.group(3)
+        
+        # '001-004' ==> '001'
+        # '001'     ==> 3 (number of digits)
+        low = low=re.match('^([0-9]+)',rge).group(1)
+        l   = len(low)
+        
         #print map(lambda x:prefix+str(x)+postfix,compactString2List(matches.group(2)))
-        return [prefix+str(x)+postfix for x in compactString2List(matches.group(2))]
+        return [prefix+strminlen(x,l)+postfix for x in compactString2List(rge)]
     else:
         return [ nodelist ]
 
