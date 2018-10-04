@@ -63,7 +63,7 @@ class Slurm(JobSched):
 
         # host[0-4]@   user@jobid  @partition ==> (host[0-4],user,jobid,partition)
         for j in rvl.split('\n'):
-            tuples.append(tuple(map(str.strip,rvl.split('@'))))
+            tuples.append(tuple(map(str.strip,j.split('@'))))
             
         return tuples
 
