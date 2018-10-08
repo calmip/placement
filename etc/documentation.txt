@@ -14,12 +14,9 @@ INDEX
 2. How to execute the commands explained in  this tutorial ?
 3. Controlling the placement on a server without any job scheduler
 4. Controlling the placement WITH slurm on an exclusive node
-5. Several switches to modify the placement:
+5. Several switches to modify the placement
 6. More secure placement requests
-5. WORKING IN DEPOPULATED MODE
-6. USING MPIRUN INSTEAD OF SRUN
 7. Checking your running jobs
-8. 
 
 1. WHAT IS PLACEMENT ?
 ======================
@@ -190,11 +187,12 @@ This is not a very interesting result, because this only reserves the cores we w
 a process should not straddle two sockets. 
 If my_exe is an mpi code (openmpi or intelmpi supported), a better way to execute the code is:
 <code>
-mpirun -np 16 numactl $(placement 16 2 --numactl --mpi_aware) my_exe
+mpirun -np 16 bash -c 'exec numactl $(placement 16 2 --numactl --mpi_aware) my_exe'
 </code>
 The switch --mpi_aware is important here, as it insures that the cores 0 and 1 will be dedicated only to rank 0 (process A), 2-3 to rank 1, etc.
-This works with environment varaibles provided by the mpi library, so it is difficult using just the --ascii switch to understand what happens. However,
-you can try the following command, which simulates an openmpi environment;
+Calling it throug bash insures that placement is called for each mpi process.
+This works with environment variables provided by the mpi library, so it is difficult using just the --ascii switch to understand what happens. However,
+you can try the following command, which simulates an openmpi environment:
 <code>
 for r in 0 1 2 3 4 5 6 7; do export OMPI_COMM_WORLD_RANK=$r; echo "rank $r";placement 8 2 --ascii --mpi_aware; done
 </code>
