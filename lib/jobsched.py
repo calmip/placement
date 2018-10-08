@@ -60,11 +60,7 @@ class JobSched(object):
            WARNING - Jobs in any other state than RUNNING are ignored"""
            
         user = runCmd('whoami').rstrip()
-        j = self.findJobsFromUser(user)
-        if len(j) > 0:
-           return j[0]
-        else:
-            return ("","","")
+        return self.findJobsFromUser(user)[0]
     
     def nodesetToHosts(self,nodeset):
         """From a nodeset, ie a string representing a set of nodes, return the list of corresponding nodes

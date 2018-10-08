@@ -32,7 +32,7 @@ from utilities import *
 import hardware
 
 #
-# placement-cont is automatically launched by the bash call script when the switch --continuous is detected
+# placement-cont is automatically launched by placement when the switch --continuous is detected
 #
 # It must be used with the --jobid switch
 # The list of compute hosts is detected with squeue, then placement --csv is launched on the hosts (using clush),
@@ -59,9 +59,13 @@ def main():
 	group.add_argument("--continuous",dest='cont',action="store_true",help="required")
 	group.add_argument("-j","--jobid",dest='jobid',action="store",help="Continuously check this running job")
 	group.add_argument("--time",dest='time',action='store',type=int,default=SLEEPTIMEMIN,help="Sleeping time between two measures")
-	
+	group.add_argument("--from-frontal",action="store_true",default=False,dest="ff",help=argparse.SUPPRESS)
 	
 	options=parser.parse_args()
+
+	if options.ff!=True:
+		sys.stderr.write ("ERROR - placement-cont.py should NOT be called directly. Please use placement --continuous\n")
+		exit(1)
 
 	if options.jobid==None:
 		sys.stderr.write ("ERROR - --jobid is required\n")

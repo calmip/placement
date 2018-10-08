@@ -87,6 +87,7 @@ class TestExpandNodeList(unittest.TestCase):
         self.assertEqual(expandNodeList('eoscomp[1]'),['eoscomp1'])
         self.assertEqual(expandNodeList('eoscomp[1-2,4]'),['eoscomp1','eoscomp2','eoscomp4'])
         self.assertEqual(expandNodeList('eoscomp[1,2]'),['eoscomp1','eoscomp2'])
+        self.assertEqual(expandNodeList('toto[08-10]'),['toto08','toto09','toto10'])
 
     def test_limits(self):
         self.assertEqual(expandNodeList('eosmesca1'),['eosmesca1'])
@@ -134,8 +135,10 @@ class TestgetGauge(unittest.TestCase):
 
 class TestgetHostname(unittest.TestCase):
     def test_normal(self):
-        '''Not sure this test will succeed - Please set the environment variable HOSTNAME : export HOSTNAME=$(hostname -s)'''
-        self.assertEqual(getHostname(),os.environ['HOSTNAME'])
+        if 'HOSTNAME' in os.environ:
+            self.assertEqual(getHostname(),os.environ['HOSTNAME'])
+        else:
+            self.assertEqual(getHostname(),runCmd(['hostname','-s']).rstrip())
           
 if __name__ == '__main__':
     unittest.main()

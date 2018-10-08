@@ -104,6 +104,15 @@ def list2CompactString(A):
         __compact(tmp,start,last_c)
     return ','.join(tmp)
 
+def strminlen(x,l):
+    """ For explandNodeList: return a string representing the integer, the length
+        of the string is at least l. If necessary we pad with 0 to the left"""
+    rvl = str(x)
+    if len(rvl)<l:
+        return (l-len(rvl))*'0' + rvl
+    else:
+        return rvl
+        
 def expandNodeList(nodelist):
     """ Return a list nodes, just like ExpandNodeList
         toto[5-6] -> return ['toto5','toto6'] 
@@ -112,9 +121,16 @@ def expandNodeList(nodelist):
     matches = re.match('(.+)\[(.+)\](.*)',nodelist)
     if matches:
         prefix = matches.group(1)
+        rge    = matches.group(2)
         postfix= matches.group(3)
+        
+        # '001-004' ==> '001'
+        # '001'     ==> 3 (number of digits)
+        low = low=re.match('^([0-9]+)',rge).group(1)
+        l   = len(low)
+        
         #print map(lambda x:prefix+str(x)+postfix,compactString2List(matches.group(2)))
-        return [prefix+str(x)+postfix for x in compactString2List(matches.group(2))]
+        return [prefix+strminlen(x,l)+postfix for x in compactString2List(rge)]
     else:
         return [ nodelist ]
 
@@ -140,7 +156,14 @@ def getHostname():
             raise PlacementException(msg)
         else:
             return p.communicate()[0].decode().split('\n')[0]
-        
+ 
+def getHostnameRem():
+    """ Return the environment varialbe PLACEMENT_REMOTE if specified, of getHostName()"""
+    if 'PLACEMENT_REMOTE' in os.environ:
+        return os.environ['PLACEMENT_REMOTE']
+    else:
+        return getHostname()         
+    
 def compactString2List(S):
     """ Return a list of integers [0,1,2,5,6,7,9] from a compact list 0-2,5-7,9 """
 
@@ -296,13 +319,18 @@ def getGauge1(value):
 def runCmd(cmd,host=None):
     '''Run a command locally or on another host, through ssh
        cmd may be a string or a list, if a string it is converted to a list
+       host is the remote host, or None
+       If host is None, the environment variable PLACEMENT_REMOTE is used instead
        Return the output as a string
        Raises an exception if return value != 0
     '''
     
     if isinstance(cmd,str):
         cmd = cmd.split(' ')
-        
+ 
+    if host==None and 'PLACEMENT_REMOTE' in os.environ:
+        host = os.environ['PLACEMENT_REMOTE']
+               
     if host != None:
         cmd.insert(0,host)
         cmd.insert(0,'-x')

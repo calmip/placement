@@ -28,7 +28,7 @@ import os
 import re
 import configparser
 from exception import *
-from utilities import  expandNodeList, getHostname, flatten, runCmd
+from utilities import  expandNodeList, getHostnameRem, flatten, runCmd
 
 class Hardware(object):
     """ Describing hardware configuration 
@@ -83,11 +83,16 @@ class Hardware(object):
 
     @staticmethod
     def __getConfFile():
+        '''return the name of the configuration file'''
         # Useful for testing !
         if 'PLACEMENT_CONF' in os.environ:
             return os.environ['PLACEMENT_CONF']
-        else:                
-            return os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
+        else:
+            conf = os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
+            if os.path.exists(conf):
+                return conf
+            else:
+                return conf+'-dist'
         
     @staticmethod
     def __guessArchiName(conf_path,config):
@@ -110,7 +115,7 @@ class Hardware(object):
                 archi_name = placement_archi
 
         # Archi not yet guessed, trying to guess from the hostname
-        node = getHostname()
+        node = getHostnameRem()
         if archi_name == None:
             archi_name = Hardware.__hostname2Archi(config, node)
             

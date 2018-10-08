@@ -138,7 +138,7 @@ def params():
     parser.add_argument("-Z","--intel_affinity",action="store_const",dest="output_mode",const="kmp",help="Output for intel openmp compiler, try also --verbose")
     parser.add_argument("-G","--gnu_affinity",action="store_const",dest="output_mode",const="gomp",help="Output for gnu openmp compiler")
     parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="Can be used with --mpi_aware in the sbatch script BEFORE mpirun, if you work on a SHARED node - EXPERIMENTAL")
-    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, implies --numactl. EXPERIMENTAL")
+    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, implies --numactl")
     parser.add_argument("-C","--check",const="ALL", nargs='?', dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
 #    FOR THE DEV: --check=+ ==> look for files called PROCESSES.txt, *.NUMASTAT.txt, gpu.xml
     parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus on a running process (default if check specified)")
@@ -154,11 +154,11 @@ def params():
 #    parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
     parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
     parser.add_argument("--no_ansi",action="store_true",default=False,dest="noansi",help="Do not use ansi sequences")
-    parser.add_argument("--from_frontal",action="store_true",default=False,dest="ff",help=argparse.SUPPRESS)
+    parser.add_argument("--from-frontal",action="store_true",default=False,dest="ff",help=argparse.SUPPRESS)
     
     # Still experimental, not documented
     parser.add_argument("--continuous",action="store_true",default=False,dest="continuous",help=argparse.SUPPRESS)
-    parser.add_argument("--patho",action="store_true",default=False,dest="pathological",help=argparse.SUPPRESS)
+    parser.add_argument("--pathological",action="store_true",default=False,dest="pathological",help=argparse.SUPPRESS)
 
     # default is srun
     parser.set_defaults(output_mode="srun")

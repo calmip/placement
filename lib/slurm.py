@@ -48,21 +48,22 @@ class Slurm(JobSched):
         return tuple(map(str.strip,rvl.split('@'))) 
 
     def findJobsFromUser(self,user):
+        """Call squeue and return a list of tuples corresponding to the jobs running for this user"""
         
         cmd = 'squeue -t RUNNING -u ' + user + ' --noheader -o %.16R@%.15u@%.7A'
         try:
             rvl = runCmd(cmd)
         except:
-            return ("","","")
+            return [("","","")]
         
         if rvl == "":
-            return ("","","")
+            return [("","","")]
 
         tuples = []
 
         # host[0-4]@   user@jobid  @partition ==> (host[0-4],user,jobid,partition)
         for j in rvl.split('\n'):
-            tuples.append(tuple(map(str.strip,rvl.split('@'))))
+            tuples.append(tuple(map(str.strip,j.split('@'))))
             
         return tuples
 

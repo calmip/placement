@@ -27,12 +27,12 @@
 # The following may be necessary or not, it depends on your installation
 
 #module load python/3.5.3
-module load python/3.6.3
+#module load python/3.6.3
 
 # The python executable
-export PLACEMENT_PYTHON=python
+export PLACEMENT_PYTHON=python3
 
-# ================ The following should not be changed (probably) =====================
+# ================ The following should not be changed =====================
 # The PLACEMENT_ROOT env variable (should be correctly set by the install script)
 export PLACEMENT_ROOT=PROOT
 
