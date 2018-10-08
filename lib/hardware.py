@@ -83,11 +83,16 @@ class Hardware(object):
 
     @staticmethod
     def __getConfFile():
+        '''return the name of the configuration file'''
         # Useful for testing !
         if 'PLACEMENT_CONF' in os.environ:
             return os.environ['PLACEMENT_CONF']
-        else:                
-            return os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
+        else:
+            conf = os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
+            if os.path.exists(conf):
+                return conf
+            else:
+                return conf+'-dist'
         
     @staticmethod
     def __guessArchiName(conf_path,config):
