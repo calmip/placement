@@ -130,7 +130,7 @@ def main():
 
     # If necessary run another exe may be on another host
     try:
-        if fn.runPlacement():
+        if fn.runPlacement() != 0:
             exit(0)
     except PlacementException as e:
         print("PLACEMENT " + str(e), file = sys.stderr)
@@ -283,7 +283,14 @@ def documentation(section):
         if line.startswith(sct):
             flag += 1
         if flag >= 2:
-            print(line, end=' ')
+            if line.startswith('<code>'):
+                print (AnsiCodes.bold())
+                continue
+            if line.startswith('</code>'):
+                print (AnsiCodes.normal())
+                continue
+
+            print(line, end='')
 
     if flag==False:
         print("OUPS - Nothing in documentation, section " + sct + ' !')

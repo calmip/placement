@@ -92,6 +92,16 @@ IS_SHARED:        False
 GPUS:             0-1,2-3
 ADDRESSING:       Numactl
 
+# readthedoc, DO NOT remove this configuration as it may be used
+# by users reading the documentation
+[readthedoc]
+SOCKETS_PER_NODE:  2
+CORES_PER_SOCKET:  18
+HYPERTHREADING:    True
+THREADS_PER_CORE:  2
+MEM_PER_SOCKET:    32768
+IS_SHARED:         False
+
 #
 # 2/ (REQUIRED) The hosts section
 #    First column is a compact list of hosts (same syntax as slurm's compact names): 
@@ -106,6 +116,9 @@ ADDRESSING:       Numactl
 #
 
 [hosts]
+# If you are in a hurry
+HOSTNAME: vendor1
+
 # The cluster compute nodes:
 clustercomp[0-96]:			vendor1
 

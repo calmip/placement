@@ -1,6 +1,9 @@
+<code>
 ===========================
 THE PLACEMENT DOCUMENTATION
 ===========================
+</code>
+
 NOTE - You may read only from the section N with the command:
 placement --documentation N
 
@@ -8,12 +11,14 @@ INDEX
 =====
 
 1. WHAT IS PLACEMENT ?
-2. CONFIGURING THE HARDWARE
-3. USING placement WITH srun, cpu_bind or WITH numactl
-4. HOW TO ADJUST YOUR placement COMMAND
+2. How to execute the commands explained in  this tutorial ?
+3. Controlling the placement on a server without any job scheduler
+4. Controlling the placement WITH slurm on an exclusive node
+5. Several switches to modify the placement:
+6. More secure placement requests
 5. WORKING IN DEPOPULATED MODE
 6. USING MPIRUN INSTEAD OF SRUN
-7. CHECKING YOUR RUNNING JOBS
+7. Checking your running jobs
 8. 
 
 1. WHAT IS PLACEMENT ?
@@ -22,295 +27,575 @@ INDEX
 placement is a wrapper making easier for you to control the placement of your processes or threads on multicore processors
 With placement you can:
 		  1/ Control before the program execution that the wanted placement configuration is correct
+		     - placement can generate srun switches (useful if the batch scheduler slurm is used)
+		     - placement can generate for you numactl switches
 		  2/ Check  running programs in order to detect bad placement issues
 
-WARNING - placement has STRONG DEPENDENCIES with two tools: SLURM, and NUMACTL 
-          So it may be difficult using placement with another scheduler than slurm
+WARNING 1/ The program numactl SHOULD BE INSTALLED, as placement has strong dependency with this utility
+        2/  Placement has a less strong dependency with the slurm job scheduler
+	    If slurm is not installed, you still can use placement you will not be able to use --jobid and --checkme
+	3/  You SHOULD be able to access to the compute nodes with ssh in order to check your running jobs
+	
+Exclusive or shared node ?
+==========================
+If you want to control the placement on your cpu cores, it is best to have the node for your exclusive use. This is the 
+standard configuration on most HPC clusters, and this is assumed in this documentation.
 
-2. CONFIGURING THE HARDWARE AND DEBUGGING THE CONFIGURATION
+However, you may also use placement with shared nodes.
+
+2. How to execute the commands explained in  this tutorial ?
 ===========================================================
+The exact output of the commands explained here may be different according to your configuration.
+However, you may fake placement to be sure you'll have the correct outputs:
+To configure the correct architecture and verify it-s ok:
+<code>
+export PLACEMENT_ARCHI=readthedoc
+placement --hardware
+Current architecture = readthedoc (2 sockets/node, 18 cores/socket, 2 threads/core (hyperthreading on), 32768 Mb/socket, EXCLUSIVE)\033[0m
+</code>
+WARNING !!! When using placement for production, DO NOT set the PLACEMENT_ARCHI environment variable
 
-placement looks for the slurm.conf file (using the environment variable $SLURM_CONF if it exists) to know the configuration,
-so that if you use slurm you should not have anything to configure !
+3. Controlling the placement on a server without any job scheduler
+==================================================================
 
-BUT if you use some other scheduler, OR if you want to check the placement behaviour on some other machine than your supercomputer,
-you may edit the placement configuration file (${PLACEMENT_ROOT}/etc/placement.conf). This file is read BEFORE slurm.conf.
+3.a/ Single process, multithreaded (maybe an openmp application)
+----------------------------------------------------------------
+Let's suppose the binary my_exe runs with 16 threads, on your 2x10 cores server. Thansk to placement, you'll be able
+to distribute the threads on the cores, in different ways.
+The switches --ascii-art or --human let you verify what will happen with a nice output.
+The switch --numactl writes for you the numactl command line you'll have to use with the binary execution.
 
-It is a simple key-value file, structured in several sections. The purpose of this file is to help placement to guess,
-using several environment variables, the hardware configuration of the underlying machine
+3.a.1/ The standard way:
+------
 
-This file is useful to let placement guess the architecture it should run on, using the hostname or
-or special environment variables. You could try for example:
+<code>
+placement 1 32 --ascii-art
+  S0---------------- S1---------------- 
+P AAAAAAAAAAAAAAAA.. AAAAAAAAAAAAAAAA.. 
+</code>
+The output in "ascii art", shows that the threads will be equally distributed on each 10 cores-socket. The letter 'A' represents
+the launched process 
 
-# placement --hardware
-Current architecture = Bullx_dlc (2 sockets/node, 10 cores/socket, 2 threads/core (hyperthreading on), 32768 Mb/socket, EXCLUSIVE)
+You can also select the output numactl, which writes the correct numactl switches for you:
+<code>
+placement 1 32 --numactl
+--physcpubind=0-15,18-33
+</code>
 
-You can force an architecture with the environment variable:
-export PLACEMENT_ARCHI=Bullx_dlc
+To execute the binary, it is rather simple:
+<code>
+numactl $(placement 1 18 --numactl) my_exe 
+</code>
+You can try other configurations:
 
+3.a.2/ Using less physical cores, but activating the hyperthreading:
+------
+<code>
+placement 1 32 --ascii-art --hyper
+  S0---------------- S1---------------- 
+P AAAAAAAA.......... AAAAAAAA.......... 
+L AAAAAAAA.......... AAAAAAAA.......... 
+</code>
+numactl output:
+<code>
+placement 1 32 --hyper --numactl
+--physcpubind=0-7,18-25,36-43,54-61
+</code>
+a.3/ Using ONLY the first socket (with hyperthreading):
+---
+<code>
+placement 1 32 --ascii-art --hyper --mode=compact
+  S0---------------- S1---------------- 
+P AAAAAAAAAAAAAAAA.. .................. 
+L AAAAAAAAAAAAAAAA.. .................. 
+</code>
+3.a.4/ WORKING WITH KMP_AFFINITY or GNU_AFFINITY:
+=================================================
 
-3. USING placement WITH srun, cpu_bind or WITH numactl
-======================================================
+you may also use placement to set the KMP_AFFINITY (for intel compilers) or GNU_AFFINITY (for gnu compilers) environement variables.
 
-It is very easy to configure cpu_bind arguments and thus place the processes and threads using srun.
+If using intel compilers, you should set KMP_AFFINITY with:
+<code>
+eval $(placement 1 32 --intel_affinity --verbose)
+</code>
 
-For example, to call a job through srun and ensure the placement is correct, you could just
-replace the standard srun call by the following:
+which does the same as:
+<code>
+export KMP_AFFINITY="granularity=fine,explicit,proclist=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],verbose"
+</code>
 
-srun $(placement) ./my_application
+If using GNU compilers, you should set GOMP_AFFINITY with:
+<code>
+eval $(placement 1 32 --gnu_affinity)
+</code>
 
-placement will then:
-		  - guess the hardware configuration
-		  - compute the srun-specific cpu_bind switch to distribute the processes and the threads among the available cores,
-		  using a scatter algorithm. It is not necessary to specify the number of processes or the number of threads, 
-		  because the environment variables SLURM_TASKS_PER_NODE and SLURM_CPUS_PER_TASK are used.
+which does the same as:
+<code>
+export GOMP_CPU_AFFINITY="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33"
+</code>
+3.b/ Application with several processes, 1 thread / process (may be an mpi application)
+---------------------------------------------------------------------------------------
 
-You may also use placement with the numactl command; for a 4 tasks, 4 threads/tasks job:
-numactl $(placement 4 4 --numactl)
+Let's suppose the binary my_exe is an mpi-based application. Let's suppose we'll launch 32 processes on our 36-cores based server.
+<code>
+placement 32 1 --ascii
+  S0---------------- S1---------------- 
+P ABCDEFGHIJKLMNOP.. QRSTUVWXYZabcdef.. 
+</code>
 
-Of course, you have a lot of other options to control the placement as you need. See placement --help for more details.
+This time, the letters ABC... represent the 32 processes launched by my_exe. You can use the same switches
+as above if you want to try other configurations.
 
-4. HOW TO ADJUST YOUR placement COMMAND
-=======================================
+To execute the binary, it is still simple (the following supposes your code is mpi based):
+<code>
+mpirun -np 32 numactl $(placement 32 1 --numactl) my_exe 
+</code>
+3.c/ Application with several processes, several threads / process (mpi/openmp application)
+-------------------------------------------------------------------------------------------
 
-The cpu_bind switch is somewhat difficult to understand, unless you speak really well hexadecimal. Luckily, placement provides you 
-with some very intuitive representations (the letters A,B,C,D represent the processes, in this example each process has 4 threads,
-we are running on a bi-socket machine, each socket has 10 physical cores):
-
-# placement 4 4 --ascii-art
-  S0-------- S1-------- 
-P AAAABBBB.. CCCCDDDD.. 
-
+3.c.1/ Let's suppose the binary my_exe is an mpi-based application, we want to launch 16 mpi processes, 2 threads/process (thus 32 cores used):
+------
+<code>
+placement 16 2 --ascii
+  S0---------------- S1---------------- 
+P AABBCCDDEEFFGGHH.. IIJJKKLLMMNNOOPP.. 
+</code>
 If you are used to cores numerotation, the following may be useful too:
+<code>
+placement 16 2 --human
+[ 0 1 ]
+[ 2 3 ]
+[ 4 5 ]
+[ 6 7 ]
+[ 8 9 ]
+[ 10 11 ]
+[ 12 13 ]
+[ 14 15 ]
+[ 18 19 ]
+[ 20 21 ]
+[ 22 23 ]
+[ 24 25 ]
+[ 26 27 ]
+[ 28 29 ]
+[ 30 31 ]
+[ 32 33 ]
+</code>
+With the numactl output, we'll have:
+<code>
+placement 16 2 --numactl
+--physcpubind=0-1,2-3,4-5,6-7,8-9,10-11,12-13,14-15,18-19,20-21,22-23,24-25,26-27,28-29,30-31,32-33
+</code>
 
-# placement 4 4 --human
-[ 0 1 2 3 ]
-[ 4 5 6 7 ]
-[ 10 11 12 13 ]
-[ 14 15 16 17 ]
+This is not a very interesting result, because this only reserves the cores we want to use for the application, without specifying that
+a process should not straddle two sockets. 
+If my_exe is an mpi code (openmpi or intelmpi supported), a better way to execute the code is:
+<code>
+mpirun -np 16 numactl $(placement 16 2 --numactl --mpi_aware) my_exe
+</code>
+The switch --mpi_aware is important here, as it insures that the cores 0 and 1 will be dedicated only to rank 0 (process A), 2-3 to rank 1, etc.
+This works with environment varaibles provided by the mpi library, so it is difficult using just the --ascii switch to understand what happens. However,
+you can try the following command, which simulates an openmpi environment;
+<code>
+for r in 0 1 2 3 4 5 6 7; do export OMPI_COMM_WORLD_RANK=$r; echo "rank $r";placement 8 2 --ascii --mpi_aware; done
+</code>
+4. Controlling the placement WITH slurm on an exclusive node
+============================================================
+You can use the same methods as explained above, however with slurm things can be much simpler.
 
-If you want to use hyperthreading, the following is for you:
+The first point is to write, as usual, the sbatch script. Suppose you are launching a hybrid job,
+ie a mixed mpi/openmp job, with 16 processes/node and 2 threads per process.
 
-# placement 4 4 --ascii-art --hyper
-  S0-------- S1-------- 
-P AABB...... CCDD...... 
-L AABB...... CCDD...... 
+The script will start as follows:
 
-The threads can be distributed in another way:
+<code>
+#!/bin/bash
+#SBATCH --ntasks=16
+#SBATCH --cpus-per-task=2
+</code>
+Then you can check the placement output with:
+<code>
+placement --ascii
+</code>
+The program uses the slurm environment variables to know the number of tasks (mpi processes) requested, and the number of cpus per task (= threads per process)
+If you use the srun program (installed with slurm), you may execute your executable with:
+<code>
+srun $(placement) my_exe
+</code>
+All default values for output mode, number of tasks and number of threads per task default to the values wanted by slurm.
+The $(placement) output is:
+<code>
+--cpu_bind=mask_cpu:0x3,0xc,0x30,0xc0,0x300,0xc00,0x3000,0xc000,0xc0000,0x300000,0xc00000,0x3000000,0xc000000,0x30000000,0xc0000000,0x300000000
+</code>
+There are two good news here:
+      - placement computes for you this somewhat complicated command
+      - This command is a mask whose purpose is to control the placement of the 16 processes launched by srun
 
-# placement 4 4 --ascii --mode=scatter_block --hyper
-  S0-------- S1-------- 
-P AAAA...... BBBB...... 
-L CCCC...... DDDD...... 
+This is much simpler than using the --mpi-aware switch as explained above. But for this to work, you must have slurm installed on your system
 
-Or even like this:
-
-# placement 4 4 --ascii --mode=compact --hyper
-  S0-------- S1-------- 
-P AABBCCDD.. .......... 
-L AABBCCDD.. .......... 
-
-or like that:
-
-# placement 4 4 --ascii --mode=compact 
-  S0-------- S1-------- 
-P AAAABBBBCC CCDDDD.... 
-
-Please have a look to the switches --mode, --hyper, --hyper_as_physical
-
-To use a given configuration in your script, you just have to replace --ascii-art or --human with --srun 
-and call srun with placement. Here, we chose the second configuration:
-
-srun $(placement 4 4 --srun --hyper) my_executable
-
-This will generate and execute the awful command:
-
-srun --cpu_bind=mask_cpu:0x300003,0xc0000c,0xc0000c00,0x300003000 my_executable
-
-Some trick:
-===========
+Some tricks:
+============
 It is good practice to put placement --ascii in top of your sbatch script, so that you'll know how
 the threads should be placed, and you get a clear message if something goes wrong.
 
 You could try something like the following:
-
+<code>
 placement --ascii
 if [[ $? != 0 ]]
 then
  echo "ERREUR DANS LE NOMBRE DE PROCESSES OU DE TACHES" 2>&1
  exit $?
 fi
-
-The job will not start if anything goes wrong (ie asking more threads than available cores).
-
-5. WORKING IN DEPOPULATED MODE FOR HYPBRID CODES
-================================================
-
-It is easy to depopulate cores when you use placement.
-Suppose you want to execute an mpi code counting N mpi processes on N bisocket, 10 cores/socket nodes,
-thus 1 process/node, but you want to use only 16 cores/process, 8 cores/socket:
-
-If using intel compilers, you should set KMP_AFFINITY with:
-eval $(placement 1 16 --intel_affinity --verbose)
-
-If using GNU compilers, you should set GOMP_AFFINITY with:
-eval $(placement 1 16 --gnu_affinity)
-
-Then call srun with:
-srun $(placement 1 16) my_executable
-
-6. USING mpirun INSTEAD OF srun
-===============================
-
-Sometimes, you'll want to use mpirun instead of srun. You'll thus have to use numactl to control the placement, instead of --cpu_bind switches
-Considering the previous example: N mpi processes on N bisocket, 10 cores/socket nodes,
-thus 1 process/node, but you want to use only 16 cores/process, 8 cores/socket, the placement commands are now:
-
-eval $(placement 1 16 --intel_affinity --verbose)
-
-mpirun  -n 2 numactl $(placement 1 16 --numactl) ./exec_50k.x
-
-7. CHECKING YOUR RUNNING JOBS WITH PLACEMENT
+</code>
+5. Several switches to modify the placement:
 ============================================
+<code>
+placement 16 2 --ascii
+  S0---------------- S1---------------- 
+P AABBCCDDEEFFGGHH.. IIJJKKLLMMNNOOPP.. 
+</code>
+<code>
+placement 16 2 --ascii --hyper
+  S0---------------- S1---------------- 
+P ABCDEFGH.......... IJKLMNOP.......... 
+L ABCDEFGH.......... IJKLMNOP.......... 
+</code>
+<code>
+placement 16 2 --ascii --mode=scatter_block
+  S0---------------- S1---------------- 
+P AACCEEGGIIKKMMOO.. BBDDFFHHJJLLNNPP.. 
+</code>
+<code>
+placement 16 2 --ascii --mode=scatter_block --hyper
+  S0---------------- S1---------------- 
+P AAEEIIMM.......... BBFFJJNN.......... 
+L CCGGKKOO.......... DDHHLLPP.......... 
+</code>
+<code>
+placement 16 2 --ascii --mode=compact 
+  S0---------------- S1---------------- 
+P AABBCCDDEEFFGGHHII JJKKLLMMNNOOPP.... 
+</code>
+<code>
+placement 16 2 --ascii --mode=compact --hyper
+  S0---------------- S1---------------- 
+P ABCDEFGHIJKLMNOP.. .................. 
+L ABCDEFGHIJKLMNOP.. .................. 
+</code>
+<code>
+placement 16 2 --ascii --mode=compact --hyper_as_physical
+  S0---------------- S1---------------- 
+P AABBCCDDEEFFGGHHII .................. 
+L JJKKLLMMNNOOPP.... .................. 
+</code>
+6. More secure placement requests
+=================================
 
+With placement you should not be able to program bad placements. Should you try to place
+9 4-threads tasks, placement will refuse the job, because one task should straddle two sockets:
+<code>
+placement 9 4 --ascii
+PLACEMENT_ERROR_FOUND
+PLACEMENT ERROR - One task is straddling two sockets ! Please lower the number of tasks/node, max is 8
+</code>
+You can however force such a configuration with the --hyper switch:
+<code>
+placement 9 4 --ascii --hyper
+  S0---------------- S1---------------- 
+P AABBCCDDEE........ FFGGHHII.......... 
+L AABBCCDDEE........ FFGGHHII.......... 
+</code>
+If you ask too many threads considering the number of physical cores, and if the configuration allows it, placements switches automatically to hyperthreading:
+<code>
+placement 10 4 --ascii
+  S0---------------- S1---------------- 
+P AABBCCDDEE........ FFGGHHIIJJ........ 
+L AABBCCDDEE........ FFGGHHIIJJ........ 
+</code>
+And if you ask too many theads, even considering the hyperthreading, placement returns a message:
+<code>
+placement 20 4 --ascii
+PLACEMENT_ERROR_FOUND
+PLACEMENT ERROR - Not enough cores ! Please lower cpus_per_task (4) or tasks (20) NUMBER OF LOGICAL CORES RESERVED FOR THIS PROCESS = 72
+</code>
+
+7. Checking your running jobs
+=============================
+
+7.a/ If slurm is not installed:
+-------------------------------
+You can use placement to check a running job on a computer using the following command:
+<code>
+placement --host=my_computer
+</code>
+See under for the output
+
+7.b/ If slurm is installed:
+---------------------------
 placement can be used to check a running job. For example, to check the last running job you just launched,
 you could run from the frontal node:
+<code>
+placement --checkme 
+jobid 12345
+node103
+                000000000000000000 000000000000000000
+                000000000011111111 112222222222333333
+                012345678901234567 890123456789012345
+     PID    TID                                        %CPU %MEM
+A  16058  16058 A................. ..................  98.4  4.0
+A         16104 .A................ ..................  82.0  4.0
+A         16105 ..A............... ..................  82.0  4.0
+A         16106 ...A.............. ..................  82.0  4.0
+A         16107 ....A............. ..................  82.0  4.0
+A         16108 .....A............ ..................  82.2  4.0
+A         16109 ......A........... ..................  82.0  4.0
+A         16110 .......A.......... ..................  82.0  4.0
+B  16059  16059 ........B......... ..................  98.4  3.7
+B         16113 .........B........ ..................  82.1  3.7
+B         16115 ..........B....... ..................  82.1  3.7
+B         16116 ...........B...... ..................  82.1  3.7
+B         16118 ............B..... ..................  82.1  3.7
+B         16120 .............B.... ..................  82.2  3.7
+B         16122 ..............B... ..................  82.3  3.7
+B         16124 ...............B.. ..................  82.2  3.7
+C  16060  16060 ................C. ..................  98.4  3.7
+C         16125 .................C ..................  82.6  3.7
+C         16126 .................. C.................  82.6  3.7
+C         16127 .................. .C................  82.6  3.7
+C         16128 .................. ..C...............  82.6  3.7
+C         16129 .................. ...C..............  82.6  3.7
+C         16130 .................. ....C.............  82.7  3.7
+C         16131 .................. .....C............  82.7  3.7
+D  16061  16061 .................. ......D...........  98.5  3.7
+D         16111 .................. .......D..........  82.3  3.7
+D         16112 .................. ........D.........  82.3  3.7
+D         16114 .................. .........D........  82.3  3.7
+D         16117 .................. ..........D.......  82.3  3.7
+D         16119 .................. ...........D......  82.4  3.7
+D         16121 .................. ............D.....  82.5  3.7
+D         16123 .................. .............D....  82.3  3.7
+</code>
 
-placement --checkme --ascii --memory --threads --sorted_threads
-eoscomp103
-  S0-------- S1-------- 
-P .......AAA .AA..A.... 
-L AAAAAA.A.. A..A.....A 
+This shows that the placement is rather poor in this job: the threads
+are not equally distributed on both sockets (18+14), and one task (C) straddles both sockets.
 
-                0000000000 0000000000
-                0000000000 1111111111
-                0123456789 0123456789
-     PID    TID                        %CPU %MEM
-A  63062  63075 .......... ..........   0.0 44.6
-A         63118 A......... ..........  99.0 44.6
-A         63073 .......... ..........   0.0 44.6
-A         63115 .A........ ..........  99.0 44.6
-A         63114 .......... ..........   0.0 44.6
-A         63119 ..A....... ..........  99.5 44.6
-A         63127 ...A...... ..........  99.5 44.6
-A         63128 ....A..... ..........  99.0 44.6
-A         63129 .....A.... ..........  99.5 44.6
-A         63123 .......A.. ..........  99.0 44.6
-A         63124 .......A.. ..........  99.0 44.6
-A         63116 ........A. ..........  99.0 44.6
-A         63121 .........A ..........  99.0 44.6
-A         63126 .......... A.........  99.5 44.6
-A         63117 .......... .A........  99.0 44.6
-A         63122 .......... ..A.......  99.5 44.6
-A         63120 .......... ...A......  99.5 44.6
-A         63125 .......... .....A....  99.0 44.6
-A         63062 .......... .........A  97.3 44.6
+Using the commands explained above, it is easy to better control the placement.
+In your sbatch script, check the SBATCH reservation directives (you should have --ntasks=4 and --core-per-task=8)
+then replace the line:
+<code>
+srun my_exe ....
+</code>
+by:
+<code>
+srun $(placement) my_exe .....
+</code>
+You can easily check the improvement:
+<code>
+placement --checkme
+jobid 12346
+node352
+                000000000000000000 000000000000000000
+                000000000011111111 112222222222333333
+                012345678901234567 890123456789012345
+     PID    TID                                        %CPU %MEM
+A  51595  51595 A................. ..................  93.7  4.0
+A         51645 .A................ ..................  49.1  4.0
+A         51646 ..A............... ..................  49.1  4.0
+A         51647 ...A.............. ..................  48.9  4.0
+A         51648 ....A............. ..................  49.0  4.0
+A         51649 .....A............ ..................  49.4  4.0
+A         51650 ......A........... ..................  49.0  4.0
+A         51651 .......A.......... ..................  49.2  4.0
+B  51596  51596 ........B......... ..................  93.5  3.7
+B         51662 .........B........ ..................  49.2  3.7
+B         51665 ..........B....... ..................  49.2  3.7
+B         51666 ...........B...... ..................  49.2  3.7
+B         51669 ............B..... ..................  49.2  3.7
+B         51670 .............B.... ..................  49.4  3.7
+B         51671 ..............B... ..................  49.8  3.7
+B         51672 ...............B.. ..................  49.4  3.7
+C  51597  51597 .................. C.................  93.5  3.7
+C         51653 .................. .C................  50.3  3.7
+C         51655 .................. ..C...............  50.4  3.7
+C         51656 .................. ...C..............  50.3  3.7
+C         51658 .................. ....C.............  50.5  3.7
+C         51660 .................. .....C............  50.3  3.7
+C         51663 .................. ......C...........  50.8  3.7
+C         51668 .................. .......C..........  50.6  3.7
+D  51598  51598 .................. ........D.........  93.5  3.7
+D         51652 .................. .........D........  50.1  3.7
+D         51654 .................. ..........D.......  50.1  3.7
+D         51657 .................. ...........D......  50.1  3.7
+D         51659 .................. ............D.....  50.2  3.7
+D         51661 .................. .............D....  50.4  3.7
+D         51664 .................. ..............D...  50.6  3.7
+D         51667 .................. ...............D..  50.3  3.7
+</code>
+You can use the --ascii representation if you prefer:
+<code>
+placement --checkme --ascii
+  S0---------------- S1---------------- 
+P AAAAAAAABBBBBBBB.. CCCCCCCCDDDDDDDD.. 
+L .................. .................. 
+</code>
+Using the upper threads-based representation, you can display the distribution of the memory between both sockets:
+<code>
+job 12346
+node352
+                000000000000000000 000000000000000000
+                000000000011111111 112222222222333333
+                012345678901234567 890123456789012345
+     PID    TID                                        %CPU %MEM
+A  51595  51595 A................. ..................  98.9  4.0
+A         51645 .A................ ..................  95.5  4.0
+A         51646 ..A............... ..................  95.5  4.0
+A         51647 ...A.............. ..................  95.5  4.0
+A         51648 ....A............. ..................  95.5  4.0
+A         51649 .....A............ ..................  95.5  4.0
+A         51650 ......A........... ..................  95.5  4.0
+A         51651 .......A.......... ..................  95.5  4.0
+B  51596  51596 ........B......... ..................  98.9  3.8
+B         51662 .........B........ ..................  95.5  3.8
+B         51665 ..........B....... ..................  95.5  3.8
+B         51666 ...........B...... ..................  95.5  3.8
+B         51669 ............B..... ..................  95.5  3.8
+B         51670 .............B.... ..................  95.5  3.8
+B         51671 ..............B... ..................  95.5  3.8
+B         51672 ...............B.. ..................  95.5  3.8
+C  51597  51597 .................. C.................  98.9  3.8
+C         51653 .................. .C................  95.6  3.8
+C         51655 .................. ..C...............  95.6  3.8
+C         51656 .................. ...C..............  95.6  3.8
+C         51658 .................. ....C.............  95.6  3.8
+C         51660 .................. .....C............  95.6  3.8
+C         51663 .................. ......C...........  95.6  3.8
+C         51668 .................. .......C..........  95.6  3.8
+D  51598  51598 .................. ........D.........  98.9  3.8
+D         51652 .................. .........D........  95.6  3.8
+D         51654 .................. ..........D.......  95.5  3.8
+D         51657 .................. ...........D......  95.6  3.8
+D         51659 .................. ............D.....  95.6  3.8
+D         51661 .................. .............D....  95.6  3.8
+D         51664 .................. ..............D...  95.6  3.8
+D         51667 .................. ...............D..  95.6  3.8
 
-  SOCKET MEMORY relative to the socket memory
-A               *********. ..........
+   DISTRIBUTION of the MEMORY among the sockets 
+A               ****************** ..................   99%  0%  
+B               ****************** ..................   99%  0%  
+C               .................. ******************   0%  99%  
+D               .................. ******************   0%  99%  
+</code>
+Here, we see that processes A and B (mpi rank 0,1) run on the socket 0, and use the memory banks
+connected to the same socket. The processes C and D (mpi ranks 2,3) run on the socket 1, and use
+the memory banks connected to the same socket.
 
-This shows that the placement is very poor in this running job. The threads
-are not equally distributed on both sockets (10+8), and only the memory of 
-the first socket is used.
+Some codes can run on the cpus AND on the gpus. This can be checked too.
+the following shows an mpi-openmp-gpu code. 18 mpi processes are launched, each has 2 threads.
+Each GPU runs 4 processes.
+<code>
+placement --checkme --memory
+node6
+                000000000000000000 000000000000000000
+                000000000011111111 112222222222333333
+                012345678901234567 890123456789012345
+     PID    TID                                        %CPU %MEM
+A  12415  12415 A................. ..................  99.4  1.2
+A         12851 .A................ ..................  98.9  1.2
+B  12416  12416 ..B............... ..................  99.2  0.9
+B         12862 ...B.............. ..................  98.5  0.9
+C  12417  12417 ....C............. ..................  99.3  0.9
+C         12866 .....C............ ..................  98.0  0.9
+D  12418  12418 ......D........... ..................  99.2  1.0
+D         12865 .......D.......... ..................  98.9  1.0
+E  12419  12419 ........E......... ..................  99.3  1.0
+E         12856 .........E........ ..................  98.9  1.0
+F  12420  12420 ..........F....... ..................  99.3  0.9
+F         12864 ...........F...... ..................  98.5  0.9
+G  12421  12421 ............G..... ..................  99.2  0.9
+G         12857 .............G.... ..................  98.3  0.9
+H  12422  12422 ..............H... ..................  99.2  1.0
+H         12863 ...............H.. ..................  98.9  1.0
+I  12423  12423 .................. I.................  99.2  1.0
+I         12861 .................. .I................  98.9  1.0
+J  12424  12424 .................. ..J...............  99.2  0.9
+J         12860 .................. ...J..............  98.5  0.9
+K  12425  12425 .................. ....K.............  99.3  0.9
+K         12855 .................. .....K............  98.2  0.9
+L  12426  12426 .................. ......L...........  99.2  1.0
+L         12854 .................. .......L..........  98.9  1.0
+M  12427  12427 .................. ........M.........  99.2  1.0
+M         12859 .................. .........M........  98.9  1.0
+N  12428  12428 .................. ..........N.......  99.3  0.9
+N         12852 .................. ...........N......  98.5  0.9
+O  12429  12429 .................. ............O.....  99.3  0.9
+O         12853 .................. .............O....  98.3  0.9
+P  12430  12430 .................. ..............P...  99.2  1.0
+P         12858 .................. ...............P..  98.9  1.0
 
-Using the commands explained in Section S5, the situation can be improved,
-and you can check this improvement:
+   DISTRIBUTION of the MEMORY among the sockets 
+A               ****************** ..................   99%  0%  
+B               ****************** ..................   99%  0%  
+C               ****************** ..................   99%  0%  
+D               ****************** ..................   99%  0%  
+E               ****************** ..................   99%  0%  
+F               ****************** ..................   99%  0%  
+G               ****************** ..................   99%  0%  
+H               ****************** ..................   99%  0%  
+I               .................. ******************   0%  99%  
+J               .................. ******************   0%  99%  
+K               .................. ******************   0%  99%  
+L               .................. ******************   0%  99%  
+M               .................. ******************   0%  99%  
+N               .................. ******************   0%  99%  
+O               .................. ******************   0%  99%  
+P               .................. ******************   0%  99%  
 
-placement --checkme --ascii --memory --threads --sorted_threads
-eoscomp8
-  S0-------- S1-------- 
-P AAAAAAAA.. AAAAAAAA.. 
-L .......... .......... 
+  GPU 0
+USE             *******........... 37%
+MEMORY          ***............... 17%
+POWER           *****............. 28%
+PROCESSES       ABCD
+USED MEMORY     ▆▆▆▆
 
-                0000000000 0000000000
-                0000000000 1111111111
-                0123456789 0123456789
-  SOCKET MEMORY AAAAAAAAA. ..........
-     PID    TID                        %CPU %MEM
-A  98539  98539 A......... ..........  91.7 44.6
-A         98563 .......... ..........   0.0 44.6
-A         98561 .......... ..........   0.0 44.6
-A         98644 .A........ ..........  82.0 44.6
-A         98645 ..A....... ..........  81.6 44.6
-A         98646 ...A...... ..........  81.6 44.6
-A         98647 ....A..... ..........  82.0 44.6
-A         98648 .....A.... ..........  81.6 44.6
-A         98649 ......A... ..........  82.0 44.6
-A         98650 .......A.. ..........  82.0 44.6
-A         98651 .......... A.........  81.6 44.6
-A         98643 .......... ..........   0.0 44.6
-A         98652 .......... .A........  81.6 44.6
-A         98653 .......... ..A.......  82.0 44.6
-A         98654 .......... ...A......  82.0 44.6
-A         98655 .......... ....A.....  82.0 44.6
-A         98656 .......... .....A....  82.0 44.6
-A         98657 .......... ......A...  82.0 44.6
-A         98658 .......... .......A..  82.0 44.6
+  GPU 1
+USE             ********.......... 43%
+MEMORY          ***............... 17%
+POWER           ***************... 84%
+PROCESSES       EFGH
+USED MEMORY     ▆▆▆▆
 
-  SOCKET MEMORY relative to the socket memory
-A               *********. ..........
+  GPU 2
+USE                                ********.......... 42%
+MEMORY                             ***............... 17%
+POWER                              ****.............. 23%
+PROCESSES                          IJKL
+USED MEMORY                        ▆▆▆▆
 
-The threads distribution is already better, but the line "SOCKET MEMORY" 
-shows that the memory used by your process is still
-allocated on one socket only: you could improve the code to change this behaviour, 
-then check again with placement.
+  GPU 3
+USE                                ********.......... 45%
+MEMORY                             ***............... 17%
+POWER                              ****.............. 22%
+PROCESSES                          MNOP
+USED MEMORY                        ▆▆▆▆
 
-8. DEBUGGING placement
-======================
+</code>
+In this output, the important information concerning the job execution is synthetized:
+   - The processes and threads are correctly placed of the cpu cores
+   - The memory consumption of each process is low (about 1%)
+   - The processes occupy the CPUs (98-99%)
+   - The processes use the memory banks connected to the same socket they compute on
+   - The 16 processes are equally distributed on the 4 GPUs connected to the system
+   - The processes send the memory to the nearest GPUs
+   - The GPU use is reasonably high
+   - The GPU memory is correctly used and there is no risk of overflow
+   - Each process used approximately the same amount of GPU memory
 
-The following is for developers who want to debug placement:
-
------------------------------------------
-The environment variable PLACEMENT_DEBUG
------------------------------------------
-You can have a look to the external commands used by placement with this variable:
-
-1/ To have the command line printed use:
-export PLACEMENT_DEBUG=1
-
-2/ To have the command line printed AND the raw result, use:
-export PLACEMENT_DEBUG=2
-
-3/ In a production environment, you'll prefer not to have output spoiled with those messages:
-export -n PLACEMENT_DEBUG
-
--------------------------------------------
-The environment variable PLACEMENT_DEBUG_1
--------------------------------------------
-On a non-exclusive node, you can further debug the configuration:
-export PLACEMENT_DEBUG_1='0-1' means that only sockets 0,1 are reserved for your job
-
-You can even specify the complete cpuset: 
-export PLACEMENT_DEBUG_1='0-1:10-15,16-21' means that only 12 cores on 2 sockets are reserved for your job
-
-Of course, PLACEMENT_DEBUG_1 SHOULD BE USED ONLY FOR DEBUGGING PURPOSE, AND SHOULD BE UNSET FOR PRODUCTION !
-
-When PLACEMENT_DEBUG_1 is not set, placement calls numactl --show to know the current reserved cpuset
-
-You can simulate how placement will behave on your supercomputer, using two different syntaxes for $PLACEMENT_DEBUG_1:
-
-1/ First syntax: SOCKETS granularity
-------------------------------------
-You can tell placement that the system did give you the sockets 1, 2, and 4:
-
-# ( export PLACEMENT_ARCHI=vendor2; export PLACEMENT_DEBUG_1=1-2,4; ~/bin/placement 3 6   --mode=scatter --ascii )
-  S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
-P                  AAAAAA.......... BBBBBB..........                  CCCCCC..........                  
-
-2/ Second syntax: CORES granularity
------------------------------------
-You can tell placement that the system did give you the cores 20 to 23, 40 to 45, and 64 to 71, which are in the sockets 1,2 and 4:.
-As we do not specify whole sockets, we cannot use scatter mode. However, you can still use the compact mode:
-
-( export PLACEMENT_ARCHI=vendor2; export PLACEMENT_DEBUG_1='1,2,4:20-23,40-45,64-71'; ~/bin/placement 3 6   --mode=compact --ascii ) 
-  S0-------------- S1-------------- S2-------------- S3-------------- S4-------------- S5-------------- S6-------------- S7-------------- 
-P                  ....AAAA........ ........AABBBB..                  BBCCCCCC........
-
+==========================================================================================
 
 That's all Folks !
 
 Have fun using placement !
 Emmanuel
 emmanuel.courcelle@inp-toulouse.fr
-https://www.calmip.univ-toulouse.fr
+https://github.com/calmip/placement/
+
 
