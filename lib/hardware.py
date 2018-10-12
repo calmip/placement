@@ -267,6 +267,9 @@ class SpecificHardware(Hardware):
             msg += "ERROR WAS = " + str(e)
             raise PlacementException(msg)
 
+        if self.IS_SHARED:
+            raise PlacementException("NOT SUPPORTED - The property SHARE is NOT SUPPORTED IN THIS RELEASE")
+            
     #
     # The Cores addressing:
     #
