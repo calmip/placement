@@ -26,8 +26,7 @@
 
 import os
 from exception import *
-from utilities import compactString2List
-import subprocess
+from utilities import compactString2List,runCmd
 
 class Architecture(object):
     """ Describing the architecture of the system
@@ -183,7 +182,7 @@ class Shared(Architecture):
             physcpubind = list(map(int,os.environ['PLACEMENT_PHYSCPU'].split(',')))
 
         # debug mode: do not call numactl, read pseudo-reserved sockets and cores from an environment variable
-        elif 'PLACEMENT_DEBUG' in os.environ:
+        elif 'PLACEMENT_DEBUG_1' in os.environ:
             [l_sockets,physcpubind] = self.__callDebug()
 
         # Not in an mpi_aware context, no debug: we call numactl --show 
@@ -218,35 +217,27 @@ class Shared(Architecture):
            return the list of reserved sockets, and the list of physical cores  """
 
         cmd = "numactl --show"
-        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        p.wait()
-        # Si returncode non nul, on a probablement demandé une tâche qui ne tourne pas
-        if p.returncode !=0:
-            msg = "ERROR - "
-            msg += "numactl error - Are you sure you are on the correct node ?"
-            raise PlacementException(msg)
-        else:
-            output = p.communicate()[0].decode().split('\n')
+        output = runCmd(cmd).split('\n')
 
-            # l_sockets is generated from line nodebind of numactl
-            # nodebind: 4 5 6 => [4,5,6]
-            for l in output:
-                if l.startswith('nodebind:'):
-                    l_sockets = list(map(int,l.rpartition(':')[2].strip().split(' ')))
-                elif l.startswith('physcpubind:'):
-                    physcpubind = list(map(int,l.rpartition(':')[2].strip().split(' ')))
-                
-            return [l_sockets,physcpubind]
+        # l_sockets is generated from line nodebind of numactl
+        # nodebind: 4 5 6 => [4,5,6]
+        for l in output:
+            if l.startswith('nodebind:'):
+                l_sockets = list(map(int,l.rpartition(':')[2].strip().split(' ')))
+            elif l.startswith('physcpubind:'):
+                physcpubind = list(map(int,l.rpartition(':')[2].strip().split(' ')))
+            
+        return [l_sockets,physcpubind]
 
 
     def __callDebug(self):
-        """ Read the env variable PLACEMENT_DEBUG and return the list of reserved sockets, and the list of physical cores
-            Possible values for PLACEMENT_DEBUG: 
+        """ Read the env variable PLACEMENT_DEBUG_1 and return the list of reserved sockets, and the list of physical cores
+            Possible values for PLACEMENT_DEBUG_1: 
               '[0-3]' Sockets 0 to 3, all cores
               '[0,1]:[0-5,20,21]  Sockets 0,1, physical cores 0,1,2,3,4,5,20,21 """
 
-        placement_debug = os.environ['PLACEMENT_DEBUG']
-        part = placement_debug.partition(':')
+        PLACEMENT_DEBUG_1 = os.environ['PLACEMENT_DEBUG_1']
+        part = PLACEMENT_DEBUG_1.partition(':')
         l_sockets   = list(map(int,compactString2List(part[0])))
         physcpubind = []
         if part[2] == '':

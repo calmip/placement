@@ -32,7 +32,6 @@ from exception import *
 from tasksbinding import *
 from utilities import *
 from architecture import *
-import subprocess
 
 #
 # class RunningMode, Extends TasksBinding.
@@ -94,14 +93,7 @@ class RunningMode(TasksBinding):
                 return
         else:
             cmd = 'nvidia-smi -q -x'
-            tmp = ''            
-            try:
-                tmp    = subprocess.check_output(cmd.split(' ')).decode()
-
-            except subprocess.CalledProcessError as e:
-                msg = "ERROR " + cmd + " returned an error: " + str(e.returncode) + "\noutput: " + e.output
-                raise PlacementException(msg)
-            
+            tmp = runCmd(cmd)
             tree = et.fromstring(tmp)
 
         # '0-1,2-3' ==> ['0-1','2-3'] ==> [[0,1],[2,3]]
@@ -167,7 +159,7 @@ class RunningMode(TasksBinding):
                 tmp = [x.replace('\n','') for x in tmp]
             else:
                 cmd = 'numastat ' + str(pid)
-                tmp = subprocess.check_output(cmd.split(' ')).decode().split('\n')
+                tmp = runCmd(cmd).split('\n')
                 tmp.pop()
             #print '\n'.join(tmp)
 
@@ -216,18 +208,13 @@ class RunningMode(TasksBinding):
         else:
             cmd = 'ps --no-headers -m -o ruser:15 -o %p -o tid -o psr -o %c -o state -o %cpu -o %mem '
             
-            # --check=ALL ==> No selection, among the processes
+            # --check=ALL ==> No selection among the processes
             if self.path == 'ALL':
                 exe = cmd + 'ax'
-                try:
-                    tmp    = subprocess.check_output(exe.split(' '))
-                    ps_res = tmp.decode().split('\n')
-                    for i,l in enumerate(ps_res):
-                        ps_res[i] = l.replace('\n','')
-
-                except subprocess.CalledProcessError as e:
-                    msg = "ERROR " + exe + " returned an error: " + str(e.returncode)
-                    raise PlacementException(msg)
+                tmp    = runCmd(exe)
+                ps_res = tmp.split('\n')
+                for i,l in enumerate(ps_res):
+                    ps_res[i] = l.replace('\n','')
 
             # --check='some_name' Let's suppose it is a user name
             else:
@@ -235,15 +222,14 @@ class RunningMode(TasksBinding):
                 exe += self.path
 
                 try:
-                    tmp    = subprocess.check_output(exe.split(' '),stderr=subprocess.STDOUT)
-                    ps_res = tmp.decode().split('\n')
+                    tmp    = runCmd(exe)
+                    ps_res = tmp.split('\n')
                     for i,l in enumerate(ps_res):
                         ps_res[i] = l.replace('\n','')
 
-                except subprocess.CalledProcessError as e:
-                    if (e.returncode != 1):
-                        msg = "ERROR " + exe + " returned an error: " + str(e.returncode)
-                        raise PlacementException(msg)
+                except PlacementException as e:
+                    if (e.err != 1):
+                        raise e
                     else:
                         ps_res = ""
 
@@ -253,15 +239,14 @@ class RunningMode(TasksBinding):
                     exe += self.path
 
                     try:
-                        tmp    = subprocess.check_output(exe.split(' '))
-                        ps_res = tmp.decode().split('\n')
+                        tmp    = runCmd(exe)
+                        ps_res = tmp.split('\n')
                         for i,l in enumerate(ps_res):
                             ps_res[i] = l.replace('\n','')
 
-                    except subprocess.CalledProcessError as e:
+                    except PlacementException as e:
                         msg = "ERROR "
-
-                        if (e.returncode == 1):
+                        if (e.err == 1):
                             msg += "No task found: Are you sure you are working on the correct host ?"
                         else:
                             msg += cmd + " returned an error: " + str(e.returncode)
@@ -427,42 +412,6 @@ class BuildTasksBound:
 
     def __call__(self):
         raise("INTERNAL ERROR - VIRTUAL PURE FUNCTION !")
-
-# This functor build the tasks_bound data structure from taskset 
-# --- THIS IS NO MORE USED ---
-#class BuildTasksBoundFromTaskSet(BuildTasksBound):
-    #"""Calling taskset, BUT DOES NOT WORK ANYMORE, IS IT STILL USEFUL ?"""
-
-    ## Appelle __taskset sur le tableau tasksBinding.pid
-    ## Transforme les affinités retournées: 0-3 ==> [0,1,2,3]
-    ## Renvoie tasks_bound + tableau vide (pas d'infos sur les threads)
-    #def __call__(self,tasksBinding):
-        #raise PlacementException("Sorry, --taskset switch is not implemented")
-
-        #tasks_bound=[]
-        #for p in tasksBinding.pid:
-            #aff = self.__runTaskSet(p)
-            #tasks_bound.append(compactString2List(aff))
-
-        #return tasks_bound
-
-    ## Appelle taskset pour le ps passé en paramètre
-    #def __runTaskSet(self,p):
-        #cmd = "taskset -c -p "
-        #cmd += str(p)
-        #try:
-            #out = subprocess.check_output(cmd.split(' ')).rstrip('\n')
-
-        #except subprocess.CalledProcessError,e:
-            #msg = "ERROR -  "
-            #msg += "The command: "
-            #msg += cmd
-            #msg += " Returned an error: "
-            #msg += str(p.returncode)
-            #raise PlacementException(msg)
-
-        ## On renvoie l'affinité
-        #return out.rpartition(" ")[2]
 
 # This functor builds the tasks_bound data structure from ps
 # Construit tasks_bound à partir de la structure de données tasksBinding.processus

@@ -33,7 +33,6 @@ import unittest
 class TestHardwareConf1(unittest.TestCase):
     def setUp(self):
         os.environ['PLACEMENT_CONF'] = 'test1.conf'
-        os.environ.pop('PLACEMENT_PARTITION',0)
         os.environ.pop('HOSTNAME',0)
 
     def test_archi_ok(self):
@@ -44,27 +43,11 @@ class TestHardwareConf1(unittest.TestCase):
         os.environ['PLACEMENT_ARCHI']= 'toto'
         self.assertRaises(PlacementException,Hardware.factory)
 
-# Testing PLACEMENT_PARTITION
-class TestHardwareConf2(unittest.TestCase):
-    def setUp(self):
-        os.environ['PLACEMENT_CONF'] = 'test2.conf'
-        os.environ.pop('PLACEMENT_ARCHI',0)
-        os.environ.pop('HOSTNAME',0)
-
-    def test_archi_ok(self):
-        os.environ['PLACEMENT_PARTITION']= 'partition1'
-        self.assertEqual(Hardware.factory().NAME,'hard2')
- 
-    def test_archi_ko(self):
-        os.environ['PLACEMENT_PARTITION']= 'toto'
-        self.assertRaises(PlacementException,Hardware.factory)
-
 # Testing HOSTNAME
 class TestHardwareConf3(unittest.TestCase):
     def setUp(self):
         os.environ['PLACEMENT_CONF'] = 'test3.conf'
         os.environ.pop('PLACEMENT_ARCHI',0)
-        os.environ.pop('PLACEMENT_PARTITION',0)
 
     def test_archi_ok(self):
         os.environ['HOSTNAME']= 'node45'
@@ -74,29 +57,10 @@ class TestHardwareConf3(unittest.TestCase):
         os.environ['HOSTNALE']= 'toto'
         self.assertRaises(PlacementException,Hardware.factory)
 
-# Testing slurm.conf
-class TestHardwareSlurmConf(unittest.TestCase):
-    def setUp(self):
-        os.environ.pop('PLACEMENT_ARCHI',0)
-        os.environ.pop('PLACEMENT_PARTITION',0)
-        os.environ['PLACEMENT_CONF'] = 'file_does_not_exist'
-        os.environ['SLURM_CONF'] = 'slurm.conf'
-        
-    def test_archi_ok(self):
-        os.environ['HOSTNAME'] = 'node67'
-        self.hardware = Hardware.factory()
-        self.assertEqual(self.hardware.getCore2Socket(19),1)
-        self.assertEqual(self.hardware.getCore2Core(26),6)
-        self.assertEqual(self.hardware.getCore2PhysCore(30),10)
-
-    def test_archi_ko(self):
-        os.environ['HOSTNAME'] = 'node670'
-        self.assertRaises(PlacementException,Hardware.factory)
-
+# Testing without any configuration
 class TestHardwareNoConf(unittest.TestCase):
     def setUp(self):
         os.environ.pop('PLACEMENT_ARCHI',0)
-        os.environ.pop('PLACEMENT_PARTITION',0)
         os.environ['PLACEMENT_CONF'] = 'file_does_not_exist'
         os.environ['SLURM_CONF'] = 'file_does_not_exist'
     

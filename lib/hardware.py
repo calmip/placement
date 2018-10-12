@@ -28,13 +28,12 @@ import os
 import re
 import configparser
 from exception import *
-from utilities import  expandNodeList, getHostname, flatten
-import subprocess
+from utilities import  expandNodeList, getHostnameRem, flatten, runCmd
 
 class Hardware(object):
     """ Describing hardware configuration 
     
-    This file uses placement.conf if exists, else slurm.conf, to guess the correct hardware configuration, using some environment variables
+    This file uses placement.conf to guess the correct hardware configuration, using some environment variables
     The private member IS_SHARED describes the fact that the HOST is SHARED between users (if True) or exclusively dedicated (if False) to the job
     It is not strictly hardware consideration, but as it never changes during the node lifetime, it makes sense considering it as a hardware parameter
     WARNING FOR SLURM ADMINS - IS_SHARED means here "The NODE is shared", NOT the Resource. 
@@ -54,21 +53,19 @@ class Hardware(object):
 
     @staticmethod
     def catalog():
-        """ Return the available hostnames (as regex), partitions, architectures as lists of lists """
+        """ Return the available hostnames (as regex), architectures as lists of lists """
         conf_file = Hardware.__getConfFile()
 
         config    = configparser.RawConfigParser()
         config.read(conf_file)        
-        partitions = config.options('partitions')
         hosts      = config.options('hosts')
         archis     = config.sections();
         archis.remove('hosts')
-        archis.remove('partitions')
-        return [hosts,partitions,archis]
+        return [hosts,archis]
 
     @staticmethod
     def factory():
-        """ Build a Hardware object from several env variables: PLACEMENT_ARCHI, PLACEMENT_PARTITION, HOSTNAME"""
+        """ Build a Hardware object from several env variables: PLACEMENT_ARCHI, HOSTNAME"""
 
         # 1st stage: Read the configuration file, if possible
         conf_file = Hardware.__getConfFile()
@@ -86,11 +83,16 @@ class Hardware(object):
 
     @staticmethod
     def __getConfFile():
+        '''return the name of the configuration file'''
         # Useful for testing !
         if 'PLACEMENT_CONF' in os.environ:
             return os.environ['PLACEMENT_CONF']
-        else:                
-            return os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
+        else:
+            conf = os.environ['PLACEMENT_ROOT'] + '/etc/placement.conf'
+            if os.path.exists(conf):
+                return conf
+            else:
+                return conf+'-dist'
         
     @staticmethod
     def __guessArchiName(conf_path,config):
@@ -106,26 +108,17 @@ class Hardware(object):
         archi_name = None
 
         # Forcing an architecture from its name, using $PLACEMENT_ARCHI
+        # Use it only for debug
         if 'PLACEMENT_ARCHI' in os.environ:
             placement_archi=os.environ['PLACEMENT_ARCHI'].strip()
             if config.has_section(placement_archi)==True:
                 archi_name = placement_archi
 
-        # Forcing an architecture from its partition name, using $PLACEMENT_PARTITION
-        elif 'PLACEMENT_PARTITION' in os.environ:
-            placement_partition=os.environ['PLACEMENT_PARTITION'].strip()
-            if config.has_section('partitions')==True:
-                if config.has_option('partitions',placement_partition)==True:
-                    archi_name = config.get('partitions',placement_partition)
-                
         # Archi not yet guessed, trying to guess from the hostname
-        node = getHostname()
+        node = getHostnameRem()
         if archi_name == None:
             archi_name = Hardware.__hostname2Archi(config, node)
             
-        if archi_name == None:
-            archi_name = Hardware.__hostname2ArchiFromSlurmConf(config,node)
-
         if archi_name == None:
             msg = "ERROR - Could not guess the architecture from the hostname (" + node + ") - ";
             if conf_path==None or not os.path.exists(conf_path):
@@ -153,126 +146,6 @@ class Hardware(object):
                 if host in expandNodeList(o):
                     return config.get('hosts',o)
         return None
-
-    @staticmethod
-    def __hostname2ArchiFromSlurmConf(config, host):
-        """ return the architecture name from the hostname, using slurm.conf
-        Try a regex match between host and the Nodename= hosts
-        If a match is found try a regex match between host and the Nodes= hosts
-        Compare the architecture found with the known architectures, creating a new archi if necessary
-        At last, return the architecture name
-        If no match, return None
-
-        Arguments:
-        config A ConfigParser object
-        host   A hostname
-        """
-
-        try:
-            if 'SLURM_CONF' in os.environ:
-                slurm_conf = os.environ['SLURM_CONF']
-            else:
-                slurm_conf = '/etc/slurm/slurm.conf'
-
-            fh_slurm_conf = open(slurm_conf,'r')
-            slurm_lines   = fh_slurm_conf.readlines()
-            fh_slurm_conf.close()
-            # Remove \n at end of lines !
-            slurm_lines = [l.strip("\n") for l in slurm_lines] 
-
-        except IOError:
-            return
-
-        # Analyze the file, looking for NodeName=
-        for l in slurm_lines:
-            if l=='' or l.startswith('#'):
-                continue
-
-            # Search a matching Nodename= and add an 'slurm' section to config
-            fields = l.split(' ')
-            for f in fields:
-                p = f.partition('=')
-                if p[0].upper()=='NODENAME':
-                    nodename = p[2]
-                    if host in expandNodeList(nodename):
-                        Hardware.__addSlurmSection(config,nodename,fields)
-                        break
-
-            # If a slurm section was created, it's OK (NodeName found)
-            if config.has_section('Slurm'):
-                break
-
-        # If a Slurm section was created, we analyze again the file, looking for PartitionName= and Nodes=
-        # The goal is to read the Shared parameter
-        if config.has_section('Slurm'):
-            for l in slurm_lines:
-                if l=='' or l.startswith('#'):
-                    continue
-
-                fields = l.split(' ')
-                partitionname=''
-                nodes=''
-                shared=''
-                for f in fields:
-                    p = f.partition('=')
-                    k = p[0].upper()
-                    v = p[2]
-                    if k=='PARTITIONNAME':
-                        partitionname=v
-                    elif k=='NODES':
-                        nodes=v
-                    elif k=='SHARED':
-                        shared=v
-
-                # Was it a line to descript the partitions ?
-                if partitionname=='':
-                    continue
-
-                # Is the current host part of this partition ?
-                if host in expandNodeList(nodes):
-                    if shared.upper().startswith('EXCLUSIVE'):
-                        config.set('Slurm','IS_SHARED','False')
-                    else:
-                        config.set('Slurm','IS_SHARED','True')
-
-                    # The architecture is definitively 'Slurm'
-                    return 'Slurm'
-
-        # Configuration not found in slum.conf, or incomplete
-        return None
-
-    @staticmethod
-    def __addSlurmSection(config,nodename,fields):
-        """Parse l and add to config a section called "Slurm" to the config object
-        Add an option called nodename to the section hosts"""
-
-        cores   = 1
-        sockets = 1
-        corespersocket = 1
-        threadspercore = 1
-        realmemory = 0
-        for f in fields:
-            p = f.partition('=')
-            n = p[0].upper()
-            if n == 'SOCKETS':
-                sockets = int(p[2])
-            elif n == 'CORESPERSOCKET':
-                corespersocket = int(p[2])
-            elif n == 'THREADSPERCORE':
-                threadspercore = int(p[2])
-            elif n == 'REALMEMORY':
-                realmemory = int(p[2])
-
-        config.add_section('Slurm')
-        config.set('Slurm','SOCKETS_PER_NODE',sockets)
-        config.set('Slurm','CORES_PER_SOCKET',corespersocket)
-        config.set('Slurm','THREADS_PER_CORE',threadspercore)
-        if threadspercore>1:
-            config.set('Slurm','HYPERTHREADING','1')
-        else:
-            config.set('Slurm','HYPERTHREADING','0')
-        config.set('Slurm','MEM_PER_SOCKET',realmemory // sockets)
-
 
     def getCore2Socket(self,core):
         """ Return the socket number from the core number
@@ -394,6 +267,9 @@ class SpecificHardware(Hardware):
             msg += "ERROR WAS = " + str(e)
             raise PlacementException(msg)
 
+        if self.IS_SHARED:
+            raise PlacementException("NOT SUPPORTED - The property SHARE is NOT SUPPORTED IN THIS RELEASE")
+            
     #
     # The Cores addressing:
     #
@@ -424,7 +300,7 @@ class SpecificHardware(Hardware):
     #     If your machine adopts the FIRST convention, you may REMOVE the parameter
     #     Addressing in placement.conf. 
     #     BUT if your machine adopts the SECOND convention (or still another one), 
-    #     you must SET this parameter to Numactl (onyl value supported),
+    #     you must SET this parameter to Numactl (only value supported),
     #     so that placement will issue a numactl --hardware to fix the addressing.
     #
     #     If you do not know, please set the parameter to Numactl, as it should always work
@@ -469,24 +345,16 @@ class SpecificHardware(Hardware):
 
         rvl = []
         cmd = "numactl --hardware"
-        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        p.wait()
-        # If returncode != 0, the is a problem
-        if p.returncode !=0:
-            msg = "ERROR - "
-            msg += "numactl error - Cannot detect properly the hardware"
-            raise PlacementException(msg)
-        else:
-            output = p.communicate()[0].decode().split('\n')
+        output = runCmd(cmd).split('\n')
 
-            # Looking for lines (in this order !)
-            # node 0 cpus: 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30
-            # node 1 cpus: 1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31
-            sock_cnt=0
-            for l in output:
-                if l.startswith('node '+str(sock_cnt)+ ' cpus:'):
-                    cores = l.partition(':')[2]
-                    rvl.append(list(map(int,cores.strip().split(' '))))
-                    sock_cnt += 1
-            
-            return flatten(rvl)
+        # Looking for lines (in this order !)
+        # node 0 cpus: 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30
+        # node 1 cpus: 1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31
+        sock_cnt=0
+        for l in output:
+            if l.startswith('node '+str(sock_cnt)+ ' cpus:'):
+                cores = l.partition(':')[2]
+                rvl.append(list(map(int,cores.strip().split(' '))))
+                sock_cnt += 1
+        
+        return flatten(rvl)

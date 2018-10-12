@@ -27,9 +27,7 @@
 """
 This software can help you to bind your processes to one or more cpu cores
 
-CALMIP - 2015-2016
-
-WARNING - There is STRONG DEPENDENCY between placement and the SLURM scheduler (http://slurm.schedmd.com)
+CALMIP - 2015-2018
 
 Start with  placement --help 
 
@@ -91,8 +89,7 @@ https://www.calmip.univ-toulouse.fr
 
 import os
 import sys
-import argparse
-import subprocess
+#import argparse
 from itertools import chain,product
 import hardware
 from architecture import *
@@ -103,62 +100,18 @@ from compact import *
 from running import *
 from utilities import *
 from printing import *
-
-# If we run an a remote machine via ssh, not sure the HOSTNAME environment variable is available !
-#####################"from socket import gethostname
+from front import *
+from params import *
 
 def main():
 
-    # Analyzing the command line arguments
-    epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.7.0"
-    parser = argparse.ArgumentParser(description="placement " + ver,epilog=epilog)
-    parser.add_argument('--version', action='version', version='%(prog)s '+ver)
-
-    # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
-    #           They are reminded here for coherency and for correctly writing help
-    group = parser.add_argument_group('checking jobs running on compute nodes (THOSE SWITCHES MUST BE SPECIFIED FIRST)')
-    group.add_argument("--checkme",dest='checkme',action="store_true",help="Check my running job")
-    group.add_argument("--jobid",dest='jobid',action="store_true",help="Check this running job (must be mine, except for sysadmins)")
-    group.add_argument("--host",dest='host',action="store_true",help="Check those hosts, ex: node[10-15] (must execute my jobs, except for sysadmins)")
-
-    group = parser.add_argument_group('Displaying some information')
-    group.add_argument("-I","--hardware",dest='show_hard',action="store_true",help="Show the currently selected hardware and leave")
-    group.add_argument("-E","--documentation", action="store",nargs='?',type=int,default=0,dest="documentation",help="Print the complete documentation and leave")
-    group.add_argument("--environment",action="store_true",dest="show_env",help="Show some useful environment variables and leave")
-    
-    parser.add_argument('tasks', metavar='tasks',nargs='?',default=-1 ) 
-    parser.add_argument('nbthreads', metavar='cpus_per_tasks',nargs='?',default=-1 ) 
-    parser.add_argument("-T","--hyper",action="store_true",default=False,dest="hyper",help='Force use of hyperthreading (False)')
-    parser.add_argument("-P","--hyper_as_physical",action="store_true",default=False,dest="hyper_phys",help="Used ONLY with mode=compact - Force hyperthreading and consider logical cores as supplementary sockets (False)")
-    parser.add_argument("-M","--mode",choices=["compact","scatter","scatter_block"],default="scatter",dest="mode",action="store",help="distribution mode: scatter,scatter_block, compact (scatter)")
-    parser.add_argument("-U","--human",action="store_true",default=False,dest="human",help="Output humanly readable")
-    parser.add_argument("-A","--ascii-art",action="store_true",default=False,dest="asciiart",help="Output geographically readable")
-    parser.add_argument("-R","--srun",action="store_const",dest="output_mode",const="srun",help="Output for srun (default)")
-    parser.add_argument("-N","--numactl",action="store_const",dest="output_mode",const="numactl",help="Output for numactl")
-    parser.add_argument("-Z","--intel_affinity",action="store_const",dest="output_mode",const="kmp",help="Output for intel openmp compiler, try also --verbose")
-    parser.add_argument("-G","--gnu_affinity",action="store_const",dest="output_mode",const="gomp",help="Output for gnu openmp compiler")
-    parser.add_argument("--make_mpi_aware",action="store_true",default=False,dest="makempiaware",help="Can be used with --mpi_aware in the sbatch script BEFORE mpirun, if you work on a SHARED node - EXPERIMENTAL")
-    parser.add_argument("--mpi_aware",action="store_true",default=False,dest="mpiaware",help="For running hybrid codes, implies --numactl. EXPERIMENTAL")
-    parser.add_argument("-C","--check",dest="check",action="store",help="Check the cpus binding of a running process (CHECK is a command name, or a user name or ALL)")
-#    FOR THE DEV: --check=+ ==> look for files called PROCESSES.txt, *.NUMASTAT.txt, gpu.xml
-    parser.add_argument("-H","--threads",action="store_true",default=False,help="With --check: show threads affinity to the cpus on a running process (default if check specified)")
-    parser.add_argument("--summary","--summary",action="store_true",default=False,help="With --check: show summary of core and gpus utilization in a running process, with a warning for pathological cases")
-    parser.add_argument("--show_depop","--show_depop",action="store_true",default=False,help="With --check --summary: show as pathological jobs the depopulated jobs, ie jobs with low cpu use and high memory allocation")
-    parser.add_argument("--cpu_threshold",dest="cpu_thr",action="store",type=int,help="With --check --summary: threshold to consider the cpu use as \"low\" ")
-    parser.add_argument("--mem_threshold",dest="mem_thr",action="store",type=int,help="With --check --summary: threshold to consider the mem allocated as \"high\" ")
-    parser.add_argument("--csv","--csv",action="store_true",default=False,help="With --check: same infos as --summary, but csv formatted and no warning indicators")
-    parser.add_argument("-i","--show_idle",action="store_true",default=False,help="With --threads: show idle threads, not only running")
-    parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
-    parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
-    parser.add_argument("--memory","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
-#    parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")
-    parser.add_argument("-V","--verbose",action="store_true",default=False,dest="verbose",help="more verbose output can be used with --check and --intel_kmp")
-    parser.add_argument("--no_ansi",action="store_true",default=False,dest="noansi",help="Do not use ansi sequences")
-    parser.set_defaults(output_mode="srun")
-    options=parser.parse_args()
+    # options = The options parsed from the command line
+    # fn      = The object FrontNode, encapsulating the job scheduler, if any
+    # args    = The positional arguments
+    (options, fn) = params()
     args=(options.tasks,options.nbthreads)
 
+    
     if options.noansi:
         AnsiCodes.noAnsi()
         
@@ -171,12 +124,18 @@ def main():
         exit(0)
 
     if options.makempiaware==True:
+        options.output_mode="numactl"
         make_mpi_aware()
         exit(0)
 
-    if options.mpiaware==True:
-        options.output_mode="numactl"
-        
+    # If necessary run another exe may be on another host
+    try:
+        if fn.runPlacement() != 0:
+            exit(0)
+    except PlacementException as e:
+        print("PLACEMENT " + str(e), file = sys.stderr)
+        exit(1)
+            
     # Guess the hardware, from the placement.conf file and from environment variables
     hard = '';
     try:
@@ -214,6 +173,8 @@ def main():
         if len(outputs)==0:
             print ("OUPS, No output specified !", file = sys.stderr)
 
+        if 'jobid' in options and options.jobid != None:
+            print("jobid " + str(options.jobid))
         for o in outputs:
             print (o)
             
@@ -322,7 +283,14 @@ def documentation(section):
         if line.startswith(sct):
             flag += 1
         if flag >= 2:
-            print(line, end=' ')
+            if line.startswith('<code>'):
+                print (AnsiCodes.bold())
+                continue
+            if line.startswith('</code>'):
+                print (AnsiCodes.normal())
+                continue
+
+            print(line, end='')
 
     if flag==False:
         print("OUPS - Nothing in documentation, section " + sct + ' !')
@@ -342,7 +310,7 @@ def make_mpi_aware():
     """
 
     # Analyze the output of umactl --show
-    numa_res = subprocess.check_output(["numactl", "--show"]).decode().split("\n")
+    numa_res = runCmd(["numactl", "--show"]).split("\n")
 
     # Look for the line physcpubind: 0 1 ...
     cores=''
@@ -377,6 +345,7 @@ def show_hard(hard):
     """
 
     if hard.NAME == 'Slurm':
+        # This was removed in placement 1.8
         arch = 'Guessed from slurm.conf'
     else:
         arch = hard.NAME
@@ -401,19 +370,17 @@ def show_env():
     msg = "Current environment...\n"
     msg += "WORKING ON HOST " + getHostname() + ', should match one of ' + str(cat[0]) + '\n'
     
-    for v in ['PYTHONPATH','PLACEMENT_ROOT','PLACEMENT_ARCHI','PLACEMENT_PARTITION','SLURM_CONF','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
-              'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK','PLACEMENT_DEBUG']:
+    for v in ['PLACEMENT_PYTHON','PYTHONPATH','PLACEMENT_ROOT','PLACEMENT_ARCHI','SLURM_TASKS_PER_NODE','SLURM_CPUS_PER_TASK',
+              'PLACEMENT_NODE','PLACEMENT_PHYSCPU','PLACEMENT_SLURM_TASKS_PER_NODE','PLACEMENT_SLURM_CPUS_PER_TASK','PLACEMENT_DEBUG','PLACEMENT_DEBUG_1']:
         try:
             msg += v
             msg += ' = '
             msg += AnsiCodes.bold() + os.environ[v] + AnsiCodes.normal()
-            if v=='PLACEMENT_DEBUG':
+            if v=='PLACEMENT_DEBUG_1':
                 msg += AnsiCodes.red_foreground() + AnsiCodes.bold() + ' - SHOULD NOT BE SET IN PRODUCTION !' + AnsiCodes.normal()
         except KeyError:
             msg += '<not specified>'
         if v=='PLACEMENT_ARCHI':
-            msg += ' of ' + str(cat[2])
-        if v=='PLACEMENT_PARTITION':
             msg += ' of ' + str(cat[1])
         msg += '\n'
     print(msg)

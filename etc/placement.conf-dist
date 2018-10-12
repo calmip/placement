@@ -92,37 +92,33 @@ IS_SHARED:        False
 GPUS:             0-1,2-3
 ADDRESSING:       Numactl
 
-#
-# 2/ (optional) The partitions section: useful if you have SLURM installed
-#    we describe our SLURM partitions. 
-#    We consider that a partition is a set of homogeneous nodes
-#    It is thus easy to detect the architecture from the partition name
-#    WARNING - If you remove this section, you MUST fill the hosts section !
-#
-#    Environment variable: PLACEMENT_PARTITION
-#       You can tell placement on what architecture it runs using for example:
-#       export PLACEMENT_ARCHI=mesca
-#
-
-# The SLURM partitions: we 
-[partitions]
-exclusive:				vendor1
-shared:					vendor1_shared
-mesca:					vendor2
+# readthedoc, DO NOT remove this configuration as it may be used
+# by users reading the documentation
+[readthedoc]
+SOCKETS_PER_NODE:  2
+CORES_PER_SOCKET:  18
+HYPERTHREADING:    True
+THREADS_PER_CORE:  2
+MEM_PER_SOCKET:    32768
+IS_SHARED:         False
 
 #
-# 3/ (optional) The hosts section
-#    WARNING - If you remove this section, you MUST fill the partitions section !
-#    First column is a compact list of hosts (same syntax as slurm's compact names)
+# 2/ (REQUIRED) The hosts section
+#    First column is a compact list of hosts (same syntax as slurm's compact names): 
+#    "host[3-5,7-9]" => ['host3','host4','host5','host7','host8','host']
+#
 #    Second column is the name of a hardware architecture
 #
-#    For each line (blank lines or # are skipped), the first name is compared to the real machine name
-#    and if a match is found the second name is returned, without further checking
-#
-#    The machine detected with getHostname() (cf. utilities.py)
+#    For each line (blank lines or # are skipped):
+#        -The compact list is expanded to a list of hostnames (see above)
+#        -If the machine name (returned by getHostname(), see utilities.py) is in the list 
+#         we return the second column (ie the architecture)
 #
 
 [hosts]
+# If you are in a hurry
+HOSTNAME: vendor1
+
 # The cluster compute nodes:
 clustercomp[0-96]:			vendor1
 

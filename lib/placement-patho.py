@@ -27,7 +27,6 @@
 import os
 import argparse
 import sys
-import subprocess
 import time
 from utilities import *
 import hardware
@@ -59,7 +58,7 @@ def main():
 	# Analysing the command line arguments
 	#epilog = ""
 	ver="1.5.0"
-	parser = argparse.ArgumentParser(version=ver,description="placement-mon " + ver)
+	parser = argparse.ArgumentParser(description="placement-mon " + ver)
 	group = parser.add_argument_group('detecting pathological jobs on compute nodes')
 	group.add_argument("--pathological",dest='patho',action="store_true",help="required")
 	group.add_argument("--time",dest='time',action='store',type=int,default=SLEEPTIMEMIN,help="Sleeping time between two measures")
@@ -202,8 +201,8 @@ def callPlacementSummary(jobids,options):
 				cmd.append('--show_depop')
 
 			#print(cmd)				
-			out=subprocess.check_output(cmd).decode().rstrip('\n')
-		except subprocess.CalledProcessError:
+			out=runCmd(cmd).rstrip('\n')
+		except PlacementException:
 			pass
 		if out.endswith('W'):
 			output[j] = out
@@ -223,7 +222,7 @@ def callPlacementSummary(jobids,options):
 #
 def detectRunningJobs():
 	cmd = SQUEUECMD
-	out=subprocess.check_output(cmd).decode().split('\n')
+	out = runCmd(cmd).split('\n')
 	return out
 
 if __name__ == "__main__":
