@@ -93,6 +93,8 @@ import argparse
 from exception import *
 from front import *
 
+PLACEMENT_VERSION = "1.8.0"
+
 def params():
     """Parse the command line and return a tuple:
        - options (the result of the parse)
@@ -107,9 +109,8 @@ def params():
         
     # Analyzing the command line arguments
     epilog = 'Do not forget to check your environment variables (--environ) and the currently configured hardware (--hard) !'
-    ver="1.7.0"
-    parser = argparse.ArgumentParser(description="placement " + ver,epilog=epilog)
-    parser.add_argument('--version', action='version', version='%(prog)s '+ver)
+    parser = argparse.ArgumentParser(description="placement " + PLACEMENT_VERSION,epilog=epilog)
+    parser.add_argument('--version', action='version', version='%(prog)s '+PLACEMENT_VERSION)
 
     # WARNING - The arguments of this group are NOT USED by the python program, ONLY by the bash wrapper !
     #           They are reminded here for coherency and for correctly writing help
