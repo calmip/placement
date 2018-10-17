@@ -177,6 +177,11 @@ class RunningMode(TasksBinding):
                 if self.hardware.SOCKETS_PER_NODE != len(ttl):
                     raise PlacementException("INTERNAL ERROR - numastat returns " + str(len(ttl)) + " columns, but we have " + SOCKETS_PER_NODE + " sockets !")
                 self.threads_bound[pid]['numamem']=ttl
+                
+            # Disable other checks - If we do not have permission for first process, it will be the same for the others
+            else:
+                self.withMemory = False
+                break
 
     def __identProcesses(self):
         """Identify the interesting processes together with their threads, from a set of commands ps
