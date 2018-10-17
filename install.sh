@@ -126,12 +126,12 @@ echo "That's all for me, folks ! "
 echo "==========================="
 
 echo "Now, you should do: "
-echo "     cp $BIN/placement-dist /bin/directory/placement"
-echo "     chmod a+rx /bin/directory/placement"
-echo "     edit /bin/directory/placement to be sure all is OK (the python version for example)"
+echo "     cd $PLACEMENT_ROOT/bin"
+echo "     cp placement-dist placement"
+echo "     chmod a+rx placement"
+echo "     edit placement to be sure all is OK (the python version for example)"
 echo ""
-echo "     cp $ETC/placement.conf-dist $ETC/placement.conf"
+echo "     cd $PLACEMENT_ROOT/etc"
+echo "     cp placement.conf-dist placement.conf"
 echo "     edit $ETC/placement.conf to configure placement"
-
-
 
