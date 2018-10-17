@@ -110,38 +110,37 @@ class Matrix(object):
         rvl += '\n'
         return rvl
 
-    def getNumamem(self,sockets_mem,mem_proc=True):
+    def getNumamem(self,sockets_mem):
         """ Return a line describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket 
-            if mem_dist==False we show the memory occupation relative to each memory socket
-            if mem_dist==True  we show the %age memory occupation on each socket, related to the process memory
-            This difference may be important is the memory footprint is low
+            We show the memory occupation relative to each memory socket
         """
         
-        mem_pid_socket = self.__getMemPidSocket(sockets_mem,mem_proc)
+        mem_pid_socket = self.__getMemPidSocket(sockets_mem)
 
         h_header='   DISTRIBUTION of the MEMORY among the sockets '
         
         rvl =  h_header
         rvl += "\n"
-        #rvl += "                ";
-        #rvl += self.__hard.SOCKETS_PER_NODE*(self.__hard.CORES_PER_SOCKET+1)*' '
-        #rvl += "  DISTRIBUTION\n"
         
         tags = list(mem_pid_socket.keys())
-        tags.sort()
-        for tag in tags:
-            val = mem_pid_socket[tag]
-            rvl += tag
-            rvl += ' ' * 15;
-            for v in val:
-                rvl += getGauge(v,self.__hard.CORES_PER_SOCKET)
-                rvl += ' '
-            rvl += '  '
-            for v in val:
-                rvl += str(v)
-                rvl += '%  '
-            
-            rvl += "\n"
+        
+        if len(tags)>0:
+            tags.sort()
+            for tag in tags:
+                val = mem_pid_socket[tag]
+                rvl += tag
+                rvl += ' ' * 15;
+                for v in val:
+                    rvl += getGauge(v,self.__hard.CORES_PER_SOCKET)
+                    rvl += ' '
+                rvl += '  '
+                for v in val:
+                    rvl += str(v)
+                    rvl += '%  '
+                
+                rvl += "\n"
+        else:
+            rvl += "    WARNING - NO INFORMATION COLLECTED - May be a PERMISSION problem ?"
 
         rvl += "\n"
 
@@ -209,33 +208,28 @@ class Matrix(object):
             i += 1
         return rvl
 
-    def __getMemPidSocket(self,sockets_mem,mem_proc):
+    def __getMemPidSocket(self,sockets_mem):
         """ Compute a NEW dict of arrays: 
                  - Key is a process tag
                  - Value is an array: 
-                         if mem_proc==False: the quantity of memory used per socket, in %/memory atached to the socket. 
-                                            0 if permission problem
-                         if mem_proc==True:  the distribution of memory among sockets, in %. 
-                                            0 if permission problem """
-
+                         the quantity of memory used per socket, in %/memory attached to the socket. 
+        """
+        
         # Create and fill the processes dictionary with absolute values        
         processes = {}
-        mem_p_proc= {} # key = tag, val = the total mem used by this process
-        for sm in sockets_mem:
-            for tag,val in sm.items():
-                if not tag in processes:
-                    processes[tag] = []
-                if not tag in mem_p_proc:
-                    mem_p_proc[tag] = 0
-                processes[tag].append(val)
-                mem_p_proc[tag] += val
-        
-        if mem_p_proc[tag]!=0:
+        if len(sockets_mem)>0:
+            mem_p_proc= {} # key = tag, val = the total mem used by this process
+            for sm in sockets_mem:
+                for tag,val in sm.items():
+                    if not tag in processes:
+                        processes[tag] = []
+                    if not tag in mem_p_proc:
+                        mem_p_proc[tag] = 0
+                    processes[tag].append(val)
+                    mem_p_proc[tag] += val
+            
             for tag,val in processes.items():
-                if mem_proc:
-                    processes[tag] = [int(100.0*x/mem_p_proc[tag]) for x in val]
-                else:
-                    processes[tag] = [int(100.0*x/self.__hard.MEM_PER_SOCKET) for x in val]
+                processes[tag] = [int(100.0*x/self.__hard.MEM_PER_SOCKET) for x in val]
                     
         return processes
 

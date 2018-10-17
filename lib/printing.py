@@ -319,12 +319,8 @@ class PrintingForMatrixThreads(PrintingFor):
         self.__sorted_processes_cores = True
     def ShowIdleThreads(self):
         self.__show_idle = True
-
-    # mem_proc if True, display memory occupation/sockets relative to the process memory
-    #          if False, display memory occupation/sockets relative to the socket memory
-    def PrintNumamem(self,mem_proc=True):
+    def PrintNumamem(self):
         self.__print_numamem = True
-        self.__mem_proc = mem_proc
 
     def __str__(self):
         '''Convert to a string (-> print) '''
@@ -448,11 +444,14 @@ class PrintingForMatrixThreads(PrintingFor):
         for s in sockets:
             sockets_mem.append({})
 
-        for pid in threads_bound:
-            tag     = threads_bound[pid]['tag']
-            numamem = threads_bound[pid]['numamem']
-            for s in sockets:
-                sockets_mem[s][tag]=numamem[s]
+        try:
+            for pid in threads_bound:
+                tag     = threads_bound[pid]['tag']
+                numamem = threads_bound[pid]['numamem']
+                for s in sockets:
+                    sockets_mem[s][tag]=numamem[s]
+        except:
+            pass
 
         return sockets_mem
 

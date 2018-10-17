@@ -163,18 +163,20 @@ class RunningMode(TasksBinding):
                 tmp.pop()
             #print '\n'.join(tmp)
 
-            # Keep only last line (Total=)
+            # Keep only last line (should Total=)
             ttl = tmp[-1].split()
 
-            # remove first and last columns
-            ttl.pop()
-            ttl.pop(0)
-            ttl = list(map(float,ttl))
-
-            # We must have same number of numbers / sockets !
-            if self.hardware.SOCKETS_PER_NODE != len(ttl):
-                raise PlacementException("INTERNAL ERROR - numastat returns " + str(len(ttl)) + " columns, but we have " + SOCKETS_PER_NODE + " sockets !")
-            self.threads_bound[pid]['numamem']=ttl
+            # If the first word does not start with Total, we have a problem ! (probably a permission problem)
+            if ttl[0].lower().startswith('total'):
+                # remove first and last columns
+                ttl.pop()
+                ttl.pop(0)
+                ttl = list(map(float,ttl))
+    
+                # We must have same number of numbers / sockets !
+                if self.hardware.SOCKETS_PER_NODE != len(ttl):
+                    raise PlacementException("INTERNAL ERROR - numastat returns " + str(len(ttl)) + " columns, but we have " + SOCKETS_PER_NODE + " sockets !")
+                self.threads_bound[pid]['numamem']=ttl
 
     def __identProcesses(self):
         """Identify the interesting processes together with their threads, from a set of commands ps
