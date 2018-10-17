@@ -93,7 +93,7 @@ import argparse
 from exception import *
 from front import *
 
-PLACEMENT_VERSION = "1.8.0"
+PLACEMENT_VERSION = "1.8.1"
 
 def params():
     """Parse the command line and return a tuple:
@@ -149,7 +149,7 @@ def params():
     parser.add_argument("--mem_threshold",dest="mem_thr",action="store",type=int,help="With --check --summary: threshold to consider the mem allocated as \"high\" ")
     parser.add_argument("--csv","--csv",action="store_true",default=False,help="With --check: same infos as --summary, but csv formatted and no warning indicators")
     parser.add_argument("-i","--show_idle",action="store_true",default=False,help="With --threads: show idle threads, not only running")
-    parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=False,help="With --threads: sort the threads in core numbers rather than pid")
+    parser.add_argument("-t","--sorted_threads_cores",action="store_true",default=True,help="With --threads: sort the threads in core numbers rather than pid")
     parser.add_argument("-p","--sorted_processes_cores",action="store_true",default=False,help="With --threads: sort the processes in core numbers rather than pid")
     parser.add_argument("--memory","--memory",action="store_true",default=False,help="With --threads: show memory occupation of each process / socket")
 #    parser.add_argument("-K","--taskset",action="store_true",default=False,help="Do not use this option, not implemented and not useful")

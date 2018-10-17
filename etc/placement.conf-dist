@@ -117,7 +117,7 @@ IS_SHARED:         False
 
 [hosts]
 # If you are in a hurry
-HOSTNAME: vendor1
+HOSTNAME: readthedoc
 
 # The cluster compute nodes:
 clustercomp[0-96]:			vendor1
