@@ -25,7 +25,7 @@
 #
 
 import os
-from utilities import runCmd,runCmdNoOut,getHostname
+from utilities import runCmd,runCmdNoOut,getHostname,expandNodeList
 from slurm import *
 from exception import *
 
@@ -134,8 +134,12 @@ class FrontNode(object):
 
         # The host switch:
         #     Translate to a list of hosts and call placement on each host
+        #     We try using the nodeset of the job scheduler, but if not found we go back to expandNodeList (utilities.py)
         if self.options.host:
-            hosts = self.__sched.nodesetToHosts(self.options.host)
+            try:
+                hosts = self.__sched.nodesetToHosts(self.options.host)
+            except AttributeError:
+                hosts = expandNodeList(self.options.host)
             
             # We check everything on each host
             self.argv.append('--check')
