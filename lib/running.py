@@ -92,9 +92,20 @@ class RunningMode(TasksBinding):
             except:
                 return
         else:
+            xml_header = '<?xml version="1.0" ?>\n<!DOCTYPE nvidia_smi_log'
             cmd = 'nvidia-smi -q -x'
-            tmp = runCmd(cmd)
-            tree = et.fromstring(tmp)
+            xml = runCmd(cmd)
+
+            # May be there are some lines before the xml (if the user has some stuff in its .bashrc)
+            # So we detect and keep only from the first xml line
+            if not xml.startswith(xml_header):
+                start_xml = xml.find(xml_header)
+                if start_xml == -1:
+                    raise PlacementException("ERROR - bad xml header returned by nvidia-smi")
+                else:
+                    xml = xml[start_xml:]
+
+            tree = et.fromstring(xml)
 
         # '0-1,2-3' ==> ['0-1','2-3'] ==> [[0,1],[2,3]]
         gpus_bound_tmp = []
