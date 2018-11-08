@@ -212,7 +212,7 @@ class Matrix(object):
         """ Compute a NEW dict of arrays: 
                  - Key is a process tag
                  - Value is an array: 
-                         the quantity of memory used per socket, in %/memory attached to the socket. 
+                         the quantity of memory used per socket, in %/total memory used by the process
         """
         
         # Create and fill the processes dictionary with absolute values        
@@ -229,7 +229,13 @@ class Matrix(object):
                     mem_p_proc[tag] += val
             
             for tag,val in processes.items():
-                processes[tag] = [int(100.0*x/self.__hard.MEM_PER_SOCKET) for x in val]
+                sum=0.0
+                for x in val:
+                    sum += x
+                if sum!=0:
+                    processes[tag] = [int(100.0*x/sum) for x in val]
+                else:
+                    processes[tag] = [0 for x in val]
                     
         return processes
 
