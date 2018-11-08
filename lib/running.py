@@ -172,7 +172,8 @@ class RunningMode(TasksBinding):
                 cmd = 'numastat ' + str(pid)
                 tmp = runCmd(cmd).split('\n')
                 tmp.pop()
-            #print '\n'.join(tmp)
+            #print ('\n'.join(tmp))
+            #print(tmp)
 
             # Keep only last line (should Total=)
             ttl = tmp[-1].split()
