@@ -47,7 +47,7 @@ class Architecture(object):
         hardware     : An object of class Hardware, descriving the hardware limits of the system
         tasks        : The number of tasks (= processes)
         cpus_per_task: The number of cpus dedicated to each process (generally the number of threads)
-        hyper        : If False, do not used hyperthreading, even if allowed by the hardware
+        hyper        : If False, do not use hyperthreading, even if allowed by the hardware
         sockets_per_node : Should be < hardware.SOCKETS_PER_NODE - Not used yet
 
         Attributes:
@@ -192,11 +192,15 @@ class Shared(Architecture):
         # generating m_cores from l_sockets and physcpubind
         for s in l_sockets:
             cores={}
-            for c in range(self.cores_per_socket):
-                c1 = c + s*self.cores_per_socket
-                cores[c1] = c1 in physcpubind
+            for t in range(self.threads_per_core):
+                for c in range(self.cores_per_socket):
+                    c1 = c + s*self.cores_per_socket + t*self.cores_per_node
+                    cores[c1] = c1 in physcpubind
             m_cores[s] = cores
 
+        #print (l_sockets)
+        #print (m_cores)
+        
         # Checking there is not incoherency
         if len(l_sockets) > self.sockets_per_node:
             msg  = "ERROR - sockets_per_node=" + str(self.sockets_per_node)
@@ -205,9 +209,9 @@ class Shared(Architecture):
             raise PlacementException(msg)
 
         for s in l_sockets:
-            if len(m_cores[s]) != self.cores_per_socket:
+            if len(m_cores[s]) != self.cores_per_socket*self.threads_per_core:
                 msg  = "ERROR - cores_per_socket=" + str(self.cores_per_socket)
-                msg += " should be equal to " +  str(m_cores[s])
+                msg += " should be equal to " +  str(len(m_cores[s]))
                 raise PlacementException(msg)
 
         return [l_sockets,m_cores]
