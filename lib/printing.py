@@ -350,8 +350,10 @@ class PrintingForMatrixThreads(PrintingFor):
         archi         = tasks_binding.archi
         threads_bound = tasks_binding.threads_bound
         gpus_info     = tasks_binding.gpus_info
+
+        print (threads_bound)
         
-        # For each task in threads_bound, compute the ppsr_min and ppsr_max, ie the min and max physical cores
+        # 1/ For each task in threads_bound, compute the ppsr_min and ppsr_max, ie the min and max physical cores
         ppsr_min = 999999
         ppsr_max = 0
         for pid in list(threads_bound.keys()):
@@ -366,6 +368,7 @@ class PrintingForMatrixThreads(PrintingFor):
                     p_ppsr_min=ppsr
                 if ppsr_max<ppsr:
                     ppsr_max=ppsr
+                
                     
             threads_bound[pid]['ppsr_min'] = p_ppsr_min
 
@@ -407,10 +410,11 @@ class PrintingForMatrixThreads(PrintingFor):
                     S = '.'
                 else:
                     S = '?'
+
                 if 'mem' in thr:
-                    rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['mem'])
+                    rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['mem'],threads[tid]['sid'])
                 else:
-                    rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'])
+                    rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['sid'])
 
         # If wanted, print 1 line / process about memory allocation
         if self.__print_numamem:
