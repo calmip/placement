@@ -225,7 +225,7 @@ class RunningMode(TasksBinding):
                 
         # Build a complicated command ps
         else:
-            cmd = 'ps --no-headers -m -o ruser:15 -o %p -o tid -o psr -o %c -o state -o %cpu -o %mem '
+            cmd = 'ps --no-headers -m -o ruser:15 -o sid -o pid -o tid -o psr -o %c -o state -o %cpu -o %mem '
             
             # --check=ALL ==> No selection among the processes
             if self.path == 'ALL':
@@ -275,40 +275,52 @@ class RunningMode(TasksBinding):
         # This output is a mixture of lines representing a processus OR a thread
         # BUT For each process, the first line represents the process itself AND the 1st thread, 
         # following lines represent the other threads
+
+        # The processus - key = pid, val = A dict (see processus_courant under)
         processus         = {}
+        
+        # The current process - key = processus properties, val = The property (ex: pid, sid, etc)
         processus_courant = {}
-        process_nb = 0
+        
+        # The session id - key = session id, val = A list of pid (the processes belonging to the group)
+        sids             = {}
+        
         for l in ps_res:
                
-            # Detecting processus
-            mp=re.match('([a-z0-9]+) +(\d+) +- +- +([^ ]+) +- +[0-9.]+ +([0-9.]+)$',l)
+            # Detecting the processes
+            mp=re.match('([a-z0-9]+) +(\d+) +(\d+) +- +- +([^ ]+) +- +[0-9.]+ +([0-9.]+)$',l)
             if mp != None:
 
                 # If there is at least 1 active thread in the current process, it is tagged and saved
                 if 'R' in processus_courant:
-                    processus_courant['tag'] = numTaskToLetter(process_nb)
-                    process_nb += 1
-                    processus[processus_courant['pid']] = processus_courant
+                    pid  = processus_courant['pid']
+                    sid = processus_courant['sid']
+                    processus[pid] = processus_courant
+                    if not sid in sids.keys():
+                        sids[sid] = []
+                    sids[sid].append(pid)
                     
-                # Reinit the current processus dictionary, as we start a new process
+                # Reinit the current processes dictionary, as we start a new process
                 processus_courant={}
                 user= mp.group(1)
-                pid = int(mp.group(2))
-                cmd = mp.group(3)
-                mem = float(mp.group(4))
+                sid= int(mp.group(2))
+                pid = int(mp.group(3))
+                cmd = mp.group(4)
+                mem = float(mp.group(5))
                 if cmd in self.__processus_reserves:
                     continue
                 if user in self.__users_reserves:
                     continue
 
                 processus_courant['user']=user
+                processus_courant['sid']=sid
                 processus_courant['pid']=pid
                 processus_courant['cmd']=cmd
                 processus_courant['mem']=mem
                 continue
 
             # Detecting threads
-            mt = re.match('[a-z0-9]+ +- +(\d+) +(\d+) +- +([A-Z]) +([0-9.]+)',l)
+            mt = re.match('[a-z0-9]+ +- +- +(\d+) +(\d+) +- +([A-Z]) +([0-9.]+)',l)
             if mt != None:
                 # If no current process, skip this line. However this should not happen
                 if len(processus_courant)==0:
@@ -330,20 +342,36 @@ class RunningMode(TasksBinding):
                 thread_courant['cpu'] = cpu                                     # % cpu use
                 thread_courant['state'] = state                                 # State of the thrad (running etc)
                 thread_courant['mem'] = processus_courant['mem']                # % mem use
+                thread_courant['sid'] = processus_courant['sid']               # The sid
 
                 if ('threads' in processus_courant)== False:
                     processus_courant['threads'] = {}
 
                 processus_courant['threads'][tid] = thread_courant
 
-        # If there is at least 1 active thread in the current process when xiting from the loop, it is tagged and saved
+        # If there is at least 1 active thread in the current process when exiting from the loop, it is tagged and saved
         if 'R' in processus_courant:
-            processus_courant['tag'] = numTaskToLetter(process_nb)
-            processus[processus_courant['pid']] = processus_courant
+            pid  = processus_courant['pid']
+            sid = int(processus_courant['sid'])
+            processus[pid] = processus_courant
+            if not sid in sids.keys():
+                sids[sid] = []
+            sids[sid].append(pid)
                 
+        # Sort the processes to tag them: The sort order is:
+        #   1/ sid asc
+        #   2/ pid asc
+        #
+        
+        p_cnt = 0
+        for sid in sorted(sids):
+            sess = sids[sid]
+            for pid in sorted(sess):
+                processus[pid]['tag'] = numTaskToLetter(p_cnt)
+                p_cnt += 1
+        
         self.processus = processus
         self.pid = sorted(processus.keys())
-
 
     def __buildArchi(self,tasks_bound):
         """ Guess architecture from observed tasks_bound"""
@@ -398,14 +426,25 @@ class RunningMode(TasksBinding):
 
     def PrintingForVerbose(self):
         """Return some verbose information"""
-
-        rvl  = "TASK  ==> PID (USER,CMD) ==> AFFINITY\n"
-        rvl += "=====================================\n"
+        
+        fmt  = '{:7d}'
+        rvl  = "SESSION TASK ==>     PID (USER,CMD) ==> AFFINITY\n"
+        rvl += "================================================\n"
+        last_sid = 0
         threads_bound = self.threads_bound
         for (pid,proc) in sorted(iter(threads_bound.items()),key=lambda k_v:(k_v[1]['tag'],k_v[0])):
-            rvl += proc['tag'] + '     '
+            if last_sid==0:
+                last_sid = proc['sid']
+                rvl += fmt.format(proc['sid'])
+            elif last_sid != proc['sid']:
+                last_sid = proc['sid']
+                rvl += fmt.format(proc['sid'])
+            else:
+                rvl += '       '
+                
+            rvl += '    ' + proc['tag']
             rvl += ' ==> '
-            rvl += str(pid)
+            rvl += fmt.format(pid)
             rvl += ' ('
             rvl += proc['user']
             rvl += ','
