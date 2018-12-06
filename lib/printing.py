@@ -351,8 +351,6 @@ class PrintingForMatrixThreads(PrintingFor):
         threads_bound = tasks_binding.threads_bound
         gpus_info     = tasks_binding.gpus_info
 
-        print (threads_bound)
-        
         # 1/ For each task in threads_bound, compute the ppsr_min and ppsr_max, ie the min and max physical cores
         ppsr_min = 999999
         ppsr_max = 0
@@ -372,6 +370,15 @@ class PrintingForMatrixThreads(PrintingFor):
                     
             threads_bound[pid]['ppsr_min'] = p_ppsr_min
 
+        # 2/ Create a copy of threads_bound, to sid_threads_bound
+        sid_threads_bound = {}
+        for pid in list(threads_bound.keys()):
+            proc = threads_bound[pid]
+            sid = proc['sid']
+            if not sid in sid_threads_bound:
+                sid_threads_bound[sid] = {}
+            sid_threads_bound[sid][pid] = proc
+
         # If memory printing, or gpu_info, consider the whole machine
         if self.__print_numamem or gpus_info != None:
             ppsr_min = 0
@@ -385,36 +392,38 @@ class PrintingForMatrixThreads(PrintingFor):
         # Print a second header line
         rvl += m.getHeader1()
 
-        # Printing the body
-        # Sort threads_bound, on processes or on threads
-        if self.__sorted_processes_cores:
-            sorted_processes = sorted(iter(threads_bound.items()),key=lambda k_v1:(k_v1[1]['ppsr_min'],k_v1[0]))
-        else:
-            sorted_processes = sorted(threads_bound.items())
-
-        # Print one line/thread
-        for (pid,thr) in sorted_processes:
-            l = threads_bound[pid]['tag']
-            threads = threads_bound[pid]['threads']
-            if self.__sorted_threads_cores:
-                sorted_threads = sorted(iter(threads.items()),key=lambda k_v:(k_v[1]['ppsr'],k_v[0]))
+        # Printing the body, sorting by sid
+        for sid in sorted(list(sid_threads_bound.keys())):
+            threads_bound = sid_threads_bound[sid]
+            # Sort threads_bound, on processes or on threads
+            if self.__sorted_processes_cores:
+                sorted_processes = sorted(iter(threads_bound.items()),key=lambda k_v1:(k_v1[1]['ppsr_min'],k_v1[0]))
             else:
-                sorted_threads = sorted(threads.items())
-
-            for (tid,thr) in sorted_threads:
-                if not self.__show_idle and threads[tid]['state'] != 'R':
-                    continue
-                if thr['state'] == 'R':
-                    S = l
-                elif thr['state'] == 'S':
-                    S = '.'
+                sorted_processes = sorted(threads_bound.items())
+    
+            # Print one line/thread
+            for (pid,thr) in sorted_processes:
+                l = threads_bound[pid]['tag']
+                threads = threads_bound[pid]['threads']
+                if self.__sorted_threads_cores:
+                    sorted_threads = sorted(iter(threads.items()),key=lambda k_v:(k_v[1]['ppsr'],k_v[0]))
                 else:
-                    S = '?'
-
-                if 'mem' in thr:
-                    rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['mem'],threads[tid]['sid'])
-                else:
-                    rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['sid'])
+                    sorted_threads = sorted(threads.items())
+    
+                for (tid,thr) in sorted_threads:
+                    if not self.__show_idle and threads[tid]['state'] != 'R':
+                        continue
+                    if thr['state'] == 'R':
+                        S = l
+                    elif thr['state'] == 'S':
+                        S = '.'
+                    else:
+                        S = '?'
+                        
+                    if 'mem' in thr:
+                        rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['mem'],thr['sid'])
+                    else:
+                        rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],thr['sid'])
 
         # If wanted, print 1 line / process about memory allocation
         if self.__print_numamem:

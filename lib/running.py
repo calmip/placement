@@ -430,10 +430,18 @@ class RunningMode(TasksBinding):
         fmt  = '{:7d}'
         rvl  = "SESSION TASK ==>     PID (USER,CMD) ==> AFFINITY\n"
         rvl += "================================================\n"
+        last_sid = 0
         threads_bound = self.threads_bound
         for (pid,proc) in sorted(iter(threads_bound.items()),key=lambda k_v:(k_v[1]['tag'],k_v[0])):
-            # starting a new session id = empty line
-            rvl += fmt.format(proc['sid'])
+            if last_sid==0:
+                last_sid = proc['sid']
+                rvl += fmt.format(proc['sid'])
+            elif last_sid != proc['sid']:
+                last_sid = proc['sid']
+                rvl += fmt.format(proc['sid'])
+            else:
+                rvl += '       '
+                
             rvl += '    ' + proc['tag']
             rvl += ' ==> '
             rvl += fmt.format(pid)
