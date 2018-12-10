@@ -394,17 +394,17 @@ class PrintingForMatrixThreads(PrintingFor):
 
         # Printing the body, sorting by sid
         for sid in sorted(list(sid_threads_bound.keys())):
-            threads_bound = sid_threads_bound[sid]
-            # Sort threads_bound, on processes or on threads
+            local_threads_bound = sid_threads_bound[sid]
+            # Sort local_threads_bound, on processes or on threads
             if self.__sorted_processes_cores:
-                sorted_processes = sorted(iter(threads_bound.items()),key=lambda k_v1:(k_v1[1]['ppsr_min'],k_v1[0]))
+                sorted_processes = sorted(iter(local_threads_bound.items()),key=lambda k_v1:(k_v1[1]['ppsr_min'],k_v1[0]))
             else:
-                sorted_processes = sorted(threads_bound.items())
+                sorted_processes = sorted(local_threads_bound.items())
     
             # Print one line/thread
             for (pid,thr) in sorted_processes:
-                l = threads_bound[pid]['tag']
-                threads = threads_bound[pid]['threads']
+                l = local_threads_bound[pid]['tag']
+                threads = local_threads_bound[pid]['threads']
                 if self.__sorted_threads_cores:
                     sorted_threads = sorted(iter(threads.items()),key=lambda k_v:(k_v[1]['ppsr'],k_v[0]))
                 else:
