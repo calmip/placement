@@ -58,7 +58,9 @@ class Matrix(object):
             self.__ppsr_min = self.__hard.getSocket2CoreMin(self.__socket_min)
             self.__ppsr_max = self.__hard.getSocket2CoreMax(self.__socket_max)
 
+        # Used by getLine
         self.__last_pid = 0
+        self.__last_sid = 0
 
     def getHeader(self,h_header=15*' '):
         '''Return a header with psr nb displayed on 3 lines (must be < 999 !)'''
@@ -106,12 +108,11 @@ class Matrix(object):
         rvl       += n_blanks*' '
 
         # Right column label
-        rvl += '  %CPU %MEM'
-        rvl += '\n'
+        rvl += '  %CPU %MEM  SESS\n'
         return rvl
 
     def getNumamem(self,sockets_mem):
-        """ Return a line describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket 
+        """ Return lines describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket 
             We show the memory occupation relative to each memory socket
         """
         
@@ -123,7 +124,7 @@ class Matrix(object):
         rvl += "\n"
         
         tags = list(mem_pid_socket.keys())
-        
+
         if len(tags)>0:
             tags.sort()
             for tag in tags:
@@ -214,7 +215,7 @@ class Matrix(object):
                  - Value is an array: 
                          the quantity of memory used per socket, in %/total memory used by the process
         """
-        
+
         # Create and fill the processes dictionary with absolute values        
         processes = {}
         if len(sockets_mem)>0:
@@ -239,7 +240,7 @@ class Matrix(object):
                     
         return processes
 
-    def getLine(self,pid,tid,ppsr,S,H,cpu=100,mem='-'):
+    def getLine(self,pid,tid,ppsr,S,H,cpu=100,mem='-',sid=0):
         """ Return a line full of '.' and a letter on the psr coloumn, plus cpu occupation at end of line"""
 
         if (ppsr<self.__ppsr_min or ppsr>self.__ppsr_max):
@@ -249,11 +250,22 @@ class Matrix(object):
         fmt1  = '{:6d}'
         fmt2  = '{:5.1f}'
         pre = H[0] + ' '
+        post= ''
+        
+        # Print the pid only for the first thread
         if (pid != self.__last_pid):
             self.__last_pid = pid
             pre += fmt1.format(pid) + ' ' + fmt1.format(tid)
+            # Print the tid only for the first process of the session
+            if (sid != self.__last_sid):
+                self.__last_sid = sid
+                post = fmt1.format(sid)
+            else:
+                post = ''
         else:
             pre += 7 * ' ' + fmt1.format(tid)
+            post = ''
+        
 
         addr  = self.__hard.getAddr2Core(ppsr)
         socket= self.__hard.getCore2Socket(addr)
@@ -271,8 +283,8 @@ class Matrix(object):
             cpumem += '    -'
         else:
             cpumem += fmt2.format(mem)
-
-        return pre + ' ' + debut + AnsiCodes.red_foreground() + S[0] + AnsiCodes.normal() + fin + cpumem + '\n'
+            
+        return pre + ' ' + debut + AnsiCodes.red_foreground() + S[0] + AnsiCodes.normal() + fin + cpumem + post + '\n'
 
     def __blankBeforeCore(self,socket,core):
         space = '.'
