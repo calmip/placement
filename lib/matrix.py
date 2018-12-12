@@ -112,7 +112,7 @@ class Matrix(object):
         return rvl
 
     def getNumamem(self,sockets_mem):
-        """ Return a line describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket 
+        """ Return lines describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket 
             We show the memory occupation relative to each memory socket
         """
         
@@ -124,7 +124,7 @@ class Matrix(object):
         rvl += "\n"
         
         tags = list(mem_pid_socket.keys())
-        
+
         if len(tags)>0:
             tags.sort()
             for tag in tags:
@@ -215,7 +215,7 @@ class Matrix(object):
                  - Value is an array: 
                          the quantity of memory used per socket, in %/total memory used by the process
         """
-        
+
         # Create and fill the processes dictionary with absolute values        
         processes = {}
         if len(sockets_mem)>0:
