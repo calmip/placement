@@ -63,6 +63,7 @@ class RunningMode(TasksBinding):
         self.tasks_bound   = None
         self.threads_bound = None
         self.gpus_info     = None
+        self.gpus_processes= set()
         self.archi = None
         self.cpus_per_task = 0
         self.tasks = 0
@@ -75,13 +76,13 @@ class RunningMode(TasksBinding):
 
     def __identGpus(self):
         """ Call nvidia-smi to get gpus status
-            Store status in a DATA STRUCTURE:
+            Store status in a DATA STRUCTURE called self.gpus_info
             gpus_bound = A list of lists.
                          1st level of list = The socket numbers of the node
                          2nd level of lists= The gpus (objects) attached to each socket
             gpu        = A dictionary describing the gpu utilization (built from nvidia-smi -q -x output)"""
 
-        gpus = self.archi.gpus
+        gpus = self.hardware.GPUS
         if gpus == '':
             return
             
@@ -156,8 +157,21 @@ class RunningMode(TasksBinding):
                 sg.append(gpu)
             gpus_bound.append(sg)
 
-        self.gpus_info = gpus_bound                
-        # print ("gpus_info =  " + str(self.gpus_info))
+        self.gpus_info = gpus_bound
+        #print ("self.gpus_info =  " + str(self.gpus_info))
+        
+        # Collect the processes detected by the gpus, if any
+        # They should be known by the cpu, but may be not in state 'R'
+        for socket in self.gpus_info:
+            #print("----> " + str(socket))
+            for gpus in socket:
+                a = gpus['PS']
+                for p in a:
+                    self.gpus_processes.add(p[0])
+        
+        #print('self.gpus_processes='+str(self.gpus_processes))
+         
+
                 
     def __identNumaMem(self):
         """ Call numastat for each pid of threads_bound, and keep the returned info inside threads_bound"""
@@ -213,6 +227,7 @@ class RunningMode(TasksBinding):
 
         """
 
+        # the result of the 'ps' command
         ps_res=''
 
         # --check='+' ==> Just using the file called PROCESSES.txt in the current directory, used ONLY for debugging 
@@ -288,8 +303,13 @@ class RunningMode(TasksBinding):
             if mp != None:
 
                 # If there is at least 1 active thread in the current process, it is tagged and saved
-                if 'R' in processus_courant:
-                    pid  = processus_courant['pid']
+                #print ( "mp = " + str(mp))
+                if 'pid' in processus_courant:
+                    pid=processus_courant['pid']
+                else:
+                    pid="-1"
+                    
+                if 'R' in processus_courant or pid in self.gpus_processes:
                     sid = processus_courant['sid']
                     processus[pid] = processus_courant
                     if not sid in sids.keys():
@@ -392,6 +412,9 @@ class RunningMode(TasksBinding):
         # Measure time
         begin = time.time()
         
+       # Call the gpu information
+        self.__identGpus()
+
         # Retrieve the list of processes
         self.__identProcesses()
 
@@ -409,9 +432,6 @@ class RunningMode(TasksBinding):
         if self.withMemory:
             self.__identNumaMem()
             
-        # Call the gpu information
-        self.__identGpus()
-
         # Measure duration
         self.duration = time.time() - begin
 
@@ -423,6 +443,10 @@ class RunningMode(TasksBinding):
         rvl += "================================================\n"
         last_sid = 0
         threads_bound = self.threads_bound
+        cpus_processes= set(threads_bound.keys())
+        if not self.gpus_processes.issubset(cpus_processes):
+            rvl += "           . ==>   Process from another user\n"
+            
         for (pid,proc) in sorted(iter(threads_bound.items()),key=lambda k_v:(k_v[1]['tag'],k_v[0])):
             if last_sid==0:
                 last_sid = proc['sid']
@@ -448,8 +472,10 @@ class RunningMode(TasksBinding):
             for tid in list(threads.keys()):
                 if threads[tid]['state']=='R':
                     cores.append(threads[tid]['psr'])
-
-            rvl += list2CompactString(cores)
+            if len(cores)==0:
+                rvl += "not running on cpu"
+            else:
+                rvl += list2CompactString(cores)
             rvl += "\n"
 
         return rvl

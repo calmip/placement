@@ -390,10 +390,10 @@ class PrintingForMatrixThreads(PrintingFor):
         rvl += m.getHeader()
 
         # Print a second header line, only if threads to display
-        if len(threads_bound)>0:
-            rvl += m.getHeader1()
+        rvl += m.getHeader1()
 
         # Printing the body, sorting by sid
+        one_line_printed = False
         for sid in sorted(list(sid_threads_bound.keys())):
             local_threads_bound = sid_threads_bound[sid]
             # Sort local_threads_bound, on processes or on threads
@@ -401,7 +401,7 @@ class PrintingForMatrixThreads(PrintingFor):
                 sorted_processes = sorted(iter(local_threads_bound.items()),key=lambda k_v1:(k_v1[1]['ppsr_min'],k_v1[0]))
             else:
                 sorted_processes = sorted(local_threads_bound.items())
-    
+
             # Print one line/thread
             for (pid,thr) in sorted_processes:
                 l = local_threads_bound[pid]['tag']
@@ -420,12 +420,18 @@ class PrintingForMatrixThreads(PrintingFor):
                         S = '.'
                     else:
                         S = '?'
-                        
+                    
                     if 'mem' in thr:
                         rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['mem'],thr['sid'])
+                        one_line_printed = True
                     else:
                         rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],thr['sid'])
+                        one_line_printed = True
 
+        # No process running on the cpu
+        if not one_line_printed:
+            rvl += m.getLine(0,0,0,'.','.')
+            
         # If wanted (and if threads), print 1 line / process about memory allocation
         if self.__print_numamem and len(threads_bound)>0:
             sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
@@ -434,7 +440,7 @@ class PrintingForMatrixThreads(PrintingFor):
  
         # If wanted, print info about the gpus
         if self._tasks_binding.gpus_info != None:
-            rvl += m.getGpuInfo(self._tasks_binding)
+            rvl += "\n" + m.getGpuInfo(self._tasks_binding)
                   
         return rvl
 
