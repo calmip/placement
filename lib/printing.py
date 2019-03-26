@@ -379,8 +379,8 @@ class PrintingForMatrixThreads(PrintingFor):
                 sid_threads_bound[sid] = {}
             sid_threads_bound[sid][pid] = proc
 
-        # If memory printing, or gpu_info, consider the whole machine
-        if self.__print_numamem or gpus_info != None:
+        # If memory printing, or gpu_info, or if not threads detected, consider the whole machine
+        if self.__print_numamem or gpus_info != None or len(threads_bound)==0:
             ppsr_min = 0
             ppsr_max = archi.sockets_per_node * archi.cores_per_node - 1
 
@@ -389,8 +389,9 @@ class PrintingForMatrixThreads(PrintingFor):
         rvl = ''
         rvl += m.getHeader()
 
-        # Print a second header line
-        rvl += m.getHeader1()
+        # Print a second header line, only if threads to display
+        if len(threads_bound)>0:
+            rvl += m.getHeader1()
 
         # Printing the body, sorting by sid
         for sid in sorted(list(sid_threads_bound.keys())):
@@ -425,8 +426,8 @@ class PrintingForMatrixThreads(PrintingFor):
                     else:
                         rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],thr['sid'])
 
-        # If wanted, print 1 line / process about memory allocation
-        if self.__print_numamem:
+        # If wanted (and if threads), print 1 line / process about memory allocation
+        if self.__print_numamem and len(threads_bound)>0:
             sockets_mem = self.__compute_memory_per_socket(archi,threads_bound)
             rvl += "\n"
             rvl += m.getNumamem(sockets_mem)

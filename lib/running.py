@@ -262,14 +262,10 @@ class RunningMode(TasksBinding):
                         ps_res = tmp.split('\n')
                         for i,l in enumerate(ps_res):
                             ps_res[i] = l.replace('\n','')
-
+                    
+                    # Still no result... 
                     except PlacementException as e:
-                        msg = "ERROR "
-                        if (e.err == 1):
-                            msg += "No task found: Are you sure you are working on the correct host ?"
-                        else:
-                            msg += cmd + " returned an error: " + str(e.returncode)
-                        raise PlacementException(msg)
+                        pass
         
         # Creating data structures processus and pid from the output of the ps command
         # This output is a mixture of lines representing a processus OR a thread
@@ -402,11 +398,6 @@ class RunningMode(TasksBinding):
         # Determine their affinity
         self.tasks_bound   = self.__buildTasksBound(self)
         self.threads_bound = self.processus
-
-        # No task found
-        if len(self.tasks_bound)==0:
-            msg = "ERROR No task found !"
-            raise PlacementException(msg)
 
         # Detect overlaps, if any
         [self.overlap,self.over_cores] = _detectOverlap(self.tasks_bound)
