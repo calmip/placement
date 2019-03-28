@@ -93,7 +93,7 @@ import argparse
 from exception import *
 from front import *
 
-PLACEMENT_VERSION = "1.10.0"
+PLACEMENT_VERSION = "1.11.0"
 
 def params():
     """Parse the command line and return a tuple:

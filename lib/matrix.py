@@ -115,7 +115,6 @@ class Matrix(object):
         """ Return lines describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket 
             We show the memory occupation relative to each memory socket
         """
-        
         mem_pid_socket = self.__getMemPidSocket(sockets_mem)
 
         h_header='   DISTRIBUTION of the MEMORY among the sockets '
@@ -124,13 +123,14 @@ class Matrix(object):
         rvl += "\n"
         
         tags = list(mem_pid_socket.keys())
-
         if len(tags)>0:
             tags.sort()
             for tag in tags:
                 val = mem_pid_socket[tag]
+                
+                # Print a line
                 rvl += tag
-                rvl += ' ' * 15;
+                rvl += ' '*2 + self.__getMemTag(sockets_mem,tag) + ' '*6
                 for v in val:
                     rvl += getGauge(v,self.__hard.CORES_PER_SOCKET)
                     rvl += ' '
@@ -189,7 +189,28 @@ class Matrix(object):
                 
         return rvl
         
+    def __getMemTag(self,sockets_mem,tag):
+        '''Return the total memory allocated by the process, formatted  (in Mb, Gb or Tb)'''
         
+        # Compute the allocated memory for this process, in Mbytes
+        abs_mem=0
+        for s in sockets_mem:
+            abs_mem += s[tag]
+        unit='Mb'
+        
+        # Convert to Gb if relevant
+        if abs_mem > 1000:
+            abs_mem /= 1000
+            unit='Gb'
+
+        # Convert to Tb if relevant
+        if abs_mem > 1000:
+            abs_mem /= 1000
+            unit='Tb'
+        
+        fmt = '{:5.1f}'
+        return fmt.format(abs_mem) + unit
+
     def __getGpuInfo_S(self,tasks_binding):
         """ return a string, representing the status of the gpus connected to the sockets"""
         
@@ -240,7 +261,7 @@ class Matrix(object):
                     
         return processes
 
-    def getLine(self,pid,tid,ppsr,S,H,cpu=100,mem='-',sid=0):
+    def getLine(self,pid,tid,ppsr,S,H,cpu=0,mem='-',sid=0):
         """ Return a line full of '.' and a letter on the psr coloumn, plus cpu occupation at end of line"""
 
         if (ppsr<self.__ppsr_min or ppsr>self.__ppsr_max):
@@ -252,8 +273,10 @@ class Matrix(object):
         pre = H[0] + ' '
         post= ''
         
+        # NOTE - pid=0 means = Print ean empty line, no process running !
+                    
         # Print the pid only for the first thread
-        if (pid != self.__last_pid):
+        if pid == 0 or pid != self.__last_pid:
             self.__last_pid = pid
             pre += fmt1.format(pid) + ' ' + fmt1.format(tid)
             # Print the tid only for the first process of the session
@@ -284,7 +307,10 @@ class Matrix(object):
         else:
             cpumem += fmt2.format(mem)
             
-        return pre + ' ' + debut + AnsiCodes.red_foreground() + S[0] + AnsiCodes.normal() + fin + cpumem + post + '\n'
+        if pid==0:
+            return pre + ' ' + debut + '.' + fin + cpumem + post + '\n'
+        else:
+            return pre + ' ' + debut + AnsiCodes.red_foreground() + S[0] + AnsiCodes.normal() + fin + cpumem + post + '\n'
 
     def __blankBeforeCore(self,socket,core):
         space = '.'
