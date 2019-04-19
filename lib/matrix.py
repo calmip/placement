@@ -160,9 +160,9 @@ class Matrix(object):
             for g in s:
                 rvl += '  '
                 rvl += 'GPU ' + str(g['id']) + "\n"
-                rvl += 'USE             ' + col_skipped + getGauge(g['U'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['U']) + "%\n"
-                rvl += 'MEMORY          ' + col_skipped + getGauge(g['M'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['M']) + "%\n"
-                rvl += 'POWER           ' + col_skipped + getGauge(g['P'],self.__hard.CORES_PER_SOCKET) + ' ' + str(g['P']) + "%\n"
+                rvl += 'USE             ' + col_skipped + getGauge(g['U'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['U']) + "%\n"
+                rvl += 'MEMORY          ' + col_skipped + getGauge(g['M'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['M']) + "%\n"
+                rvl += 'POWER           ' + col_skipped + getGauge(g['P'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['P']) + "%\n"
                 rvl += 'PROCESSES       ' + col_skipped
                 # Build and print the line "PROCESSES"
                 rvl += AnsiCodes.red_foreground()
