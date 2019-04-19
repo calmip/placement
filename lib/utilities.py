@@ -273,12 +273,21 @@ def mem2Slice(mem,mem_slice):
         s += 1
     return s
                         
-def getGauge(value,size,color=True):
+def getGauge(value,size,color=True,saturate=False):
     '''Return a string with *** or ..., the number depends of value (0-100) and size
-       For size=10, value = 50, return *****.....'''
+       For size=10, value = 50, return *****.....
+       If saturate is True, values > 100 or < 0 are replaced with 0 or 100 (=saturation)
+       If saturate is False (def), values > 100 or > 0 raise an error
+       '''
 
-    if value<0 or value>100:
-        raise ValueError( "INTERNAL ERROR - " + str(value) +" should be in the interval [0-100]")
+    if not saturate:
+        if value<0 or value>100:
+            raise ValueError( "INTERNAL ERROR - " + str(value) +" should be in the interval [0-100]")
+    else:
+        if value<0:   
+            value=0
+        if value>100: 
+            value=100
             
     m = 0.01 * value * size
     if int(m*10) % 10 < 5:
