@@ -118,12 +118,15 @@ class TestNum2Slice(unittest.TestCase):
 
 class TestgetGauge(unittest.TestCase):
     def test_gauge(self):
+        self.assertEqual(getGauge(-1,10,False,True),'..........')
+        self.assertEqual(getGauge(0,10,False),'..........')
         self.assertEqual(getGauge(4,10,False),'..........')
         self.assertEqual(getGauge(5,10,False),'*.........')
         self.assertEqual(getGauge(10,10,False),'*.........')
         self.assertEqual(getGauge(12,10,False),'*.........')
         self.assertEqual(getGauge(15,10,False),'**........')
         self.assertEqual(getGauge(100,10,False),'**********')
+        self.assertEqual(getGauge(101,10,False,True),'**********')
         self.assertEqual(getGauge(50,8,False),'****....')
         self.assertEqual(getGauge(50,8,False),'****....')
         self.assertEqual(getGauge(33,8,False),'***.....')
