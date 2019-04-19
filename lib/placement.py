@@ -200,10 +200,13 @@ def buildOutputs(options,tasks_binding):
     if options.verbose and options.output_mode != 'kmp':
         outputs.append(PrintingForVerbose(tasks_binding))
 
-    # Print for srun OR for numactl and return
+    # Print for srun OR for intel pin domain pinning OR numactl and return
     if options.check==None and options.asciiart==False and options.human==False:
         if options.output_mode=="srun":
             outputs.append(PrintingForSrun(tasks_binding))
+            return outputs
+        if options.output_mode=="i_mpi_pin_domain":
+            outputs.append(PrintingForIntelPinDomain(tasks_binding))
             return outputs
         if options.output_mode=="numactl":
             outputs.append(PrintingForNumactl(tasks_binding))
