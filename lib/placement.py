@@ -103,6 +103,10 @@ from printing import *
 from front import *
 from params import *
 
+# ----------------------------------------------------------------------
+#                                Main program
+# ----------------------------------------------------------------------
+
 def main():
 
     # options = The options parsed from the command line
@@ -111,52 +115,51 @@ def main():
     (options, fn) = params()
     args=(options.tasks,options.nbthreads)
 
-    
     if options.noansi:
         AnsiCodes.noAnsi()
         
     if options.documentation!=0:
         documentation(options.documentation)
-        exit(0)
+        return 0
 
     if options.show_env==True:
         show_env()
-        exit(0)
+        return 0
 
     if options.makempiaware==True:
         options.output_mode="numactl"
         make_mpi_aware()
-        exit(0)
+        return 0
 
     # If necessary run another exe may be on another host
     try:
-        if fn.runPlacement() != 0:
-            exit(0)
+        if fn.runPlacement():
+            return 0
+
     except PlacementException as e:
         print("PLACEMENT " + str(e), file = sys.stderr)
-        exit(1)
-            
+        return 1
+               
     # Guess the hardware, from the placement.conf file and from environment variables
     hard = '';
+#    try:
+#        hard = hardware.Hardware.factory()
+#            
+#    except PlacementException as e:
+#        print("PLACEMENT_ERROR_FOUNDDDDDDDDDDDDDDDd")
+#        print("PLACEMENT " + str(e), file = sys.stderr)
+#        exit(1)
+
     try:
+        
+        hard = '';
         hard = hardware.Hardware.factory()
-            
-    except PlacementException as e:
-        print("PLACEMENT_ERROR_FOUND")
-        print("PLACEMENT " + str(e), file = sys.stderr)
-        exit(1)
 
-# ----------------------------------------------------------------------
-#                                Main program
-# ----------------------------------------------------------------------
-
-    try:
         if options.show_hard==True:
             show_hard(hard)
-            exit(0)
-
+            return 0
+            
         # First stage: Compute data and store them inside tasks_binding
-        
         # If --check specified, data are computed from the running job(s)
         if options.check != None:
             #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
@@ -164,7 +167,6 @@ def main():
 
         # Else, data are computed from the command line parameters
         else:
-            #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_parameters(options,args,hard)
             tasks_binding = compute_data_from_parameters(options,args,hard)
 
         # Second stage - Print data, may be using several formats
@@ -183,7 +185,7 @@ def main():
             ManageException(e)
         else:
             print ("0.0:0")
-        exit(1)
+        return 1
 
 
 def buildOutputs(options,tasks_binding):
@@ -200,10 +202,13 @@ def buildOutputs(options,tasks_binding):
     if options.verbose and options.output_mode != 'kmp':
         outputs.append(PrintingForVerbose(tasks_binding))
 
-    # Print for srun OR for numactl and return
+    # Print for srun OR for intel pin domain pinning OR numactl and return
     if options.check==None and options.asciiart==False and options.human==False:
         if options.output_mode=="srun":
             outputs.append(PrintingForSrun(tasks_binding))
+            return outputs
+        if options.output_mode=="i_mpi_pin_domain":
+            outputs.append(PrintingForIntelPinDomain(tasks_binding))
             return outputs
         if options.output_mode=="numactl":
             outputs.append(PrintingForNumactl(tasks_binding))
@@ -457,4 +462,5 @@ def compute_data_from_parameters(options,args,hard):
     return task_distrib
 
 if __name__ == "__main__":
-    main()
+    status = main()
+    sys.exit(status)

@@ -55,7 +55,7 @@ class FrontNode(object):
         return exe
             
     def __runPlacement(self,host):
-        """Run placement on another host, using self.argv"""
+        """If necessary set the env PLACEMENT_REMOTE, then call placement again, appending --from-frontal to the parameters"""
 
         cmd = self.argv.copy()        
         cmd.append('--from-frontal')
@@ -77,7 +77,7 @@ class FrontNode(object):
         return self.__sched_name
 
     def runPlacement(self):
-        """ For some options, we run placement or another exe, maybe on another host
+        """ For some options, we run placement (or another exe), 
             Return True if we launched another exe
             Return False if we just return without doing anything
         """
@@ -140,7 +140,13 @@ class FrontNode(object):
                 hosts = self.__sched.nodesetToHosts(self.options.host)
             except AttributeError:
                 hosts = expandNodeList(self.options.host)
-            
+
+            # Verify the hosts are alive
+            # for h in hosts:
+            #     ssh_h = runCmd('hostname -s',h).strip()
+            #     if ssh_h != h:
+            #         print("WARNING: host #" + h + "# is called #" + ssh_h + '#')            
+                    
             # We check everything on each host
             self.argv.append('--check')
             self.argv.append('ALL')

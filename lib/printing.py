@@ -73,25 +73,20 @@ class PrintingFor(object):
         return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
 
 
-class PrintingForSrun(PrintingFor):
-    """ Printing for srun 
-
-    # placement 4 4 --srun
-    --cpu_bind=mask_cpu:0xf,0xf0,0x3c00,0x3c000
+class PrintingWithMaskCpus(PrintingFor):
+    """ Base class, computing mask_cpus for outputs using them
+        (currently only srun and domain (intel mpiexec.hydra)
     """
 
-    def __str__(self):
-        return self.__getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound)
-
-    def __getCpuBinding(self,archi,tasks_bound):
-        """ Call __GetCpuTaskBinding for each task, concatene and return """
+    def _getCpuBinding(self,archi,tasks_bound):
+        """ Call __GetCpuTaskBinding for each task and return an array of mask_cpus """
 
         mask_cpus=[]
         gc = archi.hardware.getCore2Addr
         for t in tasks_bound:
             mask_cpus += [self.__getCpuTaskBinding(archi,list(map(gc,t)))]
-
-        return "--cpu_bind=mask_cpu:" + ",".join(mask_cpus)
+        
+        return mask_cpus
 
 
     def __getCpuTaskBinding(self,archi,cores):
@@ -113,7 +108,30 @@ class PrintingForSrun(PrintingFor):
         # remove the final 'L', useful when there are many many cores
         return rvl.rstrip('L')
 
+class PrintingForSrun(PrintingWithMaskCpus):
+    """ Printing for srun 
 
+    # placement 4 4 --srun
+    --cpu_bind=mask_cpu:0xf,0xf0,0x3c00,0x3c000
+    """
+
+    def __str__(self):
+        mask_cpus=self._getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound)
+        return "--cpu_bind=mask_cpu:" + ",".join(mask_cpus)
+
+def strip0x(x):
+    return x.lstrip('0x')
+        
+class PrintingForIntelPinDomain(PrintingWithMaskCpus):
+    """ Printing for Intel pin domain (env variable I_MPI_PIN_DOMAIN used with intel's mpiexec.hydra)
+
+    # mpiexec.hydra genv I_MPI_PIN_DOMAIN $(placement 4 4 --intel_pin_domain)
+    [0xf,0xf0,0x3c00,0x3c000]
+    """
+    def __str__(self):
+        mask_cpus=self._getCpuBinding(self._tasks_binding.archi,self._tasks_binding.tasks_bound)
+        
+        return "export I_MPI_PIN_DOMAIN=[" + ",".join(map(strip0x,mask_cpus)) + "]"
 
 class PrintingForHuman(PrintingFor):
     """ Printing for a human being
