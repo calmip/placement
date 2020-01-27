@@ -33,6 +33,13 @@
 export PLACEMENT_PYTHON=python3
 
 # ================ The following should not be changed =====================
+
+# Useful if the environment is not utf8 based
+# One trivial example: LANG="C"
+# LANG="C" placement --jobid xxx where the gpus are used will not work without this variable
+# See https://stackoverflow.com/questions/47968578/python3-utf-8-decode-issue
+export PYTHONIOENCODING=utf8 
+
 # The PLACEMENT_ROOT env variable (should be correctly set by the install script)
 export PLACEMENT_ROOT=PROOT
 
