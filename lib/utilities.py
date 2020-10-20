@@ -389,50 +389,97 @@ def runCmdNoOut(cmd,host=None):
         raise PlacementException(msg,cpltdProc.returncode)
         
 class AnsiCodes(object):
-
-    # static variable
-    __using_ansi= True
+	'''Write AnsiCodes, outputting in colored characters'''
+	
+	sequences = [ '\033[30m','\033[31m','\033[32m','\033[33m','\033[34m','\033[35m','\033[36m','\033[90m','\033[93m','\033[95m' ]
+	
+	# static variable
+	__using_ansi= True
     
-    @staticmethod
-    def noAnsi():
-        AnsiCodes.__using_ansi = False
-    @staticmethod
-    def Ansi():
-        AnsiCodes.__using_ansi = False
+	@staticmethod
+	def noAnsi():
+		AnsiCodes.__using_ansi = False
+
+	@staticmethod
+	def Ansi():
+		AnsiCodes.__using_ansi = False
         
-    @staticmethod
-    def __returnCode(code):
-        if AnsiCodes.__using_ansi:
-            return code
-        else:
-            return ''
+	@staticmethod
+	def __returnCode(code):
+		if AnsiCodes.__using_ansi:
+			return code
+		else:
+			return ''
     
-    @staticmethod
-    def bold():
-        return AnsiCodes.__returnCode('\033[1m')
+	@staticmethod
+	def bold():
+		return AnsiCodes.__returnCode('\033[1m')
     
-    @staticmethod
-    def underline():
-        return AnsiCodes.__returnCode('\033[41m')
+	@staticmethod
+	def underline():
+		return AnsiCodes.__returnCode('\033[41m')
     
-    @staticmethod
-    def boldunderline():
-        return AnsiCodes.__returnCode('\033[1;4m')
+	@staticmethod
+	def boldunderline():
+		return AnsiCodes.__returnCode('\033[1;4m')
     
-    @staticmethod
-    def white_background():
-        return AnsiCodes.__returnCode('\033[47m')
+	@staticmethod
+	def reverse():
+		return AnsiCodes.__returnCode('\033[07m')
     
-    @staticmethod
-    def red_foreground():
-        return AnsiCodes.__returnCode('\033[1;31m')
+	@staticmethod
+	def boldreverse():
+		return AnsiCodes.__returnCode('\033[1;7m')
     
-    @staticmethod
-    def mag_foreground():
-        return AnsiCodes.__returnCode('\033[1;35m')
+	@staticmethod
+	def strikethrough():
+		return AnsiCodes.__returnCode('\033[09m')
     
-    # Back to "normal"    
-    @staticmethod
-    def normal():
-        return AnsiCodes.__returnCode('\033[0m')
+	@staticmethod
+	def boldstrikethrough():
+		return AnsiCodes.__returnCode('\033[1;9m')
+    
+	@staticmethod
+	def white_background():
+		return AnsiCodes.__returnCode('\033[47m')
+    
+	@staticmethod
+	def red_foreground():
+		return AnsiCodes.__returnCode('\033[1;31m')
+    
+	@staticmethod
+	def mag_foreground():
+		return AnsiCodes.__returnCode('\033[1;35m')
+    
+	# Back to "normal"    
+	@staticmethod
+	def normal():
+		return AnsiCodes.__returnCode('\033[0m')
 
+	# Mapping from an integer to ansi codes
+	@staticmethod
+	def map(i):
+		'''i is an integer to be mapped to an ansi code
+		   Return a sequence as follows:
+		      k = i : 10, l = i % 10
+		        if k % 4 == 0 return bold + sequence[l]
+		        if k % 4 == 1 return bold + reverse       + sequence[l]
+		        if k % 4 == 2 return bold + underline     + sequence[l]
+		        if k % 4 == 3 return bold + strikethrough + sequence[l]'''
+
+		k = (i//10) % 4
+		l = i %10
+		if k==0:
+			return AnsiCodes.bold() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
+		if k==1:
+			return AnsiCodes.boldreverse() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
+		if k==2:
+			return AnsiCodes.boldunderline() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
+		if k==3:
+			return AnsiCodes.boldstrikethrough() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
+    
+			
+		
+		
+	# Writing a character with some color, then return to normal mode'''
+		
