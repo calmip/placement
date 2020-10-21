@@ -27,12 +27,16 @@
 from jobsched import *
 from utilities import runCmd
 from exception import *
+import os
 
 class Slurm(JobSched):
     """This class extends JobSched, it should be used with the Slurm job scheduler
        See the documentation in jobsched.py
     """
 
+    def __init__(self):
+        self.__pid2jobid = None
+		
     def findJobFromId(self,jobid):
         
         cmd = 'squeue -t RUNNING -j ' + str(jobid) + ' --noheader -o %.16R@%.15u@%.7A'
@@ -76,3 +80,46 @@ class Slurm(JobSched):
 
         return nodes
 
+    def findJobFromPid(self,pid):
+        """Explore the /sys/fs/cgroup/cpuset pseudo filesystem, deposit the result in self.__pid2jobid
+           Return the jobid from the pid, or None if not found
+        """
+        
+        # If the data do not exist, build them
+        if self.__pid2jobid == None:
+            
+            pid2jobid = {}
+            
+            # Looking for /sys/fs/cgroup/cpuset/slurm/uid_xxx/job_yyyyyy/step_batch
+            #print ("K" + os.environ['HOSTNAME'])
+            top_dir = "/sys/fs/cgroup/cpuset/slurm/"
+            for root, dirs, files in os.walk(top_dir,False):
+                #print ("K"  + root )
+                if root.endswith('step_batch'):
+                    job_path = os.path.split(root)[0];    # => .../slurm/uid_xxx/job_yyyyyy
+                    job_dir  = os.path.split(job_path)[1] # => job_yyyyyy
+                    jobid    = job_dir.replace('job_','') # => yyyyyy
+                    
+                    # The pids are in the file cgroup.procs
+                    pids = []
+                    cgroup_procs = root + '/cgroup.procs'
+                    #print ("K"  + cgroup_procs)
+                    with open(cgroup_procs, 'r') as infile:
+                        for line in infile:
+                            line = line.strip()
+                            #print ("K"  + line)
+                            if line != '':
+                                pid2jobid[line] = jobid
+            
+            self.__pid2jobid = pid2jobid
+            
+            import pprint
+            print ("KOUKOU pid2jobid")
+            pprint.pprint(pid2jobid)
+        
+        pid = str(pid)
+        if pid in self.__pid2jobid:
+            return self.__pid2jobid[pid]
+        
+        else:
+            return None

@@ -36,7 +36,7 @@ class FrontNode(object):
     """
 
     def __init__(self,externals):
-        """ externals = An array of external commands, used to decide which JobSched objet to instantiate
+        """ externals = An array of external commands, used to decide which JobSched object to instantiate
         """
         self.options  = None
         self.argv     = None
@@ -75,6 +75,9 @@ class FrontNode(object):
         
     def getJobSchedName(self): 
         return self.__sched_name
+        
+    def getJobSched(self):
+        return self.__sched
 
     def runPlacement(self):
         """ For some options, we run placement (or another exe), 

@@ -44,7 +44,7 @@ class RunningMode(TasksBinding):
         ==> Hardware is guessed from the node name, as usual
             Architecture is guessed from the running job """
 
-    def __init__(self,path,hardware,buildTasksBound,withMemory):
+    def __init__(self,options,hardware,buildTasksBound,jobsched=None):
         """ Constructor
 
         Arguments:
@@ -52,12 +52,19 @@ class RunningMode(TasksBinding):
         hardware       : The hardware we run on 
         buildTasksbound: How to build the tasks_bound data structure ? An object-function implementating the algorithm
         withMemory     : If True, try to know memory occupation / socket using a numastat command
+        jobsched       : If not None, an object extending JobSched (ex = slurm)
+                         Used to map processes and jobs
         """
 
         TasksBinding.__init__(self,None,0,0)
-        self.path = path
-        self.hardware = hardware
-        self.withMemory = withMemory
+        self.path       = options.check
+        self.withMemory = options.memory
+
+        self.hardware   = hardware
+        
+        self.__jobid    = options.jobid
+        self.__jobsched = jobsched
+
         self.pid=[]
         self.processus=[]
         self.tasks_bound   = None
@@ -158,8 +165,7 @@ class RunningMode(TasksBinding):
             gpus_bound.append(sg)
 
         self.gpus_info = gpus_bound
-        #print ("self.gpus_info =  " + str(self.gpus_info))
-        
+    
         # Collect the processes detected by the gpus, if any
         # They should be known by the cpu, but may be not in state 'R'
         for socket in self.gpus_info:
@@ -221,7 +227,7 @@ class RunningMode(TasksBinding):
    
            self.processus is a dictionary of dictionaries:
                k = pid
-               v = {'pid':pid, 'user':'user', 'cmd':'command line','threads':{'tid':{'tid':tid, 'psr':psr}}
+               v = {'pid':pid, 'user':'user', 'cmd':'command line', 'job':'jobid', 'threads':{'tid':{'tid':tid, 'psr':psr}}
    
            self.pid is the sorted list of pids
 
@@ -386,6 +392,19 @@ class RunningMode(TasksBinding):
                 processus[pid]['tag'] = numTaskToLetter(p_cnt)
                 p_cnt += 1
         
+        # Detect the job number corresponding to those processes
+        # The detection is done by the jobscheduler
+        js = self.__jobsched
+        print ("HOUHOUHOUHOU " + str(js))
+        if js != None:
+            for pid in processus:
+                processus[pid]['job'] = js.findJobFromPid(pid)
+                
+                # TODO - This is not optimized, we work hard on this process before removing it....
+                if self.__jobid != None and processus[pid]['job'] != self.__jobid:
+                    processus.pop(pid)
+
+		# Return
         self.processus = processus
         self.pid = sorted(processus.keys())
 
@@ -478,6 +497,17 @@ class RunningMode(TasksBinding):
                 rvl += list2CompactString(cores)
             rvl += "\n"
 
+        #print ("self.gpus_info =  " + str(self.gpus_info))
+        import pprint
+        print('tasks_bound')
+        pprint.pprint(self.tasks_bound)
+
+        print('threads_bound')
+        pprint.pprint(self.threads_bound)
+
+        print('gpus_infos')
+        pprint.pprint(self.gpus_info)
+        
         return rvl
 
 
