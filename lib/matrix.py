@@ -155,7 +155,7 @@ class Matrix(object):
                 return True
         return False
 		
-    def getGpuInfo(self,tasks_binding):
+    def getGpuInfo(self,tasks_binding, print_only_my_gpus):
         """ return a string, representing the status of the gpus connected to the sockets"""
 
         rvl = ""
@@ -167,11 +167,9 @@ class Matrix(object):
         for s in gpus_info:
             for g in s:
 
-                # Do not print a gpu if it is not affected to me !
-                gpu_mine = self.__isGpuMine(g,tasks_binding)
-                
-                if gpu_mine:
-
+                # If print_only_my_gpus: do not print a gpu if it is not affected to me !
+                print_gpu = (not print_only_my_gpus) or self.__isGpuMine(g,tasks_binding)
+                if print_gpu:
                     rvl += '  '
                     rvl += 'GPU ' + str(g['id']) + "\n"
                     rvl += 'USE             ' + col_skipped + getGauge(g['U'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['U']) + "%\n"

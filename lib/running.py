@@ -395,14 +395,16 @@ class RunningMode(TasksBinding):
         # Detect the job number corresponding to those processes
         # The detection is done by the jobscheduler
         js = self.__jobsched
-        print ("HOUHOUHOUHOU " + str(js))
         if js != None:
-            for pid in processus:
-                processus[pid]['job'] = js.findJobFromPid(pid)
+            for pid in list(processus):
+                jobid = js.findJobFromPid(pid)
+                print ("pid={0} -> jobid={1}".format(pid,jobid))
                 
-                # TODO - This is not optimized, we work hard on this process before removing it....
-                if self.__jobid != None and processus[pid]['job'] != self.__jobid:
-                    processus.pop(pid)
+                # TODO - This is not optimized, we worked hard on this process before removing it....
+                if self.__jobid != None and jobid != str(self.__jobid):
+                    del(processus[pid])
+                else:
+                    processus[pid]['job'] = jobid
 
 		# Return
         self.processus = processus

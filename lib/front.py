@@ -57,14 +57,19 @@ class FrontNode(object):
     def __runPlacement(self,host):
         """If necessary set the env PLACEMENT_REMOTE, then call placement again, appending --from-frontal to the parameters"""
 
-        cmd = self.argv.copy()        
+        cmd = self.argv.copy()
+        
+        # Replace cmd[0] (python script) with the path to the bash script
+        cmd[0] = os.environ['PLACEMENTBASH']
         cmd.append('--from-frontal')
         
         if host!=getHostname():
             os.environ['PLACEMENT_REMOTE'] = host
 
-        cmd.insert(0,os.environ['PLACEMENT_PYTHON'])
-        runCmdNoOut(cmd)
+        import pprint
+        pprint.pprint (cmd)
+        #cmd.insert(0,os.environ['PLACEMENT_PYTHON'])
+        runCmdNoOut(cmd,host)
             
         os.environ.pop('PLACEMENT_REMOTE',None)
         
@@ -155,6 +160,7 @@ class FrontNode(object):
             self.argv.append('ALL')
             for h in hosts:
                 try:
+                    print ("KOUKOU Executing placement on {0}".format(h))
                     self.__runPlacement(h)
                 except PlacementException as e:
                     print ("host " + h)

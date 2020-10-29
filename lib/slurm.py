@@ -95,7 +95,8 @@ class Slurm(JobSched):
             top_dir = "/sys/fs/cgroup/cpuset/slurm/"
             for root, dirs, files in os.walk(top_dir,False):
                 #print ("K"  + root )
-                if root.endswith('step_batch'):
+                leaf = os.path.basename(root)
+                if leaf.startswith('step_'):
                     job_path = os.path.split(root)[0];    # => .../slurm/uid_xxx/job_yyyyyy
                     job_dir  = os.path.split(job_path)[1] # => job_yyyyyy
                     jobid    = job_dir.replace('job_','') # => yyyyyy

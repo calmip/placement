@@ -137,7 +137,8 @@ def main():
             return 0
 
     except PlacementException as e:
-        print("PLACEMENT " + str(e), file = sys.stderr)
+        #print("PLACEMENT " + str(e), file = sys.stderr)
+        print ("PLACEMENT " + str(e))
         return 1
                
     # Guess the hardware, from the placement.conf file and from environment variables
@@ -173,7 +174,8 @@ def main():
         # outputs is an array of objects extending PrintingFor
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
-            print ("OUPS, No output specified !", file = sys.stderr)
+            #print ("OUPS, No output specified !", file = sys.stderr)
+            print ("OUPS, No output specified !")
 
         if 'jobid' in options and options.jobid != None:
             print("jobid " + str(options.jobid))
@@ -247,6 +249,8 @@ def buildOutputs(options,tasks_binding):
             o.SortedThreadsCores()
         if options.sorted_processes_cores == True:
             o.SortedProcessesCores()
+        if options.jobid != None:
+            o.printOnlyMyGpus()
         outputs.append(o)
 
     # Only with --check: print a summary
