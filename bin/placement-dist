@@ -55,6 +55,10 @@ export PLACEMENTBASH=$(realpath $0)
 # Path to the python program
 export PLACEMENTPY=$PLACEMENT_ROOT/lib/placement.py
 
+# Just for debug (comment out for production)
+#export PLACEMENT_DEBUG=1
+
+
 # Calling the python main script
 exec $PLACEMENT_PYTHON $PLACEMENTPY $*
 

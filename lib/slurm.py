@@ -91,10 +91,8 @@ class Slurm(JobSched):
             pid2jobid = {}
             
             # Looking for /sys/fs/cgroup/cpuset/slurm/uid_xxx/job_yyyyyy/step_batch
-            #print ("K" + os.environ['HOSTNAME'])
             top_dir = "/sys/fs/cgroup/cpuset/slurm/"
             for root, dirs, files in os.walk(top_dir,False):
-                #print ("K"  + root )
                 leaf = os.path.basename(root)
                 if leaf.startswith('step_'):
                     job_path = os.path.split(root)[0];    # => .../slurm/uid_xxx/job_yyyyyy
@@ -104,19 +102,16 @@ class Slurm(JobSched):
                     # The pids are in the file cgroup.procs
                     pids = []
                     cgroup_procs = root + '/cgroup.procs'
-                    #print ("K"  + cgroup_procs)
                     with open(cgroup_procs, 'r') as infile:
                         for line in infile:
                             line = line.strip()
-                            #print ("K"  + line)
                             if line != '':
                                 pid2jobid[line] = jobid
             
             self.__pid2jobid = pid2jobid
             
-            import pprint
-            print ("KOUKOU pid2jobid")
-            pprint.pprint(pid2jobid)
+            #import pprint
+            #pprint.pprint(pid2jobid)
         
         pid = str(pid)
         if pid in self.__pid2jobid:

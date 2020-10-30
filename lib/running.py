@@ -496,56 +496,15 @@ class RunningMode(TasksBinding):
             
             rvl += format_str.format(sid,tag,pid,proc['user'],proc['cmd'],affinity,jobid)
         
-        # fmt  = '{:7d}'
-        # rvl  = "SESSION TASK ==>     PID (USER,CMD)       ==> AFFINITY        ==> jobid\n"
-        # rvl += "=======================================================================\n"
-        # last_sid = 0
-        # threads_bound = self.threads_bound
-        # cpus_processes= set(threads_bound.keys())
-        # #if not self.gpus_processes.issubset(cpus_processes):
-        # #    rvl += "           . ==>   Process from another user\n"
-            
-        # for (pid,proc) in sorted(iter(threads_bound.items()),key=lambda k_v:(k_v[1]['tag'],k_v[0])):
-            # if last_sid==0:
-                # last_sid = proc['sid']
-                # rvl += fmt.format(proc['sid'])
-            # elif last_sid != proc['sid']:
-                # last_sid = proc['sid']
-                # rvl += fmt.format(proc['sid'])
-            # else:
-                # rvl += '       '
-                
-            # rvl += '    ' + proc['tag']
-            # rvl += ' ==> '
-            # rvl += fmt.format(pid)
-            # rvl += ' ('
-            # rvl += proc['user']
-            # rvl += ','
-            # rvl += proc['cmd']
-            # rvl += ') ==> '
+        #import pprint
+        #print('tasks_bound')
+        #pprint.pprint(self.tasks_bound)
 
-            # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
-            # cores=[]
-            # threads=proc['threads']
-            # for tid in list(threads.keys()):
-                # if threads[tid]['state']=='R':
-                    # cores.append(threads[tid]['psr'])
-            # if len(cores)==0:
-                # rvl += "not running on cpu"
-            # else:
-                # rvl += list2CompactString(cores)
-            # rvl += "\n"
+        #print('threads_bound')
+        #pprint.pprint(self.threads_bound)
 
-        #print ("self.gpus_info =  " + str(self.gpus_info))
-        import pprint
-        print('tasks_bound')
-        pprint.pprint(self.tasks_bound)
-
-        print('threads_bound')
-        pprint.pprint(self.threads_bound)
-
-        print('gpus_infos')
-        pprint.pprint(self.gpus_info)
+        #print('gpus_infos')
+        #pprint.pprint(self.gpus_info)
         
         return rvl
 

@@ -66,9 +66,6 @@ class FrontNode(object):
         if host!=getHostname():
             os.environ['PLACEMENT_REMOTE'] = host
 
-        import pprint
-        pprint.pprint (cmd)
-        #cmd.insert(0,os.environ['PLACEMENT_PYTHON'])
         runCmdNoOut(cmd,host)
             
         os.environ.pop('PLACEMENT_REMOTE',None)
@@ -160,7 +157,7 @@ class FrontNode(object):
             self.argv.append('ALL')
             for h in hosts:
                 try:
-                    print ("KOUKOU Executing placement on {0}".format(h))
+                    #print ("KOUKOU Executing placement on {0}".format(h))
                     self.__runPlacement(h)
                 except PlacementException as e:
                     print ("host " + h)

@@ -403,8 +403,8 @@ def compute_data_from_running(options,args,hard,jobsched):
     hard: The hardware
     """
 
-    import pprint
-    pprint.pprint(options)
+    #import pprint
+    #pprint.pprint(options)
 
     buildTasksBound = BuildTasksBoundFromPs()
     task_distrib = RunningMode(options,hard,buildTasksBound,jobsched)
