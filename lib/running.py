@@ -394,17 +394,22 @@ class RunningMode(TasksBinding):
         
         # Detect the job number corresponding to those processes
         # The detection is done by the jobscheduler
+        # Keep track of the jobid AND give a tag to the jobig (will be used to choose the color)
         js = self.__jobsched
         if js != None:
+            joblt   = 1
+            jobtags = {}
             for pid in list(processus):
                 jobid = js.findJobFromPid(pid)
-                print ("pid={0} -> jobid={1}".format(pid,jobid))
+                processus[pid]['job']= jobid
+                if not jobid in jobtags:
+                    jobtags[jobid]   = joblt
+                    joblt            += 1
+                processus[pid]['jobtag'] = jobtags[jobid]
                 
                 # TODO - This is not optimized, we worked hard on this process before removing it....
                 if self.__jobid != None and jobid != str(self.__jobid):
                     del(processus[pid])
-                else:
-                    processus[pid]['job'] = jobid
 
 		# Return
         self.processus = processus
@@ -459,34 +464,25 @@ class RunningMode(TasksBinding):
     def PrintingForVerbose(self):
         """Return some verbose information"""
         
-        fmt  = '{:7d}'
-        rvl  = "SESSION TASK ==>     PID (USER,CMD) ==> AFFINITY\n"
-        rvl += "================================================\n"
-        last_sid = 0
+        format_str = '{:>7} {} {:>6} {:>10} {:>20} {:>30} {:>6}\n'
+        rvl = format_str.format('SESSION','TASK','PID','USER','CMD','AFFINITY','jobid')
+        rvl +=format_str.format('=======','====','===','====','===','========','=====')
+        
+        last_sid      = 0
         threads_bound = self.threads_bound
-        cpus_processes= set(threads_bound.keys())
-        if not self.gpus_processes.issubset(cpus_processes):
-            rvl += "           . ==>   Process from another user\n"
-            
         for (pid,proc) in sorted(iter(threads_bound.items()),key=lambda k_v:(k_v[1]['tag'],k_v[0])):
             if last_sid==0:
                 last_sid = proc['sid']
-                rvl += fmt.format(proc['sid'])
+                sid      = proc['sid']
             elif last_sid != proc['sid']:
                 last_sid = proc['sid']
-                rvl += fmt.format(proc['sid'])
+                sid      = proc['sid']
             else:
-                rvl += '       '
-                
-            rvl += '    ' + proc['tag']
-            rvl += ' ==> '
-            rvl += fmt.format(pid)
-            rvl += ' ('
-            rvl += proc['user']
-            rvl += ','
-            rvl += proc['cmd']
-            rvl += ') ==> '
-
+                sid      = " "
+            
+            tag   = "   " + AnsiCodes.map(proc['jobtag'])+proc['tag']+AnsiCodes.normal()
+            jobid = AnsiCodes.map(proc['jobtag'])+proc['job']+AnsiCodes.normal()
+            
             # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
             cores=[]
             threads=proc['threads']
@@ -494,10 +490,51 @@ class RunningMode(TasksBinding):
                 if threads[tid]['state']=='R':
                     cores.append(threads[tid]['psr'])
             if len(cores)==0:
-                rvl += "not running on cpu"
+                affinity = "not running on cpu"
             else:
-                rvl += list2CompactString(cores)
-            rvl += "\n"
+                affinity = list2CompactString(cores)
+            
+            rvl += format_str.format(sid,tag,pid,proc['user'],proc['cmd'],affinity,jobid)
+        
+        # fmt  = '{:7d}'
+        # rvl  = "SESSION TASK ==>     PID (USER,CMD)       ==> AFFINITY        ==> jobid\n"
+        # rvl += "=======================================================================\n"
+        # last_sid = 0
+        # threads_bound = self.threads_bound
+        # cpus_processes= set(threads_bound.keys())
+        # #if not self.gpus_processes.issubset(cpus_processes):
+        # #    rvl += "           . ==>   Process from another user\n"
+            
+        # for (pid,proc) in sorted(iter(threads_bound.items()),key=lambda k_v:(k_v[1]['tag'],k_v[0])):
+            # if last_sid==0:
+                # last_sid = proc['sid']
+                # rvl += fmt.format(proc['sid'])
+            # elif last_sid != proc['sid']:
+                # last_sid = proc['sid']
+                # rvl += fmt.format(proc['sid'])
+            # else:
+                # rvl += '       '
+                
+            # rvl += '    ' + proc['tag']
+            # rvl += ' ==> '
+            # rvl += fmt.format(pid)
+            # rvl += ' ('
+            # rvl += proc['user']
+            # rvl += ','
+            # rvl += proc['cmd']
+            # rvl += ') ==> '
+
+            # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
+            # cores=[]
+            # threads=proc['threads']
+            # for tid in list(threads.keys()):
+                # if threads[tid]['state']=='R':
+                    # cores.append(threads[tid]['psr'])
+            # if len(cores)==0:
+                # rvl += "not running on cpu"
+            # else:
+                # rvl += list2CompactString(cores)
+            # rvl += "\n"
 
         #print ("self.gpus_info =  " + str(self.gpus_info))
         import pprint

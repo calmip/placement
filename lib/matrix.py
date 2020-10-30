@@ -178,23 +178,23 @@ class Matrix(object):
                     rvl += 'PROCESSES       ' + col_skipped
     
                     # Build and print the line "PROCESSES"
-                    rvl += AnsiCodes.red_foreground()
                     for p in g['PS']:
-                        pid = p[0];
-                        rvl += tasks_binding.threads_bound[pid]['tag']
-                    rvl += AnsiCodes.normal()
+                        pid  = p[0];
+                        prc  = tasks_binding.threads_bound[pid]
+                        rvl += AnsiCodes.map(prc['jobtag'])
+                        rvl += prc['tag']
+                        rvl += AnsiCodes.normal()
                     rvl += "\n"
     
                     # Build and print the line "USED MEMORY"
                     rvl += 'USED MEMORY     ' + col_skipped
-                    rvl += AnsiCodes.red_foreground()
                     for p in g['PS']:
                         mem = p[1];
+                        prc  = tasks_binding.threads_bound[pid]
+                        rvl += AnsiCodes.map(prc['jobtag'])
                         rvl += getGauge1(mem)
-                    rvl += AnsiCodes.normal()
-                    rvl += "\n"
-    
-                    rvl += "\n"
+                        rvl += AnsiCodes.normal()
+                    rvl += "\n\n"
                 
                 else:
                     rvl += '  '
@@ -270,7 +270,7 @@ class Matrix(object):
         pre = H[0] + ' '
         post= ''
         
-        # NOTE - pid=0 means = Print ean empty line, no process running !
+        # NOTE - pid=0 means = Print an empty line, no process running !
                     
         # Print the pid only for the first thread
         if pid == 0 or pid != self.__last_pid:
@@ -307,7 +307,7 @@ class Matrix(object):
         if pid==0:
             return pre + ' ' + debut + '.' + fin + cpumem + post + '\n'
         else:
-            return pre + ' ' + debut + AnsiCodes.red_foreground() + S[0] + AnsiCodes.normal() + fin + cpumem + post + '\n'
+            return pre + ' ' + debut + S + fin + cpumem + post + '\n'
 
     def __blankBeforeCore(self,socket,core):
         space = '.'

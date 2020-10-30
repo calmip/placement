@@ -391,7 +391,7 @@ def runCmdNoOut(cmd,host=None):
 class AnsiCodes(object):
 	'''Write AnsiCodes, outputting in colored characters'''
 	
-	sequences = [ '\033[30m','\033[31m','\033[32m','\033[33m','\033[34m','\033[35m','\033[36m','\033[90m','\033[93m','\033[95m' ]
+	sequences = [ '\033[30m','\033[31m','\033[32m','\033[33m','\033[34m','\033[35m','\033[36m','\033[37m' ]
 	
 	# static variable
 	__using_ansi= True
@@ -459,16 +459,16 @@ class AnsiCodes(object):
 	# Mapping from an integer to ansi codes
 	@staticmethod
 	def map(i):
-		'''i is an integer to be mapped to an ansi code
+		'''i is an integer to be mapped to an ansi code (32 codes supported)
 		   Return a sequence as follows:
-		      k = i : 10, l = i % 10
+		      k = i : 8, l = i % 8
 		        if k % 4 == 0 return bold + sequence[l]
 		        if k % 4 == 1 return bold + reverse       + sequence[l]
 		        if k % 4 == 2 return bold + underline     + sequence[l]
 		        if k % 4 == 3 return bold + strikethrough + sequence[l]'''
 
-		k = (i//10) % 4
-		l = i %10
+		k = (i//8) % 4
+		l = i %8
 		if k==0:
 			return AnsiCodes.bold() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
 		if k==1:
@@ -477,9 +477,4 @@ class AnsiCodes(object):
 			return AnsiCodes.boldunderline() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
 		if k==3:
 			return AnsiCodes.boldstrikethrough() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
-    
-			
-		
-		
-	# Writing a character with some color, then return to normal mode'''
 		
