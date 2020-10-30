@@ -138,18 +138,15 @@ class TestgetGauge(unittest.TestCase):
 
 class TestgetHostname(unittest.TestCase):
     def test_normal(self):
-        if 'HOSTNAME' in os.environ:
-            self.assertEqual(getHostname(),os.environ['HOSTNAME'])
-        else:
-            self.assertEqual(getHostname(),runCmd(['hostname','-s']).rstrip())
+         self.assertEqual(getHostname(),runCmd(['hostname','-s']).rstrip())
  
 class TestAnsiCodes(unittest.TestCase):
 	def test_map(self):
-		self.assertNotEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(2))
-		self.assertNotEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(11))
-		self.assertNotEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(21))
-		self.assertNotEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(31))
-		self.assertEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(41))
+		self.assertNotEqual(AnsiCodes.map(1),AnsiCodes.map(2))
+		self.assertNotEqual(AnsiCodes.map(1),AnsiCodes.map(11))
+		self.assertNotEqual(AnsiCodes.map(1),AnsiCodes.map(21))
+		self.assertNotEqual(AnsiCodes.map(1),AnsiCodes.map(31))
+		self.assertEqual(AnsiCodes.map(1),AnsiCodes.map(33))
 		         
 if __name__ == '__main__':
     unittest.main()
