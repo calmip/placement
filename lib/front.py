@@ -55,20 +55,14 @@ class FrontNode(object):
         return exe
             
     def __runPlacement(self,host):
-        """If necessary set the env PLACEMENT_REMOTE, then call placement again, appending --from-frontal to the parameters"""
+        """Call placement on a remote host, appending --from-frontal to the parameters"""
 
         cmd = self.argv.copy()
         
         # Replace cmd[0] (python script) with the path to the bash script
         cmd[0] = os.environ['PLACEMENTBASH']
         cmd.append('--from-frontal')
-        
-        if host!=getHostname():
-            os.environ['PLACEMENT_REMOTE'] = host
-
         runCmdNoOut(cmd,host)
-            
-        os.environ.pop('PLACEMENT_REMOTE',None)
         
     def setOptions(self,options,argv):
         """ Initialize together options and argv """
@@ -146,7 +140,7 @@ class FrontNode(object):
             except AttributeError:
                 hosts = expandNodeList(self.options.host)
 
-            # Verify the hosts are alive
+            # Verify that the hosts are alive
             # for h in hosts:
             #     ssh_h = runCmd('hostname -s',h).strip()
             #     if ssh_h != h:
