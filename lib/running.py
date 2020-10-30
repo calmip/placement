@@ -44,7 +44,7 @@ class RunningMode(TasksBinding):
         ==> Hardware is guessed from the node name, as usual
             Architecture is guessed from the running job """
 
-    def __init__(self,path,hardware,buildTasksBound,withMemory):
+    def __init__(self,options,hardware,buildTasksBound,jobsched=None):
         """ Constructor
 
         Arguments:
@@ -52,12 +52,19 @@ class RunningMode(TasksBinding):
         hardware       : The hardware we run on 
         buildTasksbound: How to build the tasks_bound data structure ? An object-function implementating the algorithm
         withMemory     : If True, try to know memory occupation / socket using a numastat command
+        jobsched       : If not None, an object extending JobSched (ex = slurm)
+                         Used to map processes and jobs
         """
 
         TasksBinding.__init__(self,None,0,0)
-        self.path = path
-        self.hardware = hardware
-        self.withMemory = withMemory
+        self.path       = options.check
+        self.withMemory = options.memory
+
+        self.hardware   = hardware
+        
+        self.__jobid    = options.jobid
+        self.__jobsched = jobsched
+
         self.pid=[]
         self.processus=[]
         self.tasks_bound   = None
@@ -158,8 +165,7 @@ class RunningMode(TasksBinding):
             gpus_bound.append(sg)
 
         self.gpus_info = gpus_bound
-        #print ("self.gpus_info =  " + str(self.gpus_info))
-        
+    
         # Collect the processes detected by the gpus, if any
         # They should be known by the cpu, but may be not in state 'R'
         for socket in self.gpus_info:
@@ -221,7 +227,7 @@ class RunningMode(TasksBinding):
    
            self.processus is a dictionary of dictionaries:
                k = pid
-               v = {'pid':pid, 'user':'user', 'cmd':'command line','threads':{'tid':{'tid':tid, 'psr':psr}}
+               v = {'pid':pid, 'user':'user', 'cmd':'command line', 'job':'jobid', 'threads':{'tid':{'tid':tid, 'psr':psr}}
    
            self.pid is the sorted list of pids
 
@@ -386,6 +392,32 @@ class RunningMode(TasksBinding):
                 processus[pid]['tag'] = numTaskToLetter(p_cnt)
                 p_cnt += 1
         
+        # Detect the job number corresponding to those processes
+        # The detection is done by the jobscheduler
+        # Keep track of the jobid AND give a tag to the jobig (will be used to choose the color)
+        js = self.__jobsched
+        if js != None:
+            joblt   = 1
+            jobtags = {}
+            for pid in list(processus):
+                jobid = js.findJobFromPid(pid)
+                processus[pid]['job']= jobid
+                if not jobid in jobtags:
+                    jobtags[jobid]   = joblt
+                    joblt            += 1
+                processus[pid]['jobtag'] = jobtags[jobid]
+                
+                # TODO - This is not optimized, we worked hard on this process before removing it....
+                if self.__jobid != None and jobid != str(self.__jobid):
+                    del(processus[pid])
+            
+        # Add default values por job and jobtag !
+        else:
+            for pid in processus:
+                processus[pid]['job']   = "0"
+                processus[pid]['jobtag']= 1
+
+		# Return
         self.processus = processus
         self.pid = sorted(processus.keys())
 
@@ -437,35 +469,38 @@ class RunningMode(TasksBinding):
 
     def PrintingForVerbose(self):
         """Return some verbose information"""
+
+        #import pprint
+        #print('tasks_bound')
+        #pprint.pprint(self.tasks_bound)
+
+        #print('threads_bound')
+        #pprint.pprint(self.threads_bound)
+
+        #print('gpus_infos')
+        #pprint.pprint(self.gpus_info)
+                
+        format_str = '{:>7} {}{:>4}{} {:>6} {:>10} {:>20} {:>30} {}{:>6}{}\n'
+        rvl = format_str.format('SESSION','','TASK','','PID','USER','CMD','AFFINITY','','jobid','')
+        rvl +=format_str.format('=======','','====','','===','====','===','========','','=====','')
         
-        fmt  = '{:7d}'
-        rvl  = "SESSION TASK ==>     PID (USER,CMD) ==> AFFINITY\n"
-        rvl += "================================================\n"
-        last_sid = 0
+        last_sid      = 0
         threads_bound = self.threads_bound
-        cpus_processes= set(threads_bound.keys())
-        if not self.gpus_processes.issubset(cpus_processes):
-            rvl += "           . ==>   Process from another user\n"
-            
+        nrm           = AnsiCodes.normal()
         for (pid,proc) in sorted(iter(threads_bound.items()),key=lambda k_v:(k_v[1]['tag'],k_v[0])):
             if last_sid==0:
                 last_sid = proc['sid']
-                rvl += fmt.format(proc['sid'])
+                sid      = proc['sid']
             elif last_sid != proc['sid']:
                 last_sid = proc['sid']
-                rvl += fmt.format(proc['sid'])
+                sid      = proc['sid']
             else:
-                rvl += '       '
-                
-            rvl += '    ' + proc['tag']
-            rvl += ' ==> '
-            rvl += fmt.format(pid)
-            rvl += ' ('
-            rvl += proc['user']
-            rvl += ','
-            rvl += proc['cmd']
-            rvl += ') ==> '
-
+                sid      = " "
+            
+            tag   = proc['tag']
+            col = AnsiCodes.map(proc['jobtag'])
+            jobid = proc['job']
+            
             # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
             cores=[]
             threads=proc['threads']
@@ -473,11 +508,12 @@ class RunningMode(TasksBinding):
                 if threads[tid]['state']=='R':
                     cores.append(threads[tid]['psr'])
             if len(cores)==0:
-                rvl += "not running on cpu"
+                affinity = "not running on cpu"
             else:
-                rvl += list2CompactString(cores)
-            rvl += "\n"
-
+                affinity = list2CompactString(cores)
+            
+            rvl += format_str.format(sid,col,tag,nrm,pid,proc['user'],proc['cmd'],affinity,col,jobid,nrm)
+        
         return rvl
 
 

@@ -142,6 +142,14 @@ class TestgetHostname(unittest.TestCase):
             self.assertEqual(getHostname(),os.environ['HOSTNAME'])
         else:
             self.assertEqual(getHostname(),runCmd(['hostname','-s']).rstrip())
-          
+ 
+class TestAnsiCodes(unittest.TestCase):
+	def test_map(self):
+		self.assertNotEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(2))
+		self.assertNotEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(11))
+		self.assertNotEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(21))
+		self.assertNotEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(31))
+		self.assertEqual(AnsiCodes._AnsiCodes__map(1),AnsiCodes._AnsiCodes__map(41))
+		         
 if __name__ == '__main__':
     unittest.main()

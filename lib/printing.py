@@ -331,14 +331,18 @@ class PrintingForMatrixThreads(PrintingFor):
     __sorted_threads_cores   = False
     __sorted_processes_cores = False
     __print_numamem          = False
+    __print_only_my_gpus     = False
+    
     def SortedThreadsCores(self):
-        self.__sorted_threads_cores = True
+        self.__sorted_threads_cores   = True
     def SortedProcessesCores(self):
         self.__sorted_processes_cores = True
     def ShowIdleThreads(self):
-        self.__show_idle = True
+        self.__show_idle          = True
     def PrintNumamem(self):
-        self.__print_numamem = True
+        self.__print_numamem      = True
+    def printOnlyMyGpus(self):
+        self.__print_only_my_gpus = True
 
     def __str__(self):
         '''Convert to a string (-> print) '''
@@ -423,6 +427,7 @@ class PrintingForMatrixThreads(PrintingFor):
             # Print one line/thread
             for (pid,thr) in sorted_processes:
                 l = local_threads_bound[pid]['tag']
+                j = local_threads_bound[pid]['jobtag']
                 threads = local_threads_bound[pid]['threads']
                 if self.__sorted_threads_cores:
                     sorted_threads = sorted(iter(threads.items()),key=lambda k_v:(k_v[1]['ppsr'],k_v[0]))
@@ -433,7 +438,7 @@ class PrintingForMatrixThreads(PrintingFor):
                     if not self.__show_idle and threads[tid]['state'] != 'R':
                         continue
                     if thr['state'] == 'R':
-                        S = l
+                        S = AnsiCodes.map(j) + l + AnsiCodes.normal()
                     elif thr['state'] == 'S':
                         S = '.'
                     else:
@@ -458,7 +463,7 @@ class PrintingForMatrixThreads(PrintingFor):
  
         # If wanted, print info about the gpus
         if self._tasks_binding.gpus_info != None:
-            rvl += "\n" + m.getGpuInfo(self._tasks_binding)
+            rvl += "\n" + m.getGpuInfo(self._tasks_binding, self.__print_only_my_gpus)
                   
         return rvl
 

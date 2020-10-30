@@ -49,9 +49,16 @@ export PLACEMENT_EXTERNALS=PEXT
 # The PYTHONPATH env variable
 export PYTHONPATH=$PLACEMENT_ROOT/lib:$PYTHONPATH
 
-# Path to the python programs
-PLACEMENTPY=$PLACEMENT_ROOT/lib/placement.py
+# Real path to this script
+export PLACEMENTBASH=$(realpath $0)
 
-# Calling the python script
+# Path to the python program
+export PLACEMENTPY=$PLACEMENT_ROOT/lib/placement.py
+
+# Just for debug (comment out for production)
+#export PLACEMENT_DEBUG=1
+
+
+# Calling the python main script
 exec $PLACEMENT_PYTHON $PLACEMENTPY $*
 

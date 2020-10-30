@@ -158,7 +158,7 @@ def getHostname():
             return p.communicate()[0].decode().split('\n')[0]
  
 def getHostnameRem():
-    """ Return the environment varialbe PLACEMENT_REMOTE if specified, of getHostName()"""
+    """ Return the environment variable PLACEMENT_REMOTE if specified, else return getHostName()"""
     if 'PLACEMENT_REMOTE' in os.environ:
         return os.environ['PLACEMENT_REMOTE']
     else:
@@ -329,7 +329,6 @@ def runCmd(cmd,host=None):
     '''Run a command locally or on another host, through ssh
        cmd may be a string or a list, if a string it is converted to a list
        host is the remote host, or None
-       If host is None, the environment variable PLACEMENT_REMOTE is used instead
        Return the output as a string
        Raises an exception if return value != 0
     '''
@@ -337,9 +336,6 @@ def runCmd(cmd,host=None):
     if isinstance(cmd,str):
         cmd = cmd.split(' ')
  
-    if host==None and 'PLACEMENT_REMOTE' in os.environ:
-        host = os.environ['PLACEMENT_REMOTE']
-               
     if host != None:
         cmd.insert(0,host)
         cmd.insert(0,'-x')
@@ -356,6 +352,7 @@ def runCmd(cmd,host=None):
         if 'PLACEMENT_DEBUG' in os.environ and os.environ['PLACEMENT_DEBUG']=='2':
             print(cpltdProc.stdout)
         return cpltdProc.stdout
+        
     else:
         msg = ' '.join(cmd)
         msg += ' - ERROR code = '
@@ -389,50 +386,92 @@ def runCmdNoOut(cmd,host=None):
         raise PlacementException(msg,cpltdProc.returncode)
         
 class AnsiCodes(object):
-
-    # static variable
-    __using_ansi= True
+	'''Write AnsiCodes, outputting in colored characters'''
+	
+	sequences = [ '\033[30m','\033[31m','\033[32m','\033[33m','\033[34m','\033[35m','\033[36m','\033[37m' ]
+	
+	# static variable
+	__using_ansi= True
     
-    @staticmethod
-    def noAnsi():
-        AnsiCodes.__using_ansi = False
-    @staticmethod
-    def Ansi():
-        AnsiCodes.__using_ansi = False
+	@staticmethod
+	def noAnsi():
+		AnsiCodes.__using_ansi = False
+
+	@staticmethod
+	def Ansi():
+		AnsiCodes.__using_ansi = False
         
-    @staticmethod
-    def __returnCode(code):
-        if AnsiCodes.__using_ansi:
-            return code
-        else:
-            return ''
+	@staticmethod
+	def __returnCode(code):
+		if AnsiCodes.__using_ansi:
+			return code
+		else:
+			return ''
     
-    @staticmethod
-    def bold():
-        return AnsiCodes.__returnCode('\033[1m')
+	@staticmethod
+	def bold():
+		return AnsiCodes.__returnCode('\033[1m')
     
-    @staticmethod
-    def underline():
-        return AnsiCodes.__returnCode('\033[41m')
+	@staticmethod
+	def underline():
+		return AnsiCodes.__returnCode('\033[41m')
     
-    @staticmethod
-    def boldunderline():
-        return AnsiCodes.__returnCode('\033[1;4m')
+	@staticmethod
+	def boldunderline():
+		return AnsiCodes.__returnCode('\033[1;4m')
     
-    @staticmethod
-    def white_background():
-        return AnsiCodes.__returnCode('\033[47m')
+	@staticmethod
+	def reverse():
+		return AnsiCodes.__returnCode('\033[07m')
     
-    @staticmethod
-    def red_foreground():
-        return AnsiCodes.__returnCode('\033[1;31m')
+	@staticmethod
+	def boldreverse():
+		return AnsiCodes.__returnCode('\033[1;7m')
     
-    @staticmethod
-    def mag_foreground():
-        return AnsiCodes.__returnCode('\033[1;35m')
+	@staticmethod
+	def strikethrough():
+		return AnsiCodes.__returnCode('\033[09m')
     
-    # Back to "normal"    
-    @staticmethod
-    def normal():
-        return AnsiCodes.__returnCode('\033[0m')
+	@staticmethod
+	def boldstrikethrough():
+		return AnsiCodes.__returnCode('\033[1;9m')
+    
+	@staticmethod
+	def white_background():
+		return AnsiCodes.__returnCode('\033[47m')
+    
+	@staticmethod
+	def red_foreground():
+		return AnsiCodes.__returnCode('\033[1;31m')
+    
+	@staticmethod
+	def mag_foreground():
+		return AnsiCodes.__returnCode('\033[1;35m')
+    
+	# Back to "normal"    
+	@staticmethod
+	def normal():
+		return AnsiCodes.__returnCode('\033[0m')
 
+	# Mapping from an integer to ansi codes
+	@staticmethod
+	def map(i):
+		'''i is an integer to be mapped to an ansi code (32 codes supported)
+		   Return a sequence as follows:
+		      k = i : 8, l = i % 8
+		        if k % 4 == 0 return bold + sequence[l]
+		        if k % 4 == 1 return bold + reverse       + sequence[l]
+		        if k % 4 == 2 return bold + underline     + sequence[l]
+		        if k % 4 == 3 return bold + strikethrough + sequence[l]'''
+
+		k = (i//8) % 4
+		l = i %8
+		if k==0:
+			return AnsiCodes.bold() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
+		if k==1:
+			return AnsiCodes.boldreverse() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
+		if k==2:
+			return AnsiCodes.boldunderline() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
+		if k==3:
+			return AnsiCodes.boldstrikethrough() + AnsiCodes.__returnCode(AnsiCodes.sequences[l])
+		
