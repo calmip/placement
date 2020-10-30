@@ -410,6 +410,12 @@ class RunningMode(TasksBinding):
                 # TODO - This is not optimized, we worked hard on this process before removing it....
                 if self.__jobid != None and jobid != str(self.__jobid):
                     del(processus[pid])
+            
+        # Add default values por job and jobtag !
+        else:
+            for pid in processus:
+                processus[pid]['job']   = "0"
+                processus[pid]['jobtag']= 1
 
 		# Return
         self.processus = processus
@@ -463,13 +469,24 @@ class RunningMode(TasksBinding):
 
     def PrintingForVerbose(self):
         """Return some verbose information"""
-        
-        format_str = '{:>7} {} {:>6} {:>10} {:>20} {:>30} {:>6}\n'
-        rvl = format_str.format('SESSION','TASK','PID','USER','CMD','AFFINITY','jobid')
-        rvl +=format_str.format('=======','====','===','====','===','========','=====')
+
+        #import pprint
+        #print('tasks_bound')
+        #pprint.pprint(self.tasks_bound)
+
+        #print('threads_bound')
+        #pprint.pprint(self.threads_bound)
+
+        #print('gpus_infos')
+        #pprint.pprint(self.gpus_info)
+                
+        format_str = '{:>7} {}{:>4}{} {:>6} {:>10} {:>20} {:>30} {}{:>6}{}\n'
+        rvl = format_str.format('SESSION','','TASK','','PID','USER','CMD','AFFINITY','','jobid','')
+        rvl +=format_str.format('=======','','====','','===','====','===','========','','=====','')
         
         last_sid      = 0
         threads_bound = self.threads_bound
+        nrm           = AnsiCodes.normal()
         for (pid,proc) in sorted(iter(threads_bound.items()),key=lambda k_v:(k_v[1]['tag'],k_v[0])):
             if last_sid==0:
                 last_sid = proc['sid']
@@ -480,8 +497,9 @@ class RunningMode(TasksBinding):
             else:
                 sid      = " "
             
-            tag   = "   " + AnsiCodes.map(proc['jobtag'])+proc['tag']+AnsiCodes.normal()
-            jobid = AnsiCodes.map(proc['jobtag'])+proc['job']+AnsiCodes.normal()
+            tag   = proc['tag']
+            col = AnsiCodes.map(proc['jobtag'])
+            jobid = proc['job']
             
             # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
             cores=[]
@@ -494,17 +512,7 @@ class RunningMode(TasksBinding):
             else:
                 affinity = list2CompactString(cores)
             
-            rvl += format_str.format(sid,tag,pid,proc['user'],proc['cmd'],affinity,jobid)
-        
-        #import pprint
-        #print('tasks_bound')
-        #pprint.pprint(self.tasks_bound)
-
-        #print('threads_bound')
-        #pprint.pprint(self.threads_bound)
-
-        #print('gpus_infos')
-        #pprint.pprint(self.gpus_info)
+            rvl += format_str.format(sid,col,tag,nrm,pid,proc['user'],proc['cmd'],affinity,col,jobid,nrm)
         
         return rvl
 
