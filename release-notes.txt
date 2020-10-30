@@ -1,3 +1,7 @@
+v 1.13.0
+--------
+    Threads mode: coloring processes and threads from the jobid (works with slurm)
+
 v 1.12.1
 --------
     Call script: Introduced the environment variable PYTHONIOENCODING to force the encoding, whatever the locale selected on the host
