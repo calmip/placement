@@ -36,7 +36,7 @@ class FrontNode(object):
     """
 
     def __init__(self,externals):
-        """ externals = An array of external commands, used to decide which JobSched objet to instantiate
+        """ externals = An array of external commands, used to decide which JobSched object to instantiate
         """
         self.options  = None
         self.argv     = None
@@ -55,18 +55,14 @@ class FrontNode(object):
         return exe
             
     def __runPlacement(self,host):
-        """If necessary set the env PLACEMENT_REMOTE, then call placement again, appending --from-frontal to the parameters"""
+        """Call placement on a remote host, appending --from-frontal to the parameters"""
 
-        cmd = self.argv.copy()        
-        cmd.append('--from-frontal')
+        cmd = self.argv.copy()
         
-        if host!=getHostname():
-            os.environ['PLACEMENT_REMOTE'] = host
-
-        cmd.insert(0,os.environ['PLACEMENT_PYTHON'])
-        runCmdNoOut(cmd)
-            
-        os.environ.pop('PLACEMENT_REMOTE',None)
+        # Replace cmd[0] (python script) with the path to the bash script
+        cmd[0] = os.environ['PLACEMENTBASH']
+        cmd.append('--from-frontal')
+        runCmdNoOut(cmd,host)
         
     def setOptions(self,options,argv):
         """ Initialize together options and argv """
@@ -75,6 +71,9 @@ class FrontNode(object):
         
     def getJobSchedName(self): 
         return self.__sched_name
+        
+    def getJobSched(self):
+        return self.__sched
 
     def runPlacement(self):
         """ For some options, we run placement (or another exe), 
@@ -141,7 +140,7 @@ class FrontNode(object):
             except AttributeError:
                 hosts = expandNodeList(self.options.host)
 
-            # Verify the hosts are alive
+            # Verify that the hosts are alive
             # for h in hosts:
             #     ssh_h = runCmd('hostname -s',h).strip()
             #     if ssh_h != h:
@@ -152,6 +151,7 @@ class FrontNode(object):
             self.argv.append('ALL')
             for h in hosts:
                 try:
+                    #print ("KOUKOU Executing placement on {0}".format(h))
                     self.__runPlacement(h)
                 except PlacementException as e:
                     print ("host " + h)

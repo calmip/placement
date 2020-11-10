@@ -137,7 +137,8 @@ def main():
             return 0
 
     except PlacementException as e:
-        print("PLACEMENT " + str(e), file = sys.stderr)
+        #print("PLACEMENT " + str(e), file = sys.stderr)
+        print ("PLACEMENT " + str(e))
         return 1
                
     # Guess the hardware, from the placement.conf file and from environment variables
@@ -162,8 +163,8 @@ def main():
         # First stage: Compute data and store them inside tasks_binding
         # If --check specified, data are computed from the running job(s)
         if options.check != None:
-            #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_running(options,args,hard)
-            tasks_binding = compute_data_from_running(options,args,hard)
+            #[tasks,tasks_bound,threads_bound,over_cores,archi] = compute_data_from_running(options,args,hard,jobsched)
+            tasks_binding = compute_data_from_running(options,args,hard,fn.getJobSched())
 
         # Else, data are computed from the command line parameters
         else:
@@ -173,7 +174,8 @@ def main():
         # outputs is an array of objects extending PrintingFor
         outputs = buildOutputs(options,tasks_binding)
         if len(outputs)==0:
-            print ("OUPS, No output specified !", file = sys.stderr)
+            #print ("OUPS, No output specified !", file = sys.stderr)
+            print ("OUPS, No output specified !")
 
         if 'jobid' in options and options.jobid != None:
             print("jobid " + str(options.jobid))
@@ -247,6 +249,8 @@ def buildOutputs(options,tasks_binding):
             o.SortedThreadsCores()
         if options.sorted_processes_cores == True:
             o.SortedProcessesCores()
+        if options.jobid != None:
+            o.printOnlyMyGpus()
         outputs.append(o)
 
     # Only with --check: print a summary
@@ -390,7 +394,7 @@ def show_env():
         msg += '\n'
     print(msg)
 
-def compute_data_from_running(options,args,hard):
+def compute_data_from_running(options,args,hard,jobsched):
     """ Compute and return task_distrib observing a running program
     
     Arguments:
@@ -399,15 +403,11 @@ def compute_data_from_running(options,args,hard):
     hard: The hardware
     """
 
-
-    #if options.taskset == True:
-        #buildTasksBound = BuildTasksBoundFromTaskSet()
-    #else:
-        #buildTasksBound = BuildTasksBoundFromPs()
+    #import pprint
+    #pprint.pprint(options)
 
     buildTasksBound = BuildTasksBoundFromPs()
-    path = options.check
-    task_distrib = RunningMode(path,hard,buildTasksBound,options.memory)
+    task_distrib = RunningMode(options,hard,buildTasksBound,jobsched)
 
     return task_distrib
 

@@ -53,7 +53,12 @@ class JobSched(object):
            WARNING - Jobs in any other state than RUNNING are ignored"""
 
         return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
-        
+
+    def findJobFromPid(self,pid):
+        """Return the jobid, from the process id"""
+		
+        return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
+
     def findMyJob(self):
         """Call FindJobsFromUser, passing the output of whoami, and keeping only the FIRST job returned
            Return  a tuple (jobid,partition,user,nodeset), or ("","","")

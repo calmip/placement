@@ -147,7 +147,15 @@ class Matrix(object):
 
         return rvl
 
-    def getGpuInfo(self,tasks_binding):
+    def __isGpuMine(self,g,tasks_binding):
+        '''Return True if we find some process belonging to me in the gpu processes'''
+
+        for p in g['PS']:
+            if p[0] in tasks_binding.threads_bound:
+                return True
+        return False
+		
+    def getGpuInfo(self,tasks_binding, print_only_my_gpus):
         """ return a string, representing the status of the gpus connected to the sockets"""
 
         rvl = ""
@@ -158,33 +166,41 @@ class Matrix(object):
         col_skipped = ''
         for s in gpus_info:
             for g in s:
-                rvl += '  '
-                rvl += 'GPU ' + str(g['id']) + "\n"
-                rvl += 'USE             ' + col_skipped + getGauge(g['U'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['U']) + "%\n"
-                rvl += 'MEMORY          ' + col_skipped + getGauge(g['M'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['M']) + "%\n"
-                rvl += 'POWER           ' + col_skipped + getGauge(g['P'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['P']) + "%\n"
-                rvl += 'PROCESSES       ' + col_skipped
-                # Build and print the line "PROCESSES"
-                rvl += AnsiCodes.red_foreground()
-                for p in g['PS']:
-                    pid = p[0];
-                    if tasks_binding.threads_bound.get(pid)!=None:
-                        rvl += tasks_binding.threads_bound[pid]['tag']
-                    else:
-                        rvl += '.'
-                rvl += AnsiCodes.normal()
-                rvl += "\n"
 
-                # Build and print the line "USED MEMORY"
-                rvl += 'USED MEMORY     ' + col_skipped
-                rvl += AnsiCodes.red_foreground()
-                for p in g['PS']:
-                    mem = p[1];
-                    rvl += getGauge1(mem)
-                rvl += AnsiCodes.normal()
-                rvl += "\n"
-
-                rvl += "\n"
+                # If print_only_my_gpus: do not print a gpu if it is not affected to me !
+                print_gpu = (not print_only_my_gpus) or self.__isGpuMine(g,tasks_binding)
+                if print_gpu:
+                    rvl += '  '
+                    rvl += 'GPU ' + str(g['id']) + "\n"
+                    rvl += 'USE             ' + col_skipped + getGauge(g['U'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['U']) + "%\n"
+                    rvl += 'MEMORY          ' + col_skipped + getGauge(g['M'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['M']) + "%\n"
+                    rvl += 'POWER           ' + col_skipped + getGauge(g['P'],self.__hard.CORES_PER_SOCKET,True,True) + ' ' + str(g['P']) + "%\n"
+                    rvl += 'PROCESSES       ' + col_skipped
+    
+                    # Build and print the line "PROCESSES"
+                    for p in g['PS']:
+                        pid  = p[0];
+                        prc  = tasks_binding.threads_bound[pid]
+                        rvl += AnsiCodes.map(prc['jobtag'])
+                        rvl += prc['tag']
+                        rvl += AnsiCodes.normal()
+                    rvl += "\n"
+    
+                    # Build and print the line "USED MEMORY"
+                    rvl += 'USED MEMORY     ' + col_skipped
+                    for p in g['PS']:
+                        mem = p[1];
+                        prc  = tasks_binding.threads_bound[pid]
+                        rvl += AnsiCodes.map(prc['jobtag'])
+                        rvl += getGauge1(mem)
+                        rvl += AnsiCodes.normal()
+                    rvl += "\n\n"
+                
+                else:
+                    rvl += '  '
+                    rvl += 'GPU ' + str(g['id']) + "\n"
+                    rvl += AnsiCodes.red_foreground() + AnsiCodes.reverse() + "NOT USED BY THIS JOB" + AnsiCodes.normal() + "\n\n"
+                    
             col_skipped += ' '*(self.__hard.CORES_PER_SOCKET+1)
                 
         return rvl
@@ -210,25 +226,6 @@ class Matrix(object):
         
         fmt = '{:5.1f}'
         return fmt.format(abs_mem) + unit
-
-    def __getGpuInfo_S(self,tasks_binding):
-        """ return a string, representing the status of the gpus connected to the sockets"""
-        
-        gpus_info = tasks_binding.gpus_info
-        rvl    = "\nGPUS INFO:"
-        i = 0
-        j = tasks_binding.archi.cores_per_socket + 1
-        k = 0
-        for s in gpus_info:
-            for g in s:
-                if k==0:
-                    rvl += 6*' ' + j*i*' '
-                    k+=1
-                else:
-                    rvl += 16*' ' + j*i*' '
-                rvl += str(g['id'])+'-'+'U'+str(g['U'])+'%-M'+str(g['M'])+'%-C'+str(g['P'])+'%'+"\n"
-            i += 1
-        return rvl
 
     def __getMemPidSocket(self,sockets_mem):
         """ Compute a NEW dict of arrays: 
@@ -273,7 +270,7 @@ class Matrix(object):
         pre = H[0] + ' '
         post= ''
         
-        # NOTE - pid=0 means = Print ean empty line, no process running !
+        # NOTE - pid=0 means = Print an empty line, no process running !
                     
         # Print the pid only for the first thread
         if pid == 0 or pid != self.__last_pid:
@@ -310,7 +307,7 @@ class Matrix(object):
         if pid==0:
             return pre + ' ' + debut + '.' + fin + cpumem + post + '\n'
         else:
-            return pre + ' ' + debut + AnsiCodes.red_foreground() + S[0] + AnsiCodes.normal() + fin + cpumem + post + '\n'
+            return pre + ' ' + debut + S + fin + cpumem + post + '\n'
 
     def __blankBeforeCore(self,socket,core):
         space = '.'

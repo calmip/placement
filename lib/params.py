@@ -93,7 +93,7 @@ import argparse
 from exception import *
 from front import *
 
-PLACEMENT_VERSION = "1.12.1"
+PLACEMENT_VERSION = "1.13.0"
 
 def params():
     """Parse the command line and return a tuple:
@@ -119,7 +119,7 @@ def params():
     if fn.getJobSchedName() != "":
         group.add_argument("--checkme",dest='checkme',action="store_true",help="Check my running job")
         group.add_argument("--jobid",dest='jobid',action="store",type=int,help="Check this running job")
-
+    
     group.add_argument("--host",dest='host',action="store",type=str,help="Check those hosts, ex: node[10-15]")
 
     group = parser.add_argument_group('Displaying some information')
@@ -169,7 +169,11 @@ def params():
     # mpi_aware = force mode to numactl
     if options.mpiaware:
         options.output_mode="numactl"
-    
+
+    # If necessary, add the jobid attribute
+    if not hasattr(options,'jobid'):
+        options.jobid = None
+        
     fn.setOptions(options,sys.argv)
 
     #print("coucou "+options.check)
