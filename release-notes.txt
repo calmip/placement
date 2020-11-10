@@ -1,3 +1,7 @@
+v 1.13.1:
+---------
+    BUG - sometimes hang when displaying threads
+
 v 1.13.0
 --------
     Threads mode: coloring processes and threads from the jobid (works with slurm)

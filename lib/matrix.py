@@ -178,22 +178,32 @@ class Matrix(object):
                     rvl += 'PROCESSES       ' + col_skipped
     
                     # Build and print the line "PROCESSES"
+                    # A process may be seen by the gpu but not considered by placement
+                    # because its cpu use is 0 - Exemple = Cuda mps
                     for p in g['PS']:
                         pid  = p[0];
-                        prc  = tasks_binding.threads_bound[pid]
-                        rvl += AnsiCodes.map(prc['jobtag'])
-                        rvl += prc['tag']
-                        rvl += AnsiCodes.normal()
+                        if pid in tasks_binding.threads_bound:
+                            prc  = tasks_binding.threads_bound[pid]
+                            rvl += AnsiCodes.map(prc['jobtag'])
+                            rvl += prc['tag']
+                            rvl += AnsiCodes.normal()
+                        else:
+                            rvl += '.'
+  
                     rvl += "\n"
     
                     # Build and print the line "USED MEMORY"
                     rvl += 'USED MEMORY     ' + col_skipped
                     for p in g['PS']:
+                        pid = p[0]
                         mem = p[1];
-                        prc  = tasks_binding.threads_bound[pid]
-                        rvl += AnsiCodes.map(prc['jobtag'])
-                        rvl += getGauge1(mem)
-                        rvl += AnsiCodes.normal()
+                        if pid in tasks_binding.threads_bound:
+                            prc  = tasks_binding.threads_bound[pid]
+                            rvl += AnsiCodes.map(prc['jobtag'])
+                            rvl += getGauge1(mem)
+                            rvl += AnsiCodes.normal()
+                        else:
+                            rvl += ' '
                     rvl += "\n\n"
                 
                 else:
