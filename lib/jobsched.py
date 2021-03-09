@@ -32,7 +32,7 @@ class JobSched(object):
     """This class is an abstract class, all classes related to the job schedulers extend this class"""
 
     def findJobFromId(self,jobid):
-        """Return a tuple representing the the jobs of the jobid passed by parameter.
+        """Return a tuple representing the job of the jobid passed by parameter.
            Return (user,nodeset,jobid,partition)
            user      = The user who launched the job
            nodeset   = A list of nodes used by the job
@@ -56,6 +56,11 @@ class JobSched(object):
 
     def findJobFromPid(self,pid):
         """Return the jobid, from the process id"""
+		
+        return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
+
+    def findJobFromCore(self,pid):
+        """Return the jobid, from the core number"""
 		
         return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
 
