@@ -72,7 +72,8 @@ class Slurm(JobSched):
                         for line in infile:
                             line = line.strip()
                             if line != '':
-                                cores = self.nodesetToHosts(line)    # Same format for the cpusets as for the nodesets !
+                                # Nearly same format for the cpusets as for the nodesets !
+                                cores = self.nodesetToHosts('['+line+']')
                                 for core in cores:
                                     core2jobid[core] = jobid
             
@@ -80,7 +81,7 @@ class Slurm(JobSched):
             self.__core2jobid= core2jobid
             
             import pprint
-            pprint.pprint(pid2jobid)
+            #pprint.pprint(pid2jobid)
             pprint.pprint(core2jobid)
 
     def findJobFromId(self,jobid):
