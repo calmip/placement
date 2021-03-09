@@ -37,6 +37,7 @@ class Slurm(JobSched):
     def __init__(self):
         self.__pid2jobid = None
         self.__core2jobid= None
+        self._job2tag    = None
         
     def __initDataStructures(self):
         '''Init self.__pid2jobid and self.__core2jobid 
@@ -76,12 +77,22 @@ class Slurm(JobSched):
                                 cores = self.nodesetToHosts('['+line+']')
                                 for core in cores:
                                     core2jobid[core] = jobid
+        
+            # build the map self._job2tag
+            jobids = set(core2jobid.values())
+            t = 0;
+            m = {}
+            for j in jobids:
+                t += 1;
+                m[j] = t
+                
             
             self.__pid2jobid = pid2jobid
             self.__core2jobid= core2jobid
+            self._job2tag    = m
             
             import pprint
-            #pprint.pprint(pid2jobid)
+            pprint.pprint(pid2jobid)
             pprint.pprint(core2jobid)
 
     def findJobFromId(self,jobid):

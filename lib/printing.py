@@ -392,14 +392,14 @@ class PrintingForMatrixThreads(PrintingFor):
                     
             threads_bound[pid]['ppsr_min'] = p_ppsr_min
 
-        # 2/ Create a copy of threads_bound, to sid_threads_bound
+        # 2/ Create a copy of threads_bound, to sid_threads_bound (sid = session id)
         sid_threads_bound = {}
         for pid in list(threads_bound.keys()):
-            proc = threads_bound[pid]
-            sid = proc['sid']
+            proc = threads_bound[pid]           # info about the process
+            sid = proc['sid']                   # The session id
             if not sid in sid_threads_bound:
                 sid_threads_bound[sid] = {}
-            sid_threads_bound[sid][pid] = proc
+            sid_threads_bound[sid][pid] = proc  # Store the infos about the processes in session indexed data structure
 
         # If memory printing, or gpu_info, or if not threads detected, consider the whole machine
         if self.__print_numamem or gpus_info != None or len(threads_bound)==0:
@@ -414,6 +414,9 @@ class PrintingForMatrixThreads(PrintingFor):
         # Print a second header line, only if threads to display
         rvl += m.getHeader1()
 
+        # Print a third header line, with the cpusets colored
+        ######rvl += m.getHeader2()
+        
         # Printing the body, sorting by sid
         one_line_printed = False
         for sid in sorted(list(sid_threads_bound.keys())):
@@ -426,23 +429,30 @@ class PrintingForMatrixThreads(PrintingFor):
 
             # Print one line/thread
             for (pid,thr) in sorted_processes:
-                l = local_threads_bound[pid]['tag']
-                j = local_threads_bound[pid]['jobtag']
-                threads = local_threads_bound[pid]['threads']
+                l = local_threads_bound[pid]['tag']            # The letter (A,B,C,...)
+                j = local_threads_bound[pid]['jobtag']         # The tag corresponding to the job --> the color
+                threads = local_threads_bound[pid]['threads']  # The list of threads
+
+                # Sorting the threads
                 if self.__sorted_threads_cores:
                     sorted_threads = sorted(iter(threads.items()),key=lambda k_v:(k_v[1]['ppsr'],k_v[0]))
                 else:
                     sorted_threads = sorted(threads.items())
     
+                # 
                 for (tid,thr) in sorted_threads:
                     if not self.__show_idle and threads[tid]['state'] != 'R':
                         continue
+                        
+                    S = AnsiCodes.map(j)
+                    
                     if thr['state'] == 'R':
-                        S = AnsiCodes.map(j) + l + AnsiCodes.normal()
+                        S += l
                     elif thr['state'] == 'S':
-                        S = '.'
+                        S += '.'
                     else:
-                        S = '?'
+                        S += '?'
+                    S += AnsiCodes.normal()
                     
                     if 'mem' in thr:
                         rvl += m.getLine(pid,tid,threads[tid]['ppsr'],S,l,threads[tid]['cpu'],threads[tid]['mem'],thr['sid'])

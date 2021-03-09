@@ -399,15 +399,10 @@ class RunningMode(TasksBinding):
         
         js = self.jobsched
         if js != None:
-            joblt   = 1
-            jobtags = {}
             for pid in list(processus):
                 jobid = js.findJobFromPid(pid)
-                processus[pid]['job']= jobid
-                if not jobid in jobtags:
-                    jobtags[jobid]   = joblt
-                    joblt            += 1
-                processus[pid]['jobtag'] = jobtags[jobid]
+                processus[pid]['job']    = jobid
+                processus[pid]['jobtag'] = js.findTagFromJob(jobid)
                 
                 # TODO - This is not optimized, we worked hard on this process before removing it....
                 if self.jobid != None and jobid != str(self.jobid):
