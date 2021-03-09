@@ -56,14 +56,13 @@ class RunningMode(TasksBinding):
                          Used to map processes and jobs (ex: slurm jobs)
         """
 
-        TasksBinding.__init__(self,None,0,0)
+        TasksBinding.__init__(self,None,0,0,jobsched)
         self.path       = options.check
         self.withMemory = options.memory
 
         self.hardware   = hardware
         
-        self.__jobid    = options.jobid
-        self.__jobsched = jobsched
+        self.jobid      = options.jobid
 
         self.pid=[]
         self.processus=[]
@@ -398,7 +397,7 @@ class RunningMode(TasksBinding):
         # The tag corresponds to the jobid (given by the scheduler), it will be used to select the color
         # of the letter representing the process
         
-        js = self.__jobsched
+        js = self.jobsched
         if js != None:
             joblt   = 1
             jobtags = {}
@@ -411,7 +410,7 @@ class RunningMode(TasksBinding):
                 processus[pid]['jobtag'] = jobtags[jobid]
                 
                 # TODO - This is not optimized, we worked hard on this process before removing it....
-                if self.__jobid != None and jobid != str(self.__jobid):
+                if self.jobid != None and jobid != str(self.jobid):
                     del(processus[pid])
             
         # Add default values for job and jobtag !
