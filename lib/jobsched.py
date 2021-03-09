@@ -65,13 +65,13 @@ class JobSched(object):
         return "INTERNAL ERROR - ABSTRACT CLASS !!!!!"
 
     def findTagFromJob(self,jobid):
-        """Return a 'jobtag' from the job number, or "" if the job number is not found
+        """Return a 'jobtag' from the job number, or 0 if the job number is not found
            the map: self._job2tag is built by the derived classes"""
         
         if jobid in self._job2tag:
-            return self._job2tag[jobid]
+            return int(self._job2tag[jobid])
         else:
-            return ""
+            return 0
         
     def findMyJob(self):
         """Call FindJobsFromUser, passing the output of whoami, and keeping only the FIRST job returned

@@ -494,9 +494,16 @@ class RunningMode(TasksBinding):
             else:
                 sid      = " "
             
-            tag   = proc['tag']
+            #import pprint
+            #pprint.pprint(proc)
+            
+            if 'job' in proc and proc['job'] != '':
+	            jobid = proc['job']
+            else:
+                jobid = '-'
+				
+            tag = proc['tag']
             col = AnsiCodes.map(proc['jobtag'])
-            jobid = proc['job']
             
             # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
             cores=[]
@@ -508,7 +515,7 @@ class RunningMode(TasksBinding):
                 affinity = "not running on cpu"
             else:
                 affinity = list2CompactString(cores)
-            
+
             rvl += format_str.format(sid,col,tag,nrm,pid,proc['user'],proc['cmd'],affinity,col,jobid,nrm)
         
         return rvl

@@ -91,9 +91,9 @@ class Slurm(JobSched):
             self.__core2jobid= core2jobid
             self._job2tag    = m
             
-            import pprint
-            pprint.pprint(pid2jobid)
-            pprint.pprint(core2jobid)
+            #import pprint
+            #pprint.pprint(pid2jobid)
+            #pprint.pprint(core2jobid)
 
     def findJobFromId(self,jobid):
         """Call squeue and return a tuple with user/nodeset/jobid """
@@ -141,7 +141,7 @@ class Slurm(JobSched):
         return nodes
 
     def findJobFromPid(self,pid):
-        """Return the jobid from the pid, or None if not found"""
+        """Return the jobid from the pid, or "" if not found"""
         
         self.__initDataStructures()
         pid = str(pid)
@@ -149,10 +149,10 @@ class Slurm(JobSched):
             return self.__pid2jobid[pid]
         
         else:
-            return None
+            return ""
 
     def findJobFromCore(self,core):
-        """Return the jobid from the core, or None if not found"""
+        """Return the jobid from the core, or "" if not found"""
         
         self.__initDataStructures()
         core = str(core)
@@ -160,4 +160,4 @@ class Slurm(JobSched):
             return self.__core2jobid[core]
         
         else:
-            return None
+            return ""

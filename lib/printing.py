@@ -411,12 +411,13 @@ class PrintingForMatrixThreads(PrintingFor):
         rvl = ''
         rvl += m.getHeader()
 
+        # Print a third header line, with the cpusets colored
+        #rvl += m.getHeader2()
+        rvl += m.getHeader2(tasks_binding.jobsched)
+        
         # Print a second header line, only if threads to display
         rvl += m.getHeader1()
 
-        # Print a third header line, with the cpusets colored
-        ######rvl += m.getHeader2()
-        
         # Printing the body, sorting by sid
         one_line_printed = False
         for sid in sorted(list(sid_threads_bound.keys())):
