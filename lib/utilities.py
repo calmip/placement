@@ -115,24 +115,38 @@ def strminlen(x,l):
         
 def expandNodeList(nodelist):
     """ Return a list nodes, just like ExpandNodeList
+        toto[5-6]titi[5-6] returns ['toto5titi5','toto5titi6', 'toto6titi5','toto6titi6']
         toto[5-6] -> return ['toto5','toto6'] 
         toto      -> return ['toto'] """
-    
-    matches = re.match('(.+)\[(.+)\](.*)',nodelist)
-    if matches:
-        prefix = matches.group(1)
-        rge    = matches.group(2)
-        postfix= matches.group(3)
-        
-        # '001-004' ==> '001'
-        # '001'     ==> 3 (number of digits)
-        low = low=re.match('^([0-9]+)',rge).group(1)
-        l   = len(low)
-        
-        #print map(lambda x:prefix+str(x)+postfix,compactString2List(matches.group(2)))
-        return [prefix+strminlen(x,l)+postfix for x in compactString2List(rge)]
-    else:
-        return [ nodelist ]
+    #import pprint
+    nodelists_out= [nodelist]
+    while True:
+        expanded = False
+        nodelists_in  = nodelists_out
+        nodelists_out = []
+        for ndlst in nodelists_in:
+            matches = re.match('(.+)\[(.+)\](.*)',ndlst)
+            if matches:
+                expanded = True
+                prefix = matches.group(1)
+                rge    = matches.group(2)
+                postfix= matches.group(3)
+                
+                # '001-004' ==> '001'
+                low = low=re.match('^([0-9]+)',rge).group(1)
+
+                # '001'     ==> 3 (number of digits)
+                l   = len(low)
+                
+                #pprint.pprint([prefix+strminlen(x,l)+postfix for x in compactString2List(rge)])
+                nodelists_out += [prefix+strminlen(x,l)+postfix for x in compactString2List(rge)]
+            else:
+                nodelists_out.append(ndlst)
+        #pprint.pprint(nodelists_out)
+        if not expanded:
+            break
+            
+    return nodelists_out
 
 def flatten(l):
     """ Return a flatten version of the list passed in parameter
