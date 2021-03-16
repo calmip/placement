@@ -40,7 +40,7 @@ class Slurm(JobSched):
         self._job2tag    = None
         
     def __initDataStructures(self):
-        '''Init self.__pid2jobid and self.__core2jobid 
+        '''Init self.__pid2jobid, self.__core2jobid and self._job2tag
            Explore the /sys/fs/cgroup/cpuset pseudo filesystem'''
         
         # If the data do not exist, build them, else return
@@ -79,7 +79,10 @@ class Slurm(JobSched):
                                     core2jobid[core] = jobid
         
             # build the map self._job2tag
-            jobids = set(core2jobid.values())
+            jobids = sorted(list(set(core2jobid.values())))
+            import pprint
+            pprint.pprint(jobids)
+            
             t = 0;
             m = {}
             for j in jobids:
