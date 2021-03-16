@@ -36,8 +36,70 @@ class Slurm(JobSched):
 
     def __init__(self):
         self.__pid2jobid = None
-		
+        self.__core2jobid= None
+        self._job2tag    = None
+        
+    def __initDataStructures(self):
+        '''Init self.__pid2jobid, self.__core2jobid and self._job2tag
+           Explore the /sys/fs/cgroup/cpuset pseudo filesystem'''
+        
+        # If the data do not exist, build them, else return
+        if self.__pid2jobid == None or self.__core2jobid == None:
+            
+            pid2jobid = {}
+            core2jobid= {}
+            
+            # Looking for /sys/fs/cgroup/cpuset/slurm/uid_xxx/job_yyyyyy/step_batch
+            top_dir = "/sys/fs/cgroup/cpuset/slurm/"
+            for root, dirs, files in os.walk(top_dir,False):
+                leaf = os.path.basename(root)
+                if leaf.startswith('step_'):
+                    job_path = os.path.split(root)[0];    # => .../slurm/uid_xxx/job_yyyyyy
+                    job_dir  = os.path.split(job_path)[1] # => job_yyyyyy
+                    jobid    = job_dir.replace('job_','') # => yyyyyy
+                    
+                    # The pids are in the file cgroup.procs
+                    pids = []
+                    cgroup_procs = root + '/cgroup.procs'
+                    with open(cgroup_procs, 'r') as infile:
+                        for line in infile:
+                            line = line.strip()
+                            if line != '':
+                                pid2jobid[line] = jobid
+                                
+                    # The cores are in the file cpuset.cpus
+                    cpuset_cpus = root + '/cpuset.cpus'
+                    with open(cpuset_cpus, 'r') as infile:
+                        for line in infile:
+                            line = line.strip()
+                            if line != '':
+                                # Nearly same format for the cpusets as for the nodesets !
+                                cores = self.nodesetToHosts('['+line+']')
+                                for core in cores:
+                                    core2jobid[core] = jobid
+        
+            # build the map self._job2tag
+            jobids = sorted(list(set(core2jobid.values())))
+            import pprint
+            pprint.pprint(jobids)
+            
+            t = 0;
+            m = {}
+            for j in jobids:
+                t += 1;
+                m[j] = t
+                
+            
+            self.__pid2jobid = pid2jobid
+            self.__core2jobid= core2jobid
+            self._job2tag    = m
+            
+            #import pprint
+            #pprint.pprint(pid2jobid)
+            #pprint.pprint(core2jobid)
+
     def findJobFromId(self,jobid):
+        """Call squeue and return a tuple with user/nodeset/jobid """
         
         cmd = 'squeue -t RUNNING -j ' + str(jobid) + ' --noheader -o %.16R@%.15u@%.7A'
         try:
@@ -72,6 +134,7 @@ class Slurm(JobSched):
         return tuples
 
     def nodesetToHosts(self,nodeset):
+        """Expand the nodeset to a list of hosts"""
 
         try:
             nodes = runCmd('nodeset -e ' + nodeset).rstrip().split(' ')
@@ -81,41 +144,23 @@ class Slurm(JobSched):
         return nodes
 
     def findJobFromPid(self,pid):
-        """Explore the /sys/fs/cgroup/cpuset pseudo filesystem, deposit the result in self.__pid2jobid
-           Return the jobid from the pid, or None if not found
-        """
+        """Return the jobid from the pid, or "" if not found"""
         
-        # If the data do not exist, build them
-        if self.__pid2jobid == None:
-            
-            pid2jobid = {}
-            
-            # Looking for /sys/fs/cgroup/cpuset/slurm/uid_xxx/job_yyyyyy/step_batch
-            top_dir = "/sys/fs/cgroup/cpuset/slurm/"
-            for root, dirs, files in os.walk(top_dir,False):
-                leaf = os.path.basename(root)
-                if leaf.startswith('step_'):
-                    job_path = os.path.split(root)[0];    # => .../slurm/uid_xxx/job_yyyyyy
-                    job_dir  = os.path.split(job_path)[1] # => job_yyyyyy
-                    jobid    = job_dir.replace('job_','') # => yyyyyy
-                    
-                    # The pids are in the file cgroup.procs
-                    pids = []
-                    cgroup_procs = root + '/cgroup.procs'
-                    with open(cgroup_procs, 'r') as infile:
-                        for line in infile:
-                            line = line.strip()
-                            if line != '':
-                                pid2jobid[line] = jobid
-            
-            self.__pid2jobid = pid2jobid
-            
-            #import pprint
-            #pprint.pprint(pid2jobid)
-        
+        self.__initDataStructures()
         pid = str(pid)
         if pid in self.__pid2jobid:
             return self.__pid2jobid[pid]
         
         else:
-            return None
+            return ""
+
+    def findJobFromCore(self,core):
+        """Return the jobid from the core, or "" if not found"""
+        
+        self.__initDataStructures()
+        core = str(core)
+        if core in self.__core2jobid:
+            return self.__core2jobid[core]
+        
+        else:
+            return ""
