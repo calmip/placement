@@ -38,7 +38,7 @@ class TasksBinding(object):
     over_cores    = A list of cores bound to 2 or more tasks (overlapping tasks, should not happen)
     """
 
-    def __init__(self,archi,cpus_per_task=0,tasks=0):
+    def __init__(self,archi,cpus_per_task=0,tasks=0,jobsched=None):
         self.archi = archi
         if archi != None and cpus_per_task == 0:
             self.cpus_per_task = self.archi.cpus_per_task
@@ -52,6 +52,7 @@ class TasksBinding(object):
         self.threads_bound = None
         self.over_cores    = None
         self.duration      = 0 # cf. RunningMode.__initTasksThreadsBound
+        self.jobsched      = jobsched
 
     def checkParameters(self):
         """ Check the parameters, raise an exception if anything wrong"""

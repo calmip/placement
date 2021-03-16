@@ -111,6 +111,32 @@ class Matrix(object):
         rvl += '  %CPU %MEM  SESS\n'
         return rvl
 
+    def getHeader2(self,jobsched=None,h_header=15*' '):
+        '''Return a header with a point (unicode 9679) per psr, the color is related to the cpuset - ie to the jobid
+           If jobsched is None, return ""'''
+
+        if jobsched == None:
+            return ''
+
+
+        rvl = h_header
+        for p in range(self.__ppsr_min,self.__ppsr_max+1):
+            if self.__hard.getCore2Core(p)==0:
+                rvl += ' '
+            
+            jobid  = jobsched.findJobFromCore(p)
+            jobtag = jobsched.findTagFromJob(jobid)
+            if jobtag == 0:
+                rvl += ' '
+            else:
+                rvl   += AnsiCodes.map(jobtag)
+                rvl   += chr(9679)
+
+        rvl += '\n'
+        rvl += AnsiCodes.normal();
+        
+        return rvl
+		
     def getNumamem(self,sockets_mem):
         """ Return lines describing memory occupation of the sockets, sockets_mem describes the memory used per task and per socket 
             We show the memory occupation relative to each memory socket

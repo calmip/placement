@@ -53,17 +53,16 @@ class RunningMode(TasksBinding):
         buildTasksbound: How to build the tasks_bound data structure ? An object-function implementating the algorithm
         withMemory     : If True, try to know memory occupation / socket using a numastat command
         jobsched       : If not None, an object extending JobSched (ex = slurm)
-                         Used to map processes and jobs
+                         Used to map processes and jobs (ex: slurm jobs)
         """
 
-        TasksBinding.__init__(self,None,0,0)
+        TasksBinding.__init__(self,None,0,0,jobsched)
         self.path       = options.check
         self.withMemory = options.memory
 
         self.hardware   = hardware
         
-        self.__jobid    = options.jobid
-        self.__jobsched = jobsched
+        self.jobid      = options.jobid
 
         self.pid=[]
         self.processus=[]
@@ -394,24 +393,22 @@ class RunningMode(TasksBinding):
         
         # Detect the job number corresponding to those processes
         # The detection is done by the jobscheduler
-        # Keep track of the jobid AND give a tag to the jobig (will be used to choose the color)
-        js = self.__jobsched
+        # Keep track of the jobid AND give a tag (an integer: 1,2,...) to each process
+        # The tag corresponds to the jobid (given by the scheduler), it will be used to select the color
+        # of the letter representing the process
+        
+        js = self.jobsched
         if js != None:
-            joblt   = 1
-            jobtags = {}
             for pid in list(processus):
                 jobid = js.findJobFromPid(pid)
-                processus[pid]['job']= jobid
-                if not jobid in jobtags:
-                    jobtags[jobid]   = joblt
-                    joblt            += 1
-                processus[pid]['jobtag'] = jobtags[jobid]
+                processus[pid]['job']    = jobid
+                processus[pid]['jobtag'] = js.findTagFromJob(jobid)
                 
                 # TODO - This is not optimized, we worked hard on this process before removing it....
-                if self.__jobid != None and jobid != str(self.__jobid):
+                if self.jobid != None and jobid != str(self.jobid):
                     del(processus[pid])
             
-        # Add default values por job and jobtag !
+        # Add default values for job and jobtag !
         else:
             for pid in processus:
                 processus[pid]['job']   = "0"
@@ -497,9 +494,16 @@ class RunningMode(TasksBinding):
             else:
                 sid      = " "
             
-            tag   = proc['tag']
+            #import pprint
+            #pprint.pprint(proc)
+            
+            if 'job' in proc and proc['job'] != '':
+	            jobid = proc['job']
+            else:
+                jobid = '-'
+				
+            tag = proc['tag']
             col = AnsiCodes.map(proc['jobtag'])
-            jobid = proc['job']
             
             # @todo - pas jolijoli ce copier-coller depuis BuildTasksBoundFromPs, même pas sûr que ça marche avec taskset !
             cores=[]
@@ -511,11 +515,10 @@ class RunningMode(TasksBinding):
                 affinity = "not running on cpu"
             else:
                 affinity = list2CompactString(cores)
-            
+
             rvl += format_str.format(sid,col,tag,nrm,pid,proc['user'],proc['cmd'],affinity,col,jobid,nrm)
         
         return rvl
-
 
 class BuildTasksBound:
     """ This is a functor, use to build the data structure tasksBinding from taskset or ps
