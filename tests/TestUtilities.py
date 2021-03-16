@@ -88,6 +88,9 @@ class TestExpandNodeList(unittest.TestCase):
         self.assertEqual(expandNodeList('eoscomp[1-2,4]'),['eoscomp1','eoscomp2','eoscomp4'])
         self.assertEqual(expandNodeList('eoscomp[1,2]'),['eoscomp1','eoscomp2'])
         self.assertEqual(expandNodeList('toto[08-10]'),['toto08','toto09','toto10'])
+        self.assertEqual(sorted(expandNodeList('t[01-02]o[1,2]to')),sorted(['t01o1to', 't02o1to', 't01o2to', 't02o2to']))
+        self.assertEqual(sorted(expandNodeList('t[0,1]t[0,1]t[0,1]')),sorted(['t0t0t0','t0t0t1','t0t1t0','t0t1t1','t1t0t0','t1t0t1','t1t1t0','t1t1t1']))
+
 
     def test_limits(self):
         self.assertEqual(expandNodeList('eosmesca1'),['eosmesca1'])
