@@ -13,9 +13,9 @@ python3 TestScatter.py
 python3 TestCompact.py
 
 3/ If all tests are OK, you can measure the coverage:
-python-coverage run    TestUtilities.py
-python-coverage run -a TestHardware.py
-python-coverage run -a TestArchitecture.py
-python-coverage run -a TestScatter.py
-python-coverage run -a TestCompact.py
-python-coverage report -m
+python3-coverage run    TestUtilities.py
+python3-coverage run -a TestHardware.py
+python3-coverage run -a TestArchitecture.py
+python3-coverage run -a TestScatter.py
+python3-coverage run -a TestCompact.py
+python3-coverage report -m

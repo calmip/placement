@@ -80,8 +80,6 @@ class Slurm(JobSched):
         
             # build the map self._job2tag
             jobids = sorted(list(set(core2jobid.values())))
-            import pprint
-            pprint.pprint(jobids)
             
             t = 0;
             m = {}
