@@ -47,7 +47,7 @@ export PLACEMENT_ROOT=PROOT
 export PLACEMENT_EXTERNALS=PEXT
 
 # The PYTHONPATH env variable
-export PYTHONPATH=$PLACEMENT_ROOT/lib:$PYTHONPATH
+export PYTHONPATH=$PLACEMENT_ROOT/lib
 
 # Real path to this script
 export PLACEMENTBASH=$(realpath $0)
