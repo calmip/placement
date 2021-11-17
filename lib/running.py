@@ -414,7 +414,7 @@ class RunningMode(TasksBinding):
                 processus[pid]['job']   = "0"
                 processus[pid]['jobtag']= 1
 
-		# Return
+        # Return
         self.processus = processus
         self.pid = sorted(processus.keys())
 
@@ -498,10 +498,10 @@ class RunningMode(TasksBinding):
             #pprint.pprint(proc)
             
             if 'job' in proc and proc['job'] != '':
-	            jobid = proc['job']
+                jobid = proc['job']
             else:
                 jobid = '-'
-				
+                
             tag = proc['tag']
             col = AnsiCodes.map(proc['jobtag'])
             

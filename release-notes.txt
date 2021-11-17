@@ -1,3 +1,16 @@
+v 1.14.2:
+---------
+    BUG: Sometimes old step_ directories remain on the node, belonging to finished jobs
+         This induced some trouble in the cpusets display
+
+v 1.14.1:
+---------
+    BUG: in the PYTHONPATH definition
+    
+v 1.14.0:
+---------
+    Now displaying job info, taken from the cpuset
+
 v 1.13.1:
 ---------
     BUG - sometimes hang when displaying threads
