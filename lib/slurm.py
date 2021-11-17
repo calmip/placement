@@ -51,12 +51,31 @@ class Slurm(JobSched):
             
             # Looking for /sys/fs/cgroup/cpuset/slurm/uid_xxx/job_yyyyyy/step_batch
             top_dir = "/sys/fs/cgroup/cpuset/slurm/"
+
+            # This is a cache, avoiding more squeue than necessary
+            jobids={}
             for root, dirs, files in os.walk(top_dir,False):
                 leaf = os.path.basename(root)
                 if leaf.startswith('step_'):
                     job_path = os.path.split(root)[0];    # => .../slurm/uid_xxx/job_yyyyyy
                     job_dir  = os.path.split(job_path)[1] # => job_yyyyyy
                     jobid    = job_dir.replace('job_','') # => yyyyyy
+
+                    # If the job is not recognized by slurm, ignore it: this is an old trace
+                    if jobid in jobids:
+                        if not jobid in jobids:
+                            continue
+
+                    else:
+                        # If we do not know, execute squeue
+                        try:
+                            # We do not need the output, only the exit status
+                            runCmd(f'squeue -j {jobid} -o ""')
+                            jobids[jobid] = True
+                            
+                        except PlacementException as e:
+                            jobids[jobid] = False
+                            continue
                     
                     # The pids are in the file cgroup.procs
                     pids = []
