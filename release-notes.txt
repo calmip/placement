@@ -1,3 +1,7 @@
+v 1.14.3:
+---------
+    BUG: In certain conditions (gpu not used while it should be), placement --jobid crashes
+    
 v 1.14.2:
 ---------
     BUG: Sometimes old step_ directories remain on the node, belonging to finished jobs

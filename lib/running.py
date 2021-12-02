@@ -123,9 +123,21 @@ class RunningMode(TasksBinding):
         for s in gpus_bound_tmp:
             sg = []
             for g in s:
+                gpu = {}
                 xpath_request = ".//gpu/[minor_number='"+str(g)+"']";
-                obj_g = tree.findall(xpath_request)[0]  # TODO - Verifier qu'il n'y en a qu'un seul !
-                gpu   = {}
+                tmp = tree.findall(xpath_request)
+
+                # If no information about this gpu (eg gpu not used))
+                if len(tmp)==0:
+                    gpu['M'] = 0
+                    gpu['P'] = 0
+                    gpu['U'] = 0
+                    gpu['id'] = g
+                    gpu['PS'] = []
+                    sg.append(gpu)
+                    continue
+
+                obj_g = tree.findall(xpath_request)[0]  # TODO - check there is only 1 element here !
                 
                 # Memory used
                 mem_used = int(obj_g.find(".//fb_memory_usage/used").text.partition(' ')[0])
