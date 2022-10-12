@@ -1,3 +1,8 @@
+v 1.14.4:
+---------
+    - In mpi_aware mode:
+         * It is now possible using placement --mpi_aware on several nodes (only if same number of processes on each node)
+         * SLURM_NTASKS_PER_NODE is now passed as PLACEMENT_SLURM_NTASKS_PER_NODE, not only SLURM_TASKS_PER_NODE
 v 1.14.3:
 ---------
     BUG: In certain conditions (gpu not used while it should be), placement --jobid crashes

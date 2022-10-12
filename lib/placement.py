@@ -339,6 +339,8 @@ def make_mpi_aware():
     msg += 'export PLACEMENT_NODE="'+sockets+'"; ';
     if 'SLURM_TASKS_PER_NODE' in os.environ:
         msg += 'export PLACEMENT_SLURM_TASKS_PER_NODE="'+os.environ['SLURM_TASKS_PER_NODE']+'"; '
+    if 'SLURM_NTASKS_PER_NODE' in os.environ:
+        msg += 'export PLACEMENT_SLURM_NTASKS_PER_NODE="'+os.environ['SLURM_NTASKS_PER_NODE']+'"; '
     if 'SLURM_CPUS_PER_TASK' in os.environ:
         msg += 'export PLACEMENT_SLURM_CPUS_PER_TASK="'+os.environ['SLURM_CPUS_PER_TASK']+'"; '
 

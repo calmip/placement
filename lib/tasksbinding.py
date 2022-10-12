@@ -115,7 +115,7 @@ class TasksBinding(object):
                 #    print(k + ' => ' + os.environ[k])
                 raise PlacementException(msg)
 
-        rank = int(rank)
+        rank = int(rank) % len(self.tasks_bound)
         if rank>=len(self.tasks_bound):
             msg  = "INTERNAL ERROR - mpi_aware - rank = " + str(rank)
             msg += " However there are only " + str(len(self.tasks_bound)) + " tasks !"
