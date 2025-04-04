@@ -148,8 +148,22 @@ class RunningMode(TasksBinding):
                 gpu['U'] = int(obj_g.find(".//utilization/gpu_util").text.strip('%'))
                 
                 # power used
-                pwr_used = float(obj_g.find(".//power_readings/power_draw").text.partition(' ')[0])
-                pwr_limit= float(obj_g.find(".//power_readings/power_limit").text.partition(' ')[0])
+                pwr_used_obj = obj_g.find(".//power_readings/power_draw")
+                if pwr_used_obj is None:
+                    pwr_used_obj = obj_g.find(".//gpu_power_readings/instant_power_draw")
+                elif pwr_used_obj is None:
+                    print("Unable to find power draw, maybe counter name has changed again !")
+                
+                # power limit
+                pwr_limit_obj = obj_g.find(".//power_readings/power_limit")
+                if pwr_limit_obj is None:
+                    pwr_limit_obj = obj_g.find(".//gpu_power_readings/current_power_limit")
+                elif pwr_limit_obj is None:
+                    print("Unable to find power limit, maybe counter name has changed again !")
+
+                pwr_used = float(pwr_used_obj.text.partition(' ')[0])
+                pwr_limit = float(pwr_limit_obj.text.partition(' ')[0])
+
                 gpu['P'] = int(100 * pwr_used / pwr_limit)
                 
                 # gpu number
